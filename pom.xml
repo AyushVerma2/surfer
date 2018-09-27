@@ -4,7 +4,7 @@
 	<groupId>com.oceanprotocol</groupId>
 	<artifactId>surfer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	
+
 	<parent>
 		<groupId>net.mikera</groupId>
 		<artifactId>clojure-pom</artifactId>
@@ -34,7 +34,7 @@
 		<developerConnection>scm:git:git@github.com:oceanprotocol/${project.artifactId}.git</developerConnection>
 		<tag>HEAD</tag>
 	</scm>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>net.mikera</groupId>
@@ -66,6 +66,46 @@
 			<version>0.9.0</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.danielsz</groupId>
+			<artifactId>system</artifactId>
+			<version>0.4.1</version>
+		</dependency>
+		<dependency>
+			<groupId>http-kit</groupId>
+			<artifactId>http-kit</artifactId>
+			<version>2.3.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.clojure</groupId>
+			<artifactId>data.json</artifactId>
+			<version>0.2.6</version>
+		</dependency>
+		<dependency>
+			<groupId>compojure</groupId>
+			<artifactId>compojure</artifactId>
+			<version>1.6.1</version>
+		</dependency>
+		<dependency>
+			<groupId>environ</groupId>
+			<artifactId>environ</artifactId>
+			<version>1.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>ring</groupId>
+			<artifactId>ring-defaults</artifactId>
+			<version>0.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>ring-middleware-format</groupId>
+			<artifactId>ring-middleware-format</artifactId>
+			<version>0.7.0</version>
+		</dependency>
+		<dependency>
+			<groupId>clj-http</groupId>
+			<artifactId>clj-http</artifactId>
+			<version>3.4.1</version>
+		</dependency>
 	</dependencies>
-	
+
 </project>
