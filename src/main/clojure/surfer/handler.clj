@@ -3,10 +3,17 @@
     [compojure.route :as route]
     [compojure.core :refer [defroutes GET POST ANY]]
     [ring.middleware.format :refer [wrap-restful-format]]
-    [ring.middleware.defaults :refer [wrap-defaults api-defaults]]))
+    [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
+    [surfer.store :as store]
+    [surfer.ckan :as ckan]))
 
 (defroutes routes
-  (GET "/" [] "Welcome. fevfef rf rbrggrgtg grbrbrgb f dvfd")
+  (GET "/" [] "Welcome.")
+  
+  (GET "/metadata/:id" [id] 
+       (or (store/lookup id)
+           (route/not-found "404")))
+  
   (route/not-found "404"))
 
 (def app
