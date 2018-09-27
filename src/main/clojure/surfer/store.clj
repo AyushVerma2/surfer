@@ -11,3 +11,6 @@
 
 (defn lookup [id-str]
   (get @database id-str))
+
+(defn all-keys []
+  (keys @database))

@@ -10,6 +10,17 @@
 (defroutes routes
   (GET "/" [] "Welcome.")
   
+  (GET "/assets" []
+       (str 
+              "<body style=\"font-family: 'courier new', monospace;\">"
+              (apply str 
+                     (mapv 
+                       (fn [id]
+                         (str "<a href=\"/metadata/" id "\">" id " <br/>\n"))
+                       (store/all-keys)))
+              "</body>"
+              ))
+  
   (GET "/metadata/:id" [id] 
        (or (store/lookup id)
            (route/not-found "404")))

@@ -1,6 +1,7 @@
 (ns surfer.ckan
   (:require
     [clj-http.client :as client]
+    [surfer.store :as store]
     [clojure.data.json :as json]))
 
 (defn api-call [url]
@@ -24,6 +25,15 @@
   [repo package]
   (let [url (str repo "/api/3/action/package_show?id=" package)]
     (api-call url)))
+
+(defn import-package [repo package-name]
+  (let [pdata (package-show repo package-name)]
+    (store/register (json/write-str pdata)))) 
+
+(defn import-all [repo]
+  (let [packages (package-list repo)]
+    (doseq [p packages] (import-package repo p))
+    (println (str (count packages) " packages imported")))) 
 
 (defn get-data 
   "Gets the data for a given resource"
