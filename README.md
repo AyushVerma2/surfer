@@ -8,11 +8,12 @@ The Comprehensive Knowledge Archive Network (CKAN) is a web-based open source ma
 Surfer is a simple service that:
 - Crawls CKAN repositories
 - Converts CKAN metadata into Ocean metadata
+- Hashes the metadata to obtain Asset IDs
 - Offers a web-based interface for exploring the resulting Ocean assets
 
-## Usage
+## Example Usage
 
-surfer is currently designed to be used interactively at a Clojure repl. Open a REPL in the 'surfer.core' namespace.
+Surfer is currently designed to be used interactively at a Clojure REPL. Open a REPL in the 'surfer.core' namespace.
 
 ```clojure
 (ns surfer.core)
