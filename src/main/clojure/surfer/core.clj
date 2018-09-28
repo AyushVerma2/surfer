@@ -20,11 +20,13 @@
 (comment
   (-main) ;; launch the app
   (reset) ;; stop and restart the app
+  
+  (package-list "https://data.gov.uk")
 
   (let [repo "http://demo.ckan.org"
         packs (ckan/package-list repo)
         some-packs (take 20 (shuffle packs))]
-    (doall (pmap #(import-package repo % ) some-packs)))
+    (import-packages repo some-packs))
   
   (time 
     (let [ks (store/all-keys)] 

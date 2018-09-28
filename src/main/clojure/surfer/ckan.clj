@@ -30,6 +30,9 @@
   (let [pdata (package-show repo package-name)]
     (store/register (json/write-str pdata)))) 
 
+(defn import-packages [repo package-names]
+  (doall (pmap #(import-package repo % ) package-names)))
+
 (defn import-all [repo]
   (let [packages (package-list repo)]
     (doseq [p packages] (import-package repo p))
