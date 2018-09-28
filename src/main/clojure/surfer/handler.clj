@@ -16,7 +16,7 @@
      :body data}))
 
 (defroutes routes
-  (GET "/" [] "Welcome.")
+  (GET "/" [] "<body><h1>Welcome to surfer!</h1><a href='/assets'>Explore imported asset list</a></body>")
   
   (GET "/assets" []
        (str 

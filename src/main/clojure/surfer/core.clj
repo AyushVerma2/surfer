@@ -28,6 +28,7 @@
         some-packs (take 20 (shuffle packs))]
     (import-packages repo some-packs))
   
+  ;; timing test for 1000 metadata requests. Currently about 2000 req/s
   (time 
     (let [ks (store/all-keys)] 
       (doall (pmap #(do % (client/get (str "http://localhost:8080/metadata/" (rand-nth ks)))) 
