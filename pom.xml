@@ -94,17 +94,17 @@
 		<dependency>
 			<groupId>ring</groupId>
 			<artifactId>ring-defaults</artifactId>
-			<version>0.2.0</version>
+			<version>0.3.2</version>
 		</dependency>
 		<dependency>
 			<groupId>ring-middleware-format</groupId>
 			<artifactId>ring-middleware-format</artifactId>
-			<version>0.7.0</version>
+			<version>0.7.2</version>
 		</dependency>
 		<dependency>
 			<groupId>clj-http</groupId>
 			<artifactId>clj-http</artifactId>
-			<version>3.4.1</version>
+			<version>3.9.1</version>
 		</dependency>
 	</dependencies>
 
@@ -115,9 +115,8 @@
 				<artifactId>exec-maven-plugin</artifactId>
 				<version>1.2.1</version>
 				<configuration>
-					<mainClass>com.example.Main</mainClass>
+					<mainClass>clojure.main</mainClass>
 					<arguments>
-						<argument>argument1</argument>
 					</arguments>
 				</configuration>
 			</plugin>
