@@ -22,8 +22,9 @@
   (reset) ;; stop and restart the app
   
   (package-list "https://data.gov.uk")
+  (package-list "https://data.gov.sg")
 
-  (let [repo "http://demo.ckan.org"
+  (let [repo "https://data.gov.uk"
         packs (ckan/package-list repo)
         some-packs (take 20 (shuffle packs))]
     (import-packages repo some-packs))
