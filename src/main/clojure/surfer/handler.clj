@@ -1,12 +1,15 @@
 (ns surfer.handler
   (:require
     [compojure.route :as route]
-    [compojure.core :refer [defroutes GET POST ANY]]
+    [compojure.core :refer [defroutes GET PUT POST ANY context]]
     [ring.middleware.format :refer [wrap-restful-format]]
     [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
     [surfer.store :as store]
+    [surfer.utils :as u]
     [clojure.data.json :as json]
-    [surfer.ckan :as ckan]))
+    [surfer.ckan :as ckan]
+    [ring.util.response :as response]
+    [ring.util.request :as request]))
 
 (defn json-response
   [data & [status]]
@@ -26,15 +29,25 @@
                        (fn [id]
                          (let [j (json/read-str (store/lookup id))
                                title (j "title")]
-                           (str "<a href=\"/metadata/" id "\">" id " - " title "<br/>\n")))
+                           (str "<a href=\"api/v1/meta/data/" id "\">" id " - " title "<br/>\n")))
                        (store/all-keys)))
               "</body>"
               ))
   
-  (GET "/metadata/:id" [id] 
-       (if-let [js (store/lookup id)]
-         (json-response js)
-         (route/not-found "404")))
+  (context "/api/v1/meta" []
+    (GET "/data/:id" [id] 
+        (if-let [meta (store/lookup id)]
+          meta
+          (route/not-found "404")))
+    
+    (PUT "/data/:id" request 
+        (let [id (:id request)
+              body (request/body-string request)
+              hash (u/hex-string (u/keccak256 body))]
+          (when-not 
+            (= id hash) 
+            (response/bad-request ("Invalid ID for metadata, should be: " hash)))
+          (store/register id body))))
   
   (route/not-found "404"))
 

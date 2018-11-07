@@ -18,24 +18,30 @@
    );"
   ))
 
+(create-db! db)
+
 (defn drop-db! [db]
   (jdbc/execute! db 
   "drop TABLE Metadata;"
   ))
 
-(create-db! db)
+(defn truncate-db! [db]
+  (jdbc/execute! db 
+  "truncate TABLE Metadata;"
+  ))
 
-(defonce database (atom {}))
-
-(defn register [^String asset-metadata-str]
-  (let [hash (u/hex-string (u/keccak256 asset-metadata-str))
-        rs (jdbc/query db ["select * from Metadata where id = ?" hash])]
-    (if (empty? rs)
-      (jdbc/insert! db "Metadata" 
-                    {:id hash 
-                     :metadata asset-metadata-str
-                     :utime (LocalDateTime/now)}))
-    hash))
+(defn register 
+  ([^String asset-metadata-str]
+    (let [hash (u/hex-string (u/keccak256 asset-metadata-str))]
+      (register hash asset-metadata-str)))
+  ([^String hash ^String asset-metadata-str]
+    (let [rs (jdbc/query db ["select * from Metadata where id = ?" hash])]
+      (if (empty? rs)
+        (jdbc/insert! db "Metadata" 
+                      {:id hash 
+                       :metadata asset-metadata-str
+                       :utime (LocalDateTime/now)}))
+      hash)))
 
 (defn lookup [^String id-str]
   (let [rs (jdbc/query db ["select * from Metadata where id = ?" id-str])]
@@ -44,4 +50,5 @@
       (str (:metadata (first rs))))))
 
 (defn all-keys []
-  (keys @database))
+  (let [rs (jdbc/query db ["select id from Metadata;"])]
+    (map :id rs)))
