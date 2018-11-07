@@ -38,7 +38,7 @@
     (GET "/data/:id" [id] 
         (if-let [meta (store/lookup id)]
           meta
-          (route/not-found "404")))
+          (route/not-found "Metata for this Asset ID is not available.")))
     
     (PUT "/data/:id" request 
         (let [id (:id request)
@@ -46,7 +46,7 @@
               hash (u/hex-string (u/keccak256 body))]
           (when-not 
             (= id hash) 
-            (response/bad-request ("Invalid ID for metadata, should be: " hash)))
+            (response/bad-request ("Invalid ID for metadata, expected: " hash)))
           (store/register id body))))
   
   (route/not-found "404"))
