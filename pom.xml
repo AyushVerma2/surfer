@@ -41,7 +41,6 @@
 			<artifactId>core.matrix</artifactId>
 			<version>0.62.0</version>
 			<classifier>tests</classifier>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>net.mikera</groupId>
@@ -129,7 +128,6 @@
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<version>1.4.197</version>
-			<scope>test</scope>
 		</dependency>
 
 
