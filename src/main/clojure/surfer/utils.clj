@@ -9,10 +9,13 @@
 
 (def array-of-bytes-type (Class/forName "[B")) 
 
+(def EMPTY-BYTES (byte-array 0))
+
 (defn to-bytes ^bytes [data]
   (cond
     (string? data) (.getBytes ^String data StandardCharsets/UTF_8)
     (= (class data) array-of-bytes-type) data
+    (nil? data) EMPTY-BYTES
     :else (throw (IllegalArgumentException. (str "Can't convert to bytes: " (class data))))))
 
 (defn hex [i]

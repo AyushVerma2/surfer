@@ -99,6 +99,11 @@
 			<version>1.6.1</version>
 		</dependency>
 		<dependency>
+			<groupId>metosin</groupId>
+			<artifactId>compojure-api</artifactId>
+			<version>1.1.11</version>
+		</dependency>
+		<dependency>
 			<groupId>environ</groupId>
 			<artifactId>environ</artifactId>
 			<version>1.1.0</version>

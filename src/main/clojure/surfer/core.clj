@@ -16,7 +16,6 @@
     (set-init! system)
     (start)))
 
-
 (comment
   (-main) ;; launch the app
   (reset) ;; stop and restart the app
