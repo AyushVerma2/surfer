@@ -51,7 +51,7 @@
     {:swagger
      {:data {:info {:title "Storage API"
                     :description "Storage API for Ocean Marketplace"}
-             :tags [{:name "Storage API", :description "Meta API for Ocean Marketplace"}]
+             :tags [{:name "Storage API", :description "Storage API for Ocean Marketplace"}]
              ;;:consumes ["application/json"]
              ;;:produces ["application/json"]
              }}}
@@ -64,6 +64,26 @@
     (PUT "/:id" request 
         :body [metadata s/Any]
         :summary "Stores asset data for a given asset ID"
+        (throw (UnsupportedOperationException.))
+    )))
+
+(def market-api 
+  (api     
+    {:swagger
+     {:data {:info {:title "Market API"
+                    :description "Market API for Ocean Marketplace"}
+             :tags [{:name "Market API", :description "Market API for Ocean Marketplace"}]
+             ;;:consumes ["application/json"]
+             ;;:produces ["application/json"]
+             }}}
+    
+    (GET "/listings/:id" [id] 
+        :summary "Gets data for a specified listing"
+        (throw (UnsupportedOperationException.)))
+    
+    (PUT "/listings" request 
+        :body [metadata s/Any]
+        :summary "Create a listing on the marketplace. Marketplace will return a new listing ID"
         (throw (UnsupportedOperationException.))
     )))
 
@@ -98,6 +118,10 @@
     (context "/api/v1/assets" []
       :tags ["Storage API"]
       storage-api)
+    
+    (context "/api/v1/market" []
+      :tags ["Market API"]
+      market-api)
   
    ;; (response/not-found "404")
     ))
