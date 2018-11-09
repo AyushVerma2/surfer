@@ -115,8 +115,7 @@
 
 (def api-routes
   (api 
-    (swagger-routes
-      {:ui "/api-docs", :spec "/swagger.json"})
+    
     
     (GET "/" [] "<body>
                    <h1>Welcome to surfer!</h1>
@@ -160,8 +159,17 @@
                     :roles #{:user}}}))
 
 (def all-routes 
-   (routes
-     (friend/wrap-authorize api-routes #{:user}))) ;; #{:user}
+   (api 
+     (swagger-routes
+         {:ui "/api-docs", :spec "/swagger.json"})
+     
+     (api 
+       :middleware [#(friend/wrap-authorize * #{:user})]
+       api-routes)
+     
+     ;;(friend/wrap-authorize api-routes #{:user})
+     )
+   ) 
    
 (def app
   (-> all-routes
@@ -169,7 +177,8 @@
                            :workflows [(workflows/http-basic
                                          ;; :credential-fn #(creds/bcrypt-credential-fn @users %)
                                          :realm "Friend demo")]
-                           :unauthenticated-handler #(workflows/http-basic-deny "Friend demo" %)})
+                           ;; :unauthenticated-handler #(workflows/http-basic-deny "Friend demo" %)
+                           })
       ;; wrap-restful-format
       ;;(wrap-defaults api-defaults)
       ))
