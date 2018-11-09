@@ -9,7 +9,10 @@
     [clojure.data.json :as json]
     [surfer.ckan :as ckan]
     [ring.util.response :as response]
-    [ring.util.request :as request]))
+    [ring.util.request :as request]
+    [cemerick.friend :as friend]
+    [cemerick.friend [workflows :as workflows]
+                     [credentials :as creds]])) 
 
 (def meta-api 
   (api     
@@ -110,7 +113,7 @@
              (throw (UnsupportedOperationException.)))
     ))
 
-(def all-routes
+(def api-routes
   (api 
     (swagger-routes
       {:ui "/api-docs", :spec "/swagger.json"})
@@ -119,7 +122,10 @@
                    <h1>Welcome to surfer!</h1>
                    <p><a href='/assets'>Explore imported asset list</a></p>
                    <p><a href='/api-docs'>API Documentation</a></p>
+                   <p><a href='/echo'>Echo request body</a></p>
                  </body>")
+    
+    (GET "/echo" request (str request))
   
     (GET "/assets" []
          (str 
@@ -149,8 +155,21 @@
    ;; (response/not-found "404")
     ))
 
+(def users (atom {"test" {:username "test"
+                    :password (creds/hash-bcrypt "foobar")
+                    :roles #{:user}}}))
+
+(def all-routes 
+   (routes
+     (friend/wrap-authorize api-routes #{:user}))) ;; #{:user}
+   
 (def app
   (-> all-routes
+     (friend/authenticate {:credential-fn #(creds/bcrypt-credential-fn @users %)
+                           :workflows [(workflows/http-basic
+                                         ;; :credential-fn #(creds/bcrypt-credential-fn @users %)
+                                         :realm "Friend demo")]
+                           :unauthenticated-handler #(workflows/http-basic-deny "Friend demo" %)})
       ;; wrap-restful-format
       ;;(wrap-defaults api-defaults)
       ))
