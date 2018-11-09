@@ -77,15 +77,38 @@
              ;;:produces ["application/json"]
              }}}
     
-    (GET "/listings/:id" [id] 
-        :summary "Gets data for a specified listing"
-        (throw (UnsupportedOperationException.)))
+    ;; ===========================================
+    ;; User management
+    
+    (GET "/users" [] 
+             :summary "Gets the list of current users"
+             (throw (UnsupportedOperationException.)))
+    
+    (GET "/users/:id" [id] 
+             :summary "Gets data for a specified user"
+             (throw (UnsupportedOperationException.)))       
+         
+    (PUT "/users" request 
+         :body [metadata s/Any]
+         :summary "Attempts to register a new user"
+         (throw (UnsupportedOperationException.)))
+    
+    ;; ===========================================
+    ;; Asset listings
     
     (PUT "/listings" request 
-        :body [metadata s/Any]
-        :summary "Create a listing on the marketplace. Marketplace will return a new listing ID"
-        (throw (UnsupportedOperationException.))
-    )))
+             :body [metadata s/Any]
+             :summary "Create a listing on the marketplace. Marketplace will return a new listing ID"
+             (throw (UnsupportedOperationException.)))
+    
+    (GET "/listings/:id" [id] 
+             :summary "Gets data for a specified listing"
+             (throw (UnsupportedOperationException.)))
+    
+    (PUT "/listings/:id" [id] 
+             :summary "Updates data for a specified listing"
+             (throw (UnsupportedOperationException.)))
+    ))
 
 (def all-routes
   (api 
