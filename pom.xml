@@ -168,6 +168,7 @@
 						</goals>
 					</execution>
 				</executions>
+
 				<configuration>
 					<mainClass>clojure.main</mainClass>
 					<arguments>
@@ -175,6 +176,7 @@
 						<argument>surfer.core</argument>
 					</arguments>
 				</configuration>
+
 			</plugin>
 		</plugins>
 	</build>
