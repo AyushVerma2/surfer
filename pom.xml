@@ -5,12 +5,6 @@
 	<artifactId>surfer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 
-	<parent>
-		<groupId>net.mikera</groupId>
-		<artifactId>clojure-pom</artifactId>
-		<version>0.6.0</version>
-	</parent>
-
 	<licenses>
 		<license>
 			<name>Apache License, Version 2.0</name>
