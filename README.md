@@ -11,6 +11,13 @@ Surfer is a simple service that:
 - Hashes the metadata to obtain Asset IDs
 - Offers a web-based interface for exploring the resulting Ocean assets
 
+## Running Surfer
+
+Surfer can be executed using Maven.
+
+1. Clone / download the surfer repository
+2. In the root directory run `nohup mvn clean install exec:java &`
+
 ## Example Usage
 
 Surfer is currently designed to be used interactively at a Clojure REPL. Open a REPL in the 'surfer.core' namespace.
