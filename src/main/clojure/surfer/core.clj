@@ -8,6 +8,8 @@
     [system.repl :refer [set-init! go start reset stop]]
     [clojure.data.json :as json]))
 
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
 
 (defn -main
   "Start a production system, unless a system is passed as argument (as in the dev-run task)."

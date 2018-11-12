@@ -4,6 +4,10 @@
             [clojure.java.jdbc :as jdbc])
   (:import [java.time LocalDateTime]))
 
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
+
 (def db {:dbtype "h2"
          :dbname "~/surfertest"})
 

@@ -8,7 +8,10 @@
     [environ.core :refer [env]]
     [surfer.handler :refer [app]]))
 
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
 (defsystem base-system
   [;; :db (new-h2-database (select-database env) #(create-table! {} {:connection %}))
-   :web (new-web-server (Integer. (or (env :http-port) 8080)) app)])
+   :web (new-web-server (int (or (env :http-port) 8080)) app)])
 

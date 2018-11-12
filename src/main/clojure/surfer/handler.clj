@@ -14,6 +14,9 @@
     [cemerick.friend [workflows :as workflows]
                      [credentials :as creds]])) 
 
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
 (def meta-api 
   (api     
     {:swagger
