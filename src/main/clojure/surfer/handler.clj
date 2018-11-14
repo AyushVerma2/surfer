@@ -32,6 +32,10 @@
              ;;:produces ["application/json"]
              }}}
     
+    (GET "/data/" [id] 
+        :summary "A list of assets where metadata is available"
+        (store/all-keys))
+    
     (GET "/data/:id" [id] 
         :summary "Gets metadata for a specified asset"
         (if-let [meta (store/lookup id)]
@@ -69,8 +73,9 @@
     
     (GET "/:id" [id] 
         :summary "Gets data for a specified asset ID"
-        (let [meta (store/lookup id)]
-          (throw (UnsupportedOperationException.))))
+        (if-let [meta (store/lookup id)]
+          (throw (UnsupportedOperationException.))
+          (response/not-found "Asset not available.")))
     
     (PUT "/:id" request 
         :body [metadata s/Any]
