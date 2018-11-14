@@ -13,5 +13,8 @@
 
 (defsystem base-system
   [;; :db (new-h2-database (select-database env) #(create-table! {} {:connection %}))
-   :web (new-web-server (int (or (env :http-port) 8080)) app)])
+   :web (new-web-server 
+          (int (or (env :http-port) 8080)) 
+          #(surfer.handler/app %) ;; hack because system.components.http-kit need a fn? to use a handler directly
+          )])
 

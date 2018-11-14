@@ -121,7 +121,7 @@
     
     
     (GET "/" [] "<body>
-                   <h1>Welcome to surfer!</h1>
+                   <h1>Welcome to surfer</h1>
                    <p><a href='/assets'>Explore imported asset list</a></p>
                    <p><a href='/api-docs'>API Documentation</a></p>
                    <p><a href='/echo'>Echo request body</a></p>
