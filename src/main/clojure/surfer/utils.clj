@@ -18,6 +18,28 @@
     (nil? data) EMPTY-BYTES
     :else (throw (IllegalArgumentException. (str "Can't convert to bytes: " (class data))))))
 
+(defn valid-id-char?
+  "Returns true if c is a valid lowercase hex character."
+  ([^long c]
+    (or  
+      (and (<= 48 c) (<= c 57)) ;; digit
+      (and (<= 97 c) (<= c 102));; lowercase a-f
+      )))
+
+(defn valid-asset-id? 
+  "Returns true iff given a valid asset id string."
+  ([^String s]
+    (and 
+      (string? s)
+      (== 64 (count s))
+      (loop [i (int 0)]
+        (if (< i 53) 
+          (let [c (.charAt s i)]
+            (if (valid-id-char? (long c))
+              (recur (inc i))
+              false))
+          true)))))
+
 (defn hex [i]
   (.charAt "0123456789abcdef" (mod i 16)))
 
