@@ -1,7 +1,15 @@
 # surfer
-CKAN Dataset Exploration with Ocean
+
+Surfer provides a reference implementation of an Ocean Agent with the following capabilities:
+
+- Meta API for serving Ocean Asset Metadata
+- Market API for serving as an Ocean Marketplace backend
+- Common Storage API for asset data
+- CKAN Dataset Import
 
 ## Motivation
+
+### CKAN Import
 
 The Comprehensive Knowledge Archive Network (CKAN) is a web-based open source management system for the storage and distribution of open data. By crawling and indexing CKAN data, we are able to quickly open up a wealth of open data resources to the Ocean ecosystem.
 
@@ -10,6 +18,9 @@ Surfer is a simple service that:
 - Converts CKAN metadata into Ocean metadata
 - Hashes the metadata to obtain Asset IDs
 - Offers a web-based interface for exploring the resulting Ocean assets
+- Hosts a Swagger interface for exploring the Surfer APIs
+
+## Example Usage
 
 ## Running Surfer
 
@@ -17,10 +28,11 @@ Surfer can be executed using Maven.
 
 1. Clone / download the surfer repository
 2. In the root directory run `nohup mvn clean install exec:java &`
+3. Browse to `http://localhost/8080` for the Welcome page
 
-## Example Usage
+### Interactove REPL use
 
-Surfer is currently designed to be used interactively at a Clojure REPL. Open a REPL in the 'surfer.core' namespace.
+Surfer is designed to be used interactively at a Clojure REPL. Open a REPL in the 'surfer.core' namespace.
 
 ```clojure
 (ns surfer.core)
