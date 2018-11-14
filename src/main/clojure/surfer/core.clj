@@ -14,7 +14,7 @@
 (defn -main
   "Start a production system, unless a system is passed as argument (as in the dev-run task)."
   [& args]
-  (let [system (or (first args) #'base-system)]
+  (let [system #'base-system]
     (set-init! system)
     (start)))
 
