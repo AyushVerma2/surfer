@@ -16,4 +16,4 @@
 (def BASE_URL "http://localhost:8080/")
 
 (deftest test-welcome
-  (is (= 200 (:status (client/get (str BASE_URL "/"))))))
+  (is (= 200 (:status (client/get (str BASE_URL))))))

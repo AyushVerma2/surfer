@@ -17,6 +17,11 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
+(defn add-middleware [route middleware]
+  (let [handler (or (:handler route) (throw (Error. "Expected a :handler in the route")))]
+    (compojure.api.routes/map->Route 
+      (assoc route :handler (middleware handler)))))
+
 (def meta-api 
   (api     
     {:swagger
@@ -118,17 +123,6 @@
 
 (def api-routes
   (api 
-    
-    
-    (GET "/" [] "<body>
-                   <h1>Welcome to surfer</h1>
-                   <p><a href='/assets'>Explore imported asset list</a></p>
-                   <p><a href='/api-docs'>API Documentation</a></p>
-                   <p><a href='/echo'>Echo request body</a></p>
-                 </body>")
-    
-    (GET "/echo" request (str request))
-  
     (GET "/assets" []
          (str 
                 "<body style=\"font-family: 'courier new', monospace;\">"
@@ -157,6 +151,17 @@
    ;; (response/not-found "404")
     ))
 
+(def web-routes
+  (api 
+    (GET "/" [] "<body>
+                   <h1>Welcome to surfer</h1>
+                   <p><a href='/assets'>Explore imported asset list</a></p>
+                   <p><a href='/api-docs'>API Documentation</a></p>
+                   <p><a href='/echo'>Echo request body</a></p>
+                 </body>")
+    
+    (GET "/echo" request (str request))))
+
 (def users (atom {"test" {:username "test"
                     :password (creds/hash-bcrypt "foobar")
                     :roles #{:user}}}))
@@ -166,11 +171,11 @@
      (swagger-routes
          {:ui "/api-docs", :spec "/swagger.json"})
      
-     (api 
-       :middleware [#(friend/wrap-authorize * #{:user})]
-       api-routes)
+     web-routes
      
-     ;;(friend/wrap-authorize api-routes #{:user})
+     (add-middleware
+       api-routes
+       #(friend/wrap-authorize % #{:user}))
      )
    ) 
    
@@ -179,8 +184,11 @@
      (friend/authenticate {:credential-fn #(creds/bcrypt-credential-fn @users %)
                            :workflows [(workflows/http-basic
                                          ;; :credential-fn #(creds/bcrypt-credential-fn @users %)
-                                         :realm "Friend demo")]
-                           ;; :unauthenticated-handler #(workflows/http-basic-deny "Friend demo" %)
+                                         :realm "Friend demo")
+                                         :unauthorized-handler #(workflows/http-basic-deny "Friend demo" %)
+                                         :unauthenticated-handler #(workflows/http-basic-deny "Friend demo" %)
+                                       ]
+                           
                            })
       ;; wrap-restful-format
       ;;(wrap-defaults api-defaults)
