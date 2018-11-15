@@ -4,6 +4,7 @@
     [ring.middleware.format :refer [wrap-restful-format]]
     [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
     [surfer.store :as store]
+    [surfer.storage :as storage]
     [surfer.utils :as u]
     [schema.core :as s]
     [clojure.data.json :as json]
@@ -43,11 +44,17 @@
           (response/not-found "Metadata for this Asset ID is not available.")))
     
     (PUT "/data" request 
+        ;; :coercion nil 
         :body [metadata s/Any]
         :summary "Stores metadata, creating a new Asset ID"
-        (let [body (request/body-string request)
+        (let [^String body (json/write-str metadata)
               hash (u/hex-string (u/keccak256 body))]
-          (store/register body)))
+          ;; (println (keys request))
+          ;; (println (str (class body) ":" body )) 
+          ;;(println (str (class metadata) ":" metadata )) 
+          (if (empty? body) 
+            (response/bad-request "No metadata body!")
+            (store/register body))))
     
     (PUT "/data/:id" request 
         {:body [metadata s/Any] 
@@ -73,14 +80,25 @@
     
     (GET "/:id" [id] 
         :summary "Gets data for a specified asset ID"
-        (if-let [meta (store/lookup id)]
-          (throw (UnsupportedOperationException.))
-          (response/not-found "Asset not available.")))
+        (if-let [meta (store/lookup-json id)]
+          (if-let [body (storage/load-stream id)]
+            (let [ctype (meta "contentType")
+                  headers (if ctype {"Content-Type" ctype} {})]
+              {:status 200
+               :headers headers
+               :body body})
+            (response/not-found "Asset data not available."))
+          (response/not-found "Asset matadata not available.")))
     
-    (PUT "/:id" request 
+    (PUT "/:id" {{:keys [id]} :params :as request} 
         :body [metadata s/Any]
         :summary "Stores asset data for a given asset ID"
-        (throw (UnsupportedOperationException.))
+        ;; (println request)
+        (if-let [meta (store/lookup-json id)]
+          (let [body (:body request)]
+            (storage/save id body)
+            (response/created (str "/api/v1/assets/" id)))
+          (response/not-found (str "Attempting to store unregistered asset [" id "]")))
     )))
 
 (def market-api 
@@ -128,6 +146,7 @@
 
 (def api-routes
   (api 
+   
     (GET "/assets" []
          (str 
                 "<body style=\"font-family: 'courier new', monospace;\">"

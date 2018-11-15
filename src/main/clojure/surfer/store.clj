@@ -47,11 +47,21 @@
                        :utime (LocalDateTime/now)}))
       hash)))
 
-(defn lookup [^String id-str]
-  (let [rs (jdbc/query db ["select * from Metadata where id = ?" id-str])]
+(defn lookup 
+  "Gets the metadata string for a given Asset ID, or nil if not available."
+  ([^String id-str]
+    (let [rs (jdbc/query db ["select * from Metadata where id = ?" id-str])]
     (if (empty? rs)
       nil
-      (str (:metadata (first rs))))))
+        (str (:metadata (first rs)))))))
+
+(defn lookup-json 
+  "Gets the JSON data structure for the metadata of a given asset ID.
+   Returns nil if the metadata is not available."
+  ([^String id-str]
+    (if-let [meta (lookup id-str)]
+      (json/read-str meta) 
+      nil)))
 
 (defn all-keys []
   (let [rs (jdbc/query db ["select id from Metadata;"])]
