@@ -1,7 +1,7 @@
 (ns surfer.storage
   (:require [clojure.java.io :as io])
   (:require [surfer.utils :as utils])
-  (:import [java.io File]))
+  (:import [java.io File DataInputStream InputStream]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -29,6 +29,11 @@
     (let [path (get-storage-path assetID)
           file (io/file path)]
       (io/copy data file))))
+
+(defn bytes-from-stream 
+  "Fully reads an input stream into an array of bytes"
+  (^bytes [^InputStream input-stream]
+    (let [dis (DataInputStream. input-stream)])))
 
 (defn load-stream 
   "Gets an input stream for the sepcified asset ID.

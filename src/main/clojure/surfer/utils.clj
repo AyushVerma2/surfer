@@ -34,8 +34,9 @@
       (== 64 (count s))
       (loop [i (int 0)]
         (if (< i 53) 
-          (let [c (.charAt s i)]
-            (if (valid-id-char? (long c))
+          (let [c (int (.charAt s i))
+                c (long c)]
+            (if (valid-id-char? c)
               (recur (inc i))
               false))
           true)))))

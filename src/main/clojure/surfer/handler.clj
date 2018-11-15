@@ -168,8 +168,11 @@
     (GET "/echo" request (str request))))
 
 (def users (atom {"test" {:username "test"
-                    :password (creds/hash-bcrypt "foobar")
-                    :roles #{:user}}}))
+                          :password (creds/hash-bcrypt "foobar")
+                          :roles #{:user}}
+                  "Aladdin" {:username "Aladdin"
+                          :password (creds/hash-bcrypt "OpenSesame")
+                          :roles #{:user}}}))
 
 (def all-routes 
    (api 
