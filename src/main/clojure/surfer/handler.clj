@@ -49,11 +49,13 @@
         :body [metadata s/Any]
         ;; :return String
         :summary "Stores metadata, creating a new Asset ID"
-        (let [^String body (json/write-str metadata)
+        (let [^InputStream body-stream (:body request)
+              _ (.reset body-stream)
+              ^String body (slurp body-stream)
               hash (u/hex-string (u/keccak256 body))]
-          ;; (println (keys request))
+          
           ;; (println (str (class body) ":" body )) 
-          ;;(println (str (class metadata) ":" metadata )) 
+          ;; (println (str (class metadata) ":" metadata )) 
           (if (empty? body) 
             (response/bad-request "No metadata body!")
             (let [id (store/register body)]
@@ -101,11 +103,16 @@
         ;; :coercion nil
         :body [metadata s/Any]
         :summary "Stores asset data for a given asset ID"
-        (println (:body request))
+        ;; (println (:body request))
         (if-let [meta (store/lookup-json id)]
-          (let [^InputStream body (:body request)]
-            (.reset body)
-            (storage/save id body)
+          (do 
+            (if-let [^InputStream body (:body request)]
+             (do ;; we have a body 
+               (.reset body)
+               (storage/save id body))
+             (do ;; no body, but valid id
+               (storage/save id (byte-array 0))
+               ))
             (response/created (str "/api/v1/assets/" id)))
           (response/not-found (str "Attempting to store unregistered asset [" id "]")))
     )))
