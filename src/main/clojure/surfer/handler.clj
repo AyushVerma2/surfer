@@ -65,17 +65,16 @@
                (str "\"" id "\"")
                )))))
     
-    (PUT "/data/:id" request 
+    (PUT "/data/:id" {{:keys [id]} :params :as request}
         {:body [metadata s/Any] 
          :summary "Stores metadata for the given asset ID"}
-        (let [id (:id request)]
           (let [^InputStream body-stream (:body request)
               _ (.reset body-stream)
               ^String body (slurp body-stream)        
               hash (u/hex-string (u/keccak256 body))]
           (if (= id hash)
             (store/register id body) ;; OK, write to store
-            (response/bad-request (str "Invalid ID for metadata, expected: " hash))))))
+            (response/bad-request (str "Invalid ID for metadata, expected: " hash " got " id)))))
     
     ))
 
