@@ -35,6 +35,7 @@
   ))
 
 (defn register 
+  "Regiaters asset metadata in the data store. Returns the Asset ID as a string."
   ([^String asset-metadata-str]
     (let [hash (u/hex-string (u/keccak256 asset-metadata-str))]
       (register hash asset-metadata-str)))

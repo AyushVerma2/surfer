@@ -13,7 +13,8 @@
     [ring.util.request :as request]
     [cemerick.friend :as friend]
     [cemerick.friend [workflows :as workflows]
-                     [credentials :as creds]])) 
+                     [credentials :as creds]])
+  (:import [java.io InputStream])) 
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -30,7 +31,7 @@
                     :description "Meta API for Ocean Marketplace"}
              :tags [{:name "Meta API", :description "Meta API for Ocean Marketplace"}]
              ;;:consumes ["application/json"]
-             ;;:produces ["application/json"]
+             :produces ["application/json"]
              }}}
     
     (GET "/data/" [id] 
@@ -43,9 +44,10 @@
           meta
           (response/not-found "Metadata for this Asset ID is not available.")))
     
-    (PUT "/data" request 
+    (POST "/data" request 
         ;; :coercion nil 
         :body [metadata s/Any]
+        ;; :return String
         :summary "Stores metadata, creating a new Asset ID"
         (let [^String body (json/write-str metadata)
               hash (u/hex-string (u/keccak256 body))]
@@ -54,7 +56,12 @@
           ;;(println (str (class metadata) ":" metadata )) 
           (if (empty? body) 
             (response/bad-request "No metadata body!")
-            (store/register body))))
+            (let [id (store/register body)]
+              ;; (println "Created: " id)
+              (response/response
+               ;; (str "/api/v1/meta/data/" id)
+               (str "\"" id "\"")
+               )))))
     
     (PUT "/data/:id" request 
         {:body [metadata s/Any] 
@@ -91,11 +98,13 @@
           (response/not-found "Asset matadata not available.")))
     
     (PUT "/:id" {{:keys [id]} :params :as request} 
+        ;; :coercion nil
         :body [metadata s/Any]
         :summary "Stores asset data for a given asset ID"
-        ;; (println request)
+        (println (:body request))
         (if-let [meta (store/lookup-json id)]
-          (let [body (:body request)]
+          (let [^InputStream body (:body request)]
+            (.reset body)
             (storage/save id body)
             (response/created (str "/api/v1/assets/" id)))
           (response/not-found (str "Attempting to store unregistered asset [" id "]")))
@@ -122,7 +131,7 @@
              :summary "Gets data for a specified user"
              (throw (UnsupportedOperationException.)))       
          
-    (PUT "/users" request 
+    (POST "/users" request 
          :body [metadata s/Any]
          :summary "Attempts to register a new user"
          (throw (UnsupportedOperationException.)))
