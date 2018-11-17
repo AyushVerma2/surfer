@@ -35,14 +35,16 @@
   )
   
     (jdbc/execute! db 
-    "CREATE INDEX IF NOT EXISTS IX_USERNAME
+    "CREATE UNIQUE INDEX IF NOT EXISTS IX_USERNAME
      ON USERS(username) ;"
   )
 )
 
 (defn drop-db! [db]
-  (jdbc/execute! db "drop TABLE Metadata;")
-  (jdbc/execute! db "drop TABLE Users;")
+  (jdbc/execute! db "drop TABLE IF EXISTS Metadata;")
+  
+  (jdbc/execute! db "drop TABLE IF EXISTS Users;")
+  (jdbc/execute! db "drop INDEX IF EXISTS IX_USERNAME;")
   );
 
 (defn truncate-db! [db]
@@ -98,6 +100,15 @@
         nil ;; user not found
         (first rs)))))
 
+(defn get-user-by-name
+  "Gets a user map from the data store.
+   Returns nil if not found"
+  ([username]
+    (let [rs (jdbc/query db ["select * from Users where username = ?" username])]
+      (if (empty? rs)
+        nil ;; user not found
+        (first rs)))))
+
 (defn get-users 
   "Lists all users of the marketplace.
    Returns a sequence of maps containing the db records for each user"
@@ -114,17 +125,20 @@
                        :username (:username user)}) rs))))
 
 (defn register-user 
-  "Regiaters a user in the data store. Returns the New User ID as a string."
+  "Registers a user in the data store. Returns the New User ID as a string.
+
+   Returns the new user ID, or nil if creation failed."
   ([user-data]
     (let [id (u/new-random-id)
-          rs (jdbc/query db ["select * from Users where id = ?" id])]
-      (if (empty? rs)
+          username (:username user-data)
+          rs (jdbc/query db ["select * from Users where id = ?" id])
+          rs2 (jdbc/query db ["select * from Users where username = ?" username])]
+      (when (and (empty? rs) (empty? rs2))
         (jdbc/insert! db "Users" 
                       {:id id
-                       :username (:username user-data)
+                       :username username
                        :password (:password user-data)
-                       :metadata (json/write-str {}) 
+                       :status "Active" 
+                       :metadata (json/write-str (or (:metadata user-data) {})) 
                        :ctime (LocalDateTime/now)})
-        (register-user user-data) ;; collision?!? Just in case....
-        )
-      id)))
+         id))))

@@ -7,7 +7,7 @@
 
 
 (deftest test-register
-  (let [user {:username "bob"
+  (let [user {:username (str "bob" (System/currentTimeMillis))
               :password (creds/hash-bcrypt "OpenSesame")}
         id (store/register-user user)]
     (is (u/valid-user-id? id))

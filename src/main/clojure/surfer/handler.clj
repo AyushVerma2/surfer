@@ -139,9 +139,14 @@
              (throw (UnsupportedOperationException.)))       
          
     (POST "/users" request 
-         :body [metadata s/Any]
+         :query-params [username :- String, password :- String]
          :summary "Attempts to register a new user"
-         (throw (UnsupportedOperationException.)))
+         (let [crypt-pw (creds/hash-bcrypt password)
+               user {:username username
+                     :password crypt-pw}]
+           (if-let [id (store/register-user user)]
+            id
+            (response/bad-request (str "User name already exists: " (:username user))))))
     
     ;; ===========================================
     ;; Asset listings
@@ -229,16 +234,22 @@
 
    Returns an authentication map, including the :identity and :roles set"
   ([creds]
-    (or (creds/bcrypt-credential-fn @users %)
+    (or (creds/bcrypt-credential-fn @users creds)
         (if-let [username (:username creds)]
           (let [password (:password creds)
-                user (store/get-user username)])))))
+                user (store/get-user-by-name username)]
+            (when (and
+                    user
+                    (= password (:password user))
+                    (= "Active" (:status user))))
+            {:identity username
+             :roles #{:user}})))))
    
 (def app
   (-> all-routes
      (friend/authenticate {:credential-fn surfer-credential-function
                            :workflows [(workflows/http-basic
-                                         ;; :credential-fn #(creds/bcrypt-credential-fn @users %)
+                                         ;; :credential-fn surfer-credential-function
                                          :realm "Friend demo")
                                          :unauthorized-handler #(workflows/http-basic-deny "Friend demo" %)
                                          :unauthenticated-handler #(workflows/http-basic-deny "Friend demo" %)
