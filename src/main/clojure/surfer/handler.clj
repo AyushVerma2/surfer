@@ -58,7 +58,7 @@
           ;; (println (str (class metadata) ":" metadata )) 
           (if (empty? body) 
             (response/bad-request "No metadata body!")
-            (let [id (store/register body)]
+            (let [id (store/register-asset body)]
               ;; (println "Created: " id)
               (response/response
                ;; (str "/api/v1/meta/data/" id)
@@ -72,7 +72,7 @@
               body (request/body-string request)
               hash (u/hex-string (u/keccak256 body))]
           (if (= id hash)
-            (store/register id body) ;; OK, write to store
+            (store/register-asset id body) ;; OK, write to store
             (response/bad-request (str "Invalid ID for metadata, expected: " hash)))))
     
     ))
@@ -132,7 +132,7 @@
     
     (GET "/users" [] 
              :summary "Gets the list of current users"
-             (throw (UnsupportedOperationException.)))
+             (store/list-users))
     
     (GET "/users/:id" [id] 
              :summary "Gets data for a specified user"

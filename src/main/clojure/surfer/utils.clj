@@ -1,6 +1,7 @@
 (ns surfer.utils
   (:import 
     [java.security MessageDigest]
+    [java.util UUID]
     [java.nio.charset StandardCharsets]
     [org.bouncycastle.crypto.digests KeccakDigest] ))
 
@@ -51,14 +52,18 @@
   (apply str (map byte-to-hex data)))
 
 (defn sha256 
-  "Compute sha256 hash of a message."
+  "Compute sha256 hash of a message.
+
+   Returns an array of 32 bytes."
   [msg]
   (let [data (to-bytes msg)
         md (MessageDigest/getInstance "SHA-256")]
     (.digest md data)))
 
 (defn keccak256
-  "Compute keccak256 hash of a message."
+  "Compute keccak256 hash of a message.
+
+   Returns an array of 32 bytes."
   [msg]
   (let [data (to-bytes msg)
         md (KeccakDigest. 256)
@@ -66,3 +71,18 @@
     (.update md data (int 0) (int (count data)))
     (.doFinal md result 0)
     result))
+
+(defn new-random-id 
+  "Creates a new random hex ID of the given length. 
+
+   Default length is 64."
+  ([] (new-random-id 64))
+  ([^long length]
+    (let [uuid (UUID/randomUUID)
+         hash (keccak256 (str uuid))
+         hex (hex-string hash)
+         bs (* 64 (quot (dec length) 64))
+         tail (subs hex 0 (- length bs))]
+      (if (> bs 0)
+        (str (new-random-id bs) tail)
+        tail))))
