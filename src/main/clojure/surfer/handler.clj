@@ -221,10 +221,22 @@
        #(friend/wrap-authorize % #{:user}))
      )
    ) 
+
+(defn surfer-credential-function 
+  "A friend credential function.
+
+   Accepts a friend credential map as sole input.
+
+   Returns an authentication map, including the :identity and :roles set"
+  ([creds]
+    (or (creds/bcrypt-credential-fn @users %)
+        (if-let [username (:username creds)]
+          (let [password (:password creds)
+                user (store/get-user username)])))))
    
 (def app
   (-> all-routes
-     (friend/authenticate {:credential-fn #(creds/bcrypt-credential-fn @users %)
+     (friend/authenticate {:credential-fn surfer-credential-function
                            :workflows [(workflows/http-basic
                                          ;; :credential-fn #(creds/bcrypt-credential-fn @users %)
                                          :realm "Friend demo")

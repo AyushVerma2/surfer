@@ -27,12 +27,12 @@
       (and (<= 97 c) (<= c 102));; lowercase a-f
       )))
 
-(defn valid-asset-id? 
+(defn valid-id? 
   "Returns true iff given a valid asset id string."
-  ([^String s]
+  ([^String s ^long len]
     (and 
       (string? s)
-      (== 64 (count s))
+      (== len (count s))
       (loop [i (int 0)]
         (if (< i 53) 
           (let [c (int (.charAt s i))
@@ -41,6 +41,16 @@
               (recur (inc i))
               false))
           true)))))
+
+(defn valid-user-id? 
+  "Returns true iff given a valid user id string."
+  ([id]
+    (valid-id? id 64)))
+
+(defn valid-asset-id? 
+  "Returns true iff given a valid user id string."
+  ([id]
+    (valid-id? id 64)))
 
 (defn hex [i]
   (.charAt "0123456789abcdef" (mod i 16)))

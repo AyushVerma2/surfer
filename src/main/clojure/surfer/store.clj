@@ -22,12 +22,14 @@
    );"
   )
   
+  ;; Users
   (jdbc/execute! db 
   "CREATE TABLE IF NOT EXISTS Users ( 
      id CHAR(64) NOT NULL PRIMARY KEY, 
-     username CHAR(64) NOT NULL, 
+     username varCHAR(64) NOT NULL, 
      password varchar NOT NULL,
      metadata varchar NOT NULL, 
+     status varchar(10) NOT NULL,
      ctime TIMESTAMP NOT NULL
    );"
   )
@@ -62,19 +64,7 @@
                        :utime (LocalDateTime/now)}))
       hash)))
 
-(defn register-user 
-  "Regiaters a user in the data store. Returns the New User ID as a string."
-  ([user-data]
-    (let [id (utils/new-random-id)
-          rs (jdbc/query db ["select * from Users where id = ?" hash])]
-      (if (empty? rs)
-        (jdbc/insert! db "Users" 
-                      {:id id
-                       :username (:username user-data)
-                       :password (:password user-data)
-                       :metadata (json/write-str {}) 
-                       :ctime (LocalDateTime/now)}))
-      hash)))
+
 
 (defn lookup 
   "Gets the metadata string for a given Asset ID, or nil if not available."
@@ -99,7 +89,42 @@
 ;; ===================================================
 ;; User management
 
-(defn list-users []
-  (let [rs (jdbc/query db ["select * from Users;"])]
-    (map (fn [user] {:id (:id user)
-                     :username (:username user)}) rs)))
+(defn get-user 
+  "Gets a user map from the data store.
+   Returns nil if not found"
+  ([id]
+    (let [rs (jdbc/query db ["select * from Users where id = ?" id])]
+      (if (empty? rs)
+        nil ;; user not found
+        (first rs)))))
+
+(defn get-users 
+  "Lists all users of the marketplace.
+   Returns a sequence of maps containing the db records for each user"
+  ([]
+    (let [rs (jdbc/query db ["select * from Users;"])]
+      rs)))
+
+(defn list-users 
+  "Lists all users of the marketplace.
+   Returns a sequence of maps containing :id and :username"
+  ([]
+    (let [rs (get-users)]
+      (map (fn [user] {:id (:id user)
+                       :username (:username user)}) rs))))
+
+(defn register-user 
+  "Regiaters a user in the data store. Returns the New User ID as a string."
+  ([user-data]
+    (let [id (u/new-random-id)
+          rs (jdbc/query db ["select * from Users where id = ?" id])]
+      (if (empty? rs)
+        (jdbc/insert! db "Users" 
+                      {:id id
+                       :username (:username user-data)
+                       :password (:password user-data)
+                       :metadata (json/write-str {}) 
+                       :ctime (LocalDateTime/now)})
+        (register-user user-data) ;; collision?!? Just in case....
+        )
+      id)))
