@@ -52,9 +52,8 @@
                          (merge AUTH_HEADERS
                                {:body (str adata " some extra stuff")}))
       (catch [:status 400] {:keys [request-time headers body]}
-        ;; OK, should expect validation failue
-      )
-      )
+        ;; OK, should expect validation failue here
+      ))
     
     ;; test upload
     (let [r3 (client/put (str BASE_URL "api/v1/assets/" id) 
