@@ -38,17 +38,23 @@
     (GET "/data/" request 
         :summary "A list of assets where metadata is available"
         :return [schemas/AssetID]
-        (store/all-keys))
+        {:status  200
+         :headers {"Content-Type" "application/json"}
+         :body    (store/all-keys)})
     
     (GET "/data/:id" [id] 
         :summary "Gets metadata for a specified asset"
+        :coercion nil 
+        :return schemas/Asset
         (if-let [meta (store/lookup id)]
-          meta
+          {:status  200
+           :headers {"Content-Type" "application/json"}
+           :body    meta}
           (response/not-found "Metadata for this Asset ID is not available.")))
     
     (POST "/data" request 
-        ;; :coercion nil 
-        :body [metadata s/Any]
+        :coercion nil 
+        :body [metadata schemas/Asset]
         :return schemas/AssetID
         :summary "Stores metadata, creating a new Asset ID"
         (let [^InputStream body-stream (:body request)
@@ -80,14 +86,14 @@
     ))
 
 (def storage-api 
-  (api     
+  (routes     
     {:swagger
      {:data {:info {:title "Storage API"
                     :description "Storage API for Ocean Marketplace"}
              :tags [{:name "Storage API", :description "Storage API for Ocean Marketplace"}]
              ;;:consumes ["application/json"]
-             ;;:produces ["application/json"]
-             }}}
+           ;;:produces ["application/json"]
+           }}}
     
     (GET "/:id" [id] 
         :summary "Gets data for a specified asset ID"
@@ -120,14 +126,14 @@
     )))
 
 (def market-api 
-  (api     
+  (routes     
     {:swagger
      {:data {:info {:title "Market API"
                     :description "Market API for Ocean Marketplace"}
              :tags [{:name "Market API", :description "Market API for Ocean Marketplace"}]
              ;;:consumes ["application/json"]
-             ;;:produces ["application/json"]
-             }}}
+           ;;:produces ["application/json"]
+           }}}
     
     ;; ===========================================
     ;; User management
@@ -142,12 +148,15 @@
          
     (POST "/users" request 
          :query-params [username :- String, password :- String]
+         :return schemas/UserID
          :summary "Attempts to register a new user"
          (let [crypt-pw (creds/hash-bcrypt password)
                user {:username username
                      :password crypt-pw}]
            (if-let [id (store/register-user user)]
-            id
+            {:status  200
+             :headers {"Content-Type" "application/json"}
+             :body    id}
             (response/bad-request (str "User name already exists: " (:username user))))))
     
     ;; ===========================================
@@ -221,8 +230,6 @@
 
 (def all-routes 
    (routes 
-     
-     
      web-routes
      
      (add-middleware
