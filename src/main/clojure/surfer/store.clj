@@ -14,6 +14,7 @@
 (Class/forName "org.h2.Driver")
 
 (defn create-db! [db] 
+  ;; Asset metadata
   (jdbc/execute! db 
   "CREATE TABLE IF NOT EXISTS Metadata ( 
      id CHAR(64) NOT NULL PRIMARY KEY, 
@@ -22,11 +23,27 @@
    );"
   )
   
+  ;; Listings
+  (jdbc/execute! db 
+  "CREATE TABLE IF NOT EXISTS Listings ( 
+     id CHAR(64) NOT NULL PRIMARY KEY, 
+     userid CHAR(64) NOT NULL,
+     assetid CHAR(64) NOT NULL, 
+     info VARCHAR,
+     agreement VARCHAR,
+     trust_level INT, 
+     trust_visbile CHAR(64), 
+     trust_access CHAR(64), 
+     ctime TIMESTAMP NOT NULL,
+     utime TIMESTAMP
+   );"
+  )
+  
   ;; Users
   (jdbc/execute! db 
   "CREATE TABLE IF NOT EXISTS Users ( 
      id CHAR(64) NOT NULL PRIMARY KEY, 
-     username varCHAR(64) NOT NULL, 
+     username VARCHAR(64) NOT NULL, 
      password varchar NOT NULL,
      metadata varchar NOT NULL, 
      status varchar(10) NOT NULL,
@@ -42,19 +59,16 @@
 
 (defn drop-db! [db]
   (jdbc/execute! db "drop TABLE IF EXISTS Metadata;")
-  
+  (jdbc/execute! db "drop TABLE IF EXISTS Listings;")
   (jdbc/execute! db "drop TABLE IF EXISTS Users;")
   (jdbc/execute! db "drop INDEX IF EXISTS IX_USERNAME;")
   );
 
 (defn truncate-db! [db]
-  (jdbc/execute! db 
-  "truncate TABLE Metadata;"
+  (jdbc/execute! db "truncate TABLE Metadata;")
+  (jdbc/execute! db "truncate TABLE Listings;")
+  (jdbc/execute! db "truncate TABLE Users;")
   )
-  
-  (jdbc/execute! db 
-  "truncate TABLE Users;"
-  ))
 
 (defn register-asset 
   "Regiaters asset metadata in the data store. Returns the Asset ID as a string."
