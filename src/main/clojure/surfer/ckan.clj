@@ -28,7 +28,7 @@
 
 (defn import-package [repo package-name]
   (let [pdata (package-show repo package-name)]
-    (store/register (json/write-str pdata)))) 
+    (store/register-asset (json/write-str pdata)))) 
 
 (defn import-packages [repo package-names]
   (doall (pmap #(import-package repo % ) package-names)))

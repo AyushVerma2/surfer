@@ -50,6 +50,10 @@
 (defn truncate-db! [db]
   (jdbc/execute! db 
   "truncate TABLE Metadata;"
+  )
+  
+  (jdbc/execute! db 
+  "truncate TABLE Users;"
   ))
 
 (defn register-asset 
@@ -84,9 +88,11 @@
       (json/read-str meta) 
       nil)))
 
-(defn all-keys []
-  (let [rs (jdbc/query db ["select id from Metadata;"])]
-    (map :id rs)))
+(defn all-keys 
+  "Returns a list of all metadata asset IDs stored."
+  ([]
+    (let [rs (jdbc/query db ["select id from Metadata;"])]
+      (map :id rs))))
 
 ;; ===================================================
 ;; User management

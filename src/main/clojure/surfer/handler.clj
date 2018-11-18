@@ -4,6 +4,7 @@
     [ring.middleware.format :refer [wrap-restful-format]]
     [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
     [surfer.store :as store]
+    [ocean.schemas :as schemas]
     [surfer.storage :as storage]
     [surfer.utils :as u]
     [schema.core :as s]
@@ -25,7 +26,7 @@
       (assoc route :handler (middleware handler)))))
 
 (def meta-api 
-  (api     
+  (routes     
     {:swagger
      {:data {:info {:title "Meta API"
                     :description "Meta API for Ocean Marketplace"}
@@ -34,8 +35,9 @@
              :produces ["application/json"]
              }}}
     
-    (GET "/data/" [id] 
+    (GET "/data/" request 
         :summary "A list of assets where metadata is available"
+        :return [schemas/AssetID]
         (store/all-keys))
     
     (GET "/data/:id" [id] 
@@ -47,7 +49,7 @@
     (POST "/data" request 
         ;; :coercion nil 
         :body [metadata s/Any]
-        ;; :return String
+        :return schemas/AssetID
         :summary "Stores metadata, creating a new Asset ID"
         (let [^InputStream body-stream (:body request)
               _ (.reset body-stream)
@@ -167,6 +169,9 @@
 
 (def api-routes
   (api 
+    {:api {:invalid-routes-fn nil}} ;; supress warning on child routes
+    (swagger-routes
+         {:ui "/api-docs", :spec "/swagger.json"})
    
     (GET "/assets" []
          (str 
@@ -215,9 +220,8 @@
                           :roles #{:user}}}))
 
 (def all-routes 
-   (api 
-     (swagger-routes
-         {:ui "/api-docs", :spec "/swagger.json"})
+   (routes 
+     
      
      web-routes
      
