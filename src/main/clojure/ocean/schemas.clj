@@ -13,6 +13,14 @@
 (s/defschema AssetType
   (s/enum "dataset", "algorithm", "container", "workflow", "other"))
 
+(s/defschema AssetLink
+  {:name s/Str
+   :type s/Str
+   :url s/Str})
+
+
 (s/defschema Asset
   {:name s/Str
-   :type AssetType})
+   :type AssetType
+   :dateCreated s/Inst
+   :links [AssetLink]})

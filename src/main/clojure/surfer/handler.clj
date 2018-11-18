@@ -53,7 +53,7 @@
           (response/not-found "Metadata for this Asset ID is not available.")))
     
     (POST "/data" request 
-        :coercion nil 
+        :coercion nil ;; prevents coercion so we get the original input stream
         :body [metadata schemas/Asset]
         :return schemas/AssetID
         :summary "Stores metadata, creating a new Asset ID"
@@ -74,7 +74,8 @@
                )))))
     
     (PUT "/data/:id" {{:keys [id]} :params :as request}
-        {:body [metadata s/Any] 
+        {:coercion nil
+         :body [metadata schemas/Asset] 
          :summary "Stores metadata for the given asset ID"}
           (let [^InputStream body-stream (:body request)
               _ (.reset body-stream)

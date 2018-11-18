@@ -25,18 +25,36 @@
   (is (= 200 (:status (client/get (str BASE_URL) AUTH_HEADERS)))))
 
 (deftest test-register-upload
-  (let [r1 (client/post (str BASE_URL "api/v1/meta/data") 
+  (let [adata (json/write-str {"name" "test asset 1"})
+        r1 (client/post (str BASE_URL "api/v1/meta/data") 
                         (merge AUTH_HEADERS
-                               {:body (json/write-str {"name" "test asset 1"})}))
+                               {:body adata}))
         id (json/read-str (:body r1))]
     (is (= 200 (:status r1)))
     (is (utils/valid-asset-id? id))
+    (is (= (utils/hex-string (utils/keccak256 adata)) id))
    
     ;; test we can get the asset metadata
     (let [r2 (client/get (str BASE_URL "api/v1/meta/data/" id) AUTH_HEADERS)]
       (is (= 200 (:status r2))))
    
     ;; (println (str "Registered: " id))
+    
+    ;; test re-upload of identical metadata
+    (let [r2a (client/put (str BASE_URL "api/v1/meta/data/" id) 
+                         (merge AUTH_HEADERS
+                               {:body adata}))]
+      (is (= 200 (:status r2a))))
+    
+    ;; check validation failure with erroneous metadata
+    (try+ 
+      (client/put (str BASE_URL "api/v1/meta/data/" id) 
+                         (merge AUTH_HEADERS
+                               {:body (str adata " some extra stuff")}))
+      (catch [:status 400] {:keys [request-time headers body]}
+        ;; OK, should expect validation failue
+      )
+      )
     
     ;; test upload
     (let [r3 (client/put (str BASE_URL "api/v1/assets/" id) 
