@@ -265,6 +265,9 @@
     
     (GET "/echo" request (str request))))
 
+;; ===========================================
+;; Authentication
+
 (def users (atom {"test" {:username "test"
                           :password (creds/hash-bcrypt "foobar")
                           :roles #{:user}}
@@ -272,28 +275,6 @@
                           :password (creds/hash-bcrypt "OpenSesame")
                           :roles #{:user :admin}}}))
 
-(defn api-auth-middleware 
-  "Middlware for API authentications"
-  ([handler]
-  (-> handler
-    (friend/wrap-authorize #{:user :admin})
-    (friend/authenticate {:credential-fn surfer-credential-function
-                          :workflows [(workflows/http-basic
-                                         ;; :credential-fn surfer-credential-function
-                                        :realm AUTH_REALM)
-                                        :unauthorized-handler #(workflows/http-basic-deny "Friend demo" %)
-                                        :unauthenticated-handler #(workflows/http-basic-deny "Friend demo" %)
-                                       ]}))))
-
-(def all-routes 
-   (routes 
-     web-routes
-     
-     (add-middleware
-       api-routes
-       api-auth-middleware
-     )
-   )) 
 
 (def AUTH_REALM "OceanRM")
 
@@ -314,7 +295,33 @@
                     (= "Active" (:status user))))
             {:identity username
              :roles #{:user}})))))
-   
+
+(defn api-auth-middleware 
+  "Middlware for API authentications"
+  ([handler]
+  (-> handler
+    (friend/wrap-authorize #{:user :admin})
+    (friend/authenticate {:credential-fn surfer-credential-function
+                          :workflows [(workflows/http-basic
+                                         ;; :credential-fn surfer-credential-function
+                                        :realm AUTH_REALM)
+                                        :unauthorized-handler #(workflows/http-basic-deny "Friend demo" %)
+                                        :unauthenticated-handler #(workflows/http-basic-deny "Friend demo" %)
+                                       ]}))))
+
+;; =====================================================
+;; Main routes
+
+(def all-routes 
+   (routes 
+     web-routes
+     
+     (add-middleware
+       api-routes
+       api-auth-middleware
+     )
+   )) 
+
 (def app
   (-> all-routes
      
