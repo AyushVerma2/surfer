@@ -188,28 +188,34 @@
            }}}
     
     ;; ===========================================
-    ;; User management
+    ;; Marketplace database management
     
     (POST "/drop-db" [] 
              :summary "Drops the current database. DANGER."
-             (store/drop-db!)
-             (response/response "Successful"))
+             (friend/authorize #{:admin}
+               (store/drop-db!)
+               (response/response "Successful")))
  
     (POST "/clear-db" [] 
              :summary "Clears the current database. DANGER."
-             (store/truncate-db!)
-             (response/response "Successful"))
+             (friend/authorize #{:admin}
+               (store/truncate-db!)
+               (response/response "Successful")))
  
     (POST "/create-db" [] 
              :summary "(Re)creates the current database. DANGER."
-             (store/create-db!)
-             (response/response "Successful"))
+             (friend/authorize #{:admin}
+               (store/create-db!)
+               (response/response "Successful")))
     
     ))
 
 (def api-routes
   (api 
-    {:api {:invalid-routes-fn nil}} ;; supress warning on child routes
+    {:api {:invalid-routes-fn nil} ;; supress warning on child routes
+     :exceptions {:compojure.api.exception/default nil ;; no handler for exceptions
+                  }
+     } 
     (swagger-routes
          {:ui "/api-docs", :spec "/swagger.json"})
    
@@ -261,7 +267,7 @@
                           :roles #{:user}}
                   "Aladdin" {:username "Aladdin"
                           :password (creds/hash-bcrypt "OpenSesame")
-                          :roles #{:user}}}))
+                          :roles #{:user :admin}}}))
 
 (def all-routes 
    (routes 
@@ -269,7 +275,7 @@
      
      (add-middleware
        api-routes
-       #(friend/wrap-authorize % #{:user}))
+       #(friend/wrap-authorize % #{:user :admin}))
      )
    ) 
 

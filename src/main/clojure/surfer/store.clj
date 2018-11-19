@@ -73,9 +73,9 @@
 (defn truncate-db! 
   ([] (truncate-db! (current-db)))
   ([db]
-  (jdbc/execute! db "truncate TABLE Metadata;")
-  (jdbc/execute! db "truncate TABLE Listings;")
-  (jdbc/execute! db "truncate TABLE Users;")
+    (jdbc/execute! db "truncate TABLE Metadata;")
+    (jdbc/execute! db "truncate TABLE Listings;")
+    (jdbc/execute! db "truncate TABLE Users;")
   ))
 
 (defn register-asset 
