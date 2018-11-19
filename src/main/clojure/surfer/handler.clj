@@ -12,6 +12,7 @@
     [surfer.ckan :as ckan]
     [ring.util.response :as response]
     [ring.util.request :as request]
+    [slingshot.slingshot :as slingshot]
     [cemerick.friend :as friend]
     [cemerick.friend [workflows :as workflows]
                      [credentials :as creds]])
@@ -213,8 +214,10 @@
 (def api-routes
   (api 
     {:api {:invalid-routes-fn nil} ;; supress warning on child routes
-     :exceptions {:compojure.api.exception/default nil ;; no handler for exceptions
-                  }
+     :exceptions {:handlers {:compojure.api.exception/default 
+                            (fn [ex ex-data request]
+                              (slingshot/throw+ ex))
+                            }}
      } 
     (swagger-routes
          {:ui "/api-docs", :spec "/swagger.json"})
@@ -269,15 +272,28 @@
                           :password (creds/hash-bcrypt "OpenSesame")
                           :roles #{:user :admin}}}))
 
+(defn api-auth-middleware 
+  "Middlware for API authentications"
+  ([handler]
+  (-> handler
+    (friend/wrap-authorize #{:user :admin})
+    (friend/authenticate {:credential-fn surfer-credential-function
+                          :workflows [(workflows/http-basic
+                                         ;; :credential-fn surfer-credential-function
+                                        :realm AUTH_REALM)
+                                        :unauthorized-handler #(workflows/http-basic-deny "Friend demo" %)
+                                        :unauthenticated-handler #(workflows/http-basic-deny "Friend demo" %)
+                                       ]}))))
+
 (def all-routes 
    (routes 
      web-routes
      
      (add-middleware
        api-routes
-       #(friend/wrap-authorize % #{:user :admin}))
+       api-auth-middleware
      )
-   ) 
+   )) 
 
 (def AUTH_REALM "OceanRM")
 
@@ -301,15 +317,7 @@
    
 (def app
   (-> all-routes
-     (friend/authenticate {:credential-fn surfer-credential-function
-                           :workflows [(workflows/http-basic
-                                         ;; :credential-fn surfer-credential-function
-                                         :realm AUTH_REALM)
-                                         :unauthorized-handler #(workflows/http-basic-deny "Friend demo" %)
-                                         :unauthenticated-handler #(workflows/http-basic-deny "Friend demo" %)
-                                       ]
-                           
-                           })
+     
       ;; wrap-restful-format
       ;;(wrap-defaults api-defaults)
       ))
