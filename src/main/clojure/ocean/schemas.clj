@@ -18,9 +18,15 @@
    :type s/Str
    :url s/Str})
 
-
 (s/defschema Asset
   {:name s/Str
+   :description s/Str
    :type AssetType
    :dateCreated s/Inst
    :links [AssetLink]})
+
+(s/defschema Listing
+  {:title s/Str
+   :description s/Str
+   :assetid AssetID
+   :userid UserID})

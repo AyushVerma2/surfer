@@ -163,8 +163,8 @@
     ;; ===========================================
     ;; Asset listings
     
-    (PUT "/listings" request 
-             :body [metadata s/Any]
+    (POST "/listings" request 
+             :body [listing schemas/Listing]
              :summary "Create a listing on the marketplace. Marketplace will return a new listing ID"
              (throw (UnsupportedOperationException.)))
     
@@ -175,6 +175,36 @@
     (PUT "/listings/:id" [id] 
              :summary "Updates data for a specified listing"
              (throw (UnsupportedOperationException.)))
+    ))
+
+(def admin-api 
+  (routes     
+    {:swagger
+     {:data {:info {:title "Market Admin API"
+                    :description "Administration API for Ocean Marketplace"}
+             :tags [{:name "Admin API", :description "Administration API for Ocean Marketplace"}]
+             ;;:consumes ["application/json"]
+           ;;:produces ["application/json"]
+           }}}
+    
+    ;; ===========================================
+    ;; User management
+    
+    (POST "/drop-db" [] 
+             :summary "Drops the current database. DANGER."
+             (store/drop-db!)
+             (response/response "Successful"))
+ 
+    (POST "/clear-db" [] 
+             :summary "Clears the current database. DANGER."
+             (store/truncate-db!)
+             (response/response "Successful"))
+ 
+    (POST "/create-db" [] 
+             :summary "(Re)creates the current database. DANGER."
+             (store/create-db!)
+             (response/response "Successful"))
+    
     ))
 
 (def api-routes
@@ -207,6 +237,10 @@
     (context "/api/v1/market" []
       :tags ["Market API"]
       market-api)
+    
+    (context "/api/v1/market-admin" []
+      :tags ["Market Admin API"]
+      admin-api)
   
    ;; (response/not-found "404")
     ))
@@ -239,6 +273,8 @@
      )
    ) 
 
+(def AUTH_REALM "OceanRM")
+
 (defn surfer-credential-function 
   "A friend credential function.
 
@@ -262,7 +298,7 @@
      (friend/authenticate {:credential-fn surfer-credential-function
                            :workflows [(workflows/http-basic
                                          ;; :credential-fn surfer-credential-function
-                                         :realm "Friend demo")
+                                         :realm AUTH_REALM)
                                          :unauthorized-handler #(workflows/http-basic-deny "Friend demo" %)
                                          :unauthenticated-handler #(workflows/http-basic-deny "Friend demo" %)
                                        ]
