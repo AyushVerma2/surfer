@@ -124,8 +124,8 @@
           (response/not-found "Asset matadata not available.")))
     
     (PUT "/:id" {{:keys [id]} :params :as request} 
-        ;; :coercion nil
-        :body [metadata s/Any]
+        :coercion nil
+        :body [metadata nil]
         :summary "Stores asset data for a given asset ID"
         ;; (println (:body request))
         (if-let [meta (store/lookup-json id)]
@@ -205,8 +205,8 @@
                         result (store/create-listing listing)]
                     ;; (println result)
                     {:status  200
-                    :headers {"Content-Type" "application/json"}
-                    :body    result
+                     :headers {"Content-Type" "application/json"}
+                     :body    result
                    })
                    {:status 400
                     :body "Invalid asset id - must register asset first"

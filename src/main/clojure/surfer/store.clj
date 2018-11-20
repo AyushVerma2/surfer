@@ -144,6 +144,12 @@
 ;; ===================================================
 ;; Listing management
 
+(defn clean-listing 
+  "Utility function to clean data from an asset listing"
+  ([listing]
+    ;; (println listing)
+    (dissoc listing :utime :ctime)))
+
 (defn get-listing 
   "Gets a listing map from the data store.
    Returns nil if not found"
@@ -151,16 +157,16 @@
     (let [rs (jdbc/query db ["select * from Listings where id = ?" id])]
       (if (empty? rs)
         nil ;; user not found
-        (first rs)))))
+        (clean-listing (first rs))))))
 
 (defn get-listings 
   "Gets a full list of listings from thge marketplace"
   ([]
     (let [rs (jdbc/query db ["select * from Listings"])]
-      rs)))
+      (map clean-listing rs))))
 
 (defn create-listing 
-  "Creates in the data store. Returns the New Listing."
+  "Creates in the data store. Returns the new Listing."
   ([listing]
     ;; (println listing) 
     (let [id (u/new-random-id)
@@ -175,7 +181,8 @@
                        :utime (LocalDateTime/now)
                        }]
       (jdbc/insert! db "Listings" insert-data)
-      (dissoc insert-data :ctime))))
+      (clean-listing insert-data) ;; return the cleaned listing
+      )))
 
 ;; ===================================================
 ;; User management

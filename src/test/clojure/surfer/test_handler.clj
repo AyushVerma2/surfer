@@ -71,7 +71,17 @@
           r5 (client/post (str BASE_URL "api/v1/market/listings") 
                           (merge AUTH_HEADERS
                                {:body ldata}))])
-    ))
+    )
+  
+    (try+ 
+      (let [ldata (json/write-str {:assetid "this is not a valid asset id"})
+            r5 (client/post (str BASE_URL "api/v1/market/listings") 
+                          (merge AUTH_HEADERS
+                               {:body ldata}))])
+      (catch [:status 400] ex
+        ;; OK, should not work
+        ))
+  )
 
 (deftest test-no-asset 
   (try+ 
