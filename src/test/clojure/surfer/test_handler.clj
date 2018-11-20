@@ -66,7 +66,7 @@
       (is (= 200 (:status r4)))
       (is (= "This is my test data" (:body r4))))
     
-    ;; test listing
+    ;; test POST listing
     (let [ldata (json/write-str {:assetid id})
           r5 (client/post (str BASE_URL "api/v1/market/listings") 
                           (merge AUTH_HEADERS

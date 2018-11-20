@@ -4,12 +4,13 @@
             [clojure.java.jdbc :as jdbc]
             [cemerick.friend 
                      [credentials :as creds]])
-  (:import [java.time LocalDateTime]))
+  (:import [java.time LocalDateTime]
+           [java.util Date]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(declare register-user)
+(declare register-user generate-test-data)
 
 ;; ====================================================
 ;; Database setup and management
@@ -62,18 +63,14 @@
      );"
     )
     
-    (register-user {:id "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
-                    :username "test" 
-                    :password (creds/hash-bcrypt "foobar")} )
-    (register-user {:id "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
-                    :username "Aladdin" 
-                    :password (creds/hash-bcrypt "OpenSesame")} )
-  
     (jdbc/execute! db 
       "CREATE UNIQUE INDEX IF NOT EXISTS IX_USERNAME
-       ON USERS(username) ;"
-  ))
+       ON USERS(username) ;")
+    
+    (generate-test-data db)
+  )
 )
+
 
 (defn drop-db! 
   ([] (drop-db! (current-db)))
@@ -90,6 +87,18 @@
     (jdbc/execute! db "truncate TABLE Listings;")
     (jdbc/execute! db "truncate TABLE Users;")
   ))
+
+;; =========================================================
+;; Test data generation
+
+(defn generate-test-data [db]
+  (register-user {:id "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
+                  :username "test" 
+                  :password (creds/hash-bcrypt "foobar")} )
+  (register-user {:id "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
+                  :username "Aladdin" 
+                  :password (creds/hash-bcrypt "OpenSesame")} )
+  )
 
 ;; =========================================================
 ;; Asset management and metadata
@@ -161,7 +170,9 @@
                        :assetid (:assetid listing)
                        :info (:info listing) 
                        :agreement (:agreement listing)
+                       :trust_level (int (or (:trust_level listing) 0))
                        :ctime (LocalDateTime/now)
+                       :utime (LocalDateTime/now)
                        }]
       (jdbc/insert! db "Listings" insert-data)
       (dissoc insert-data :ctime))))

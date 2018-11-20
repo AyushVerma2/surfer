@@ -41,5 +41,6 @@
    (s/optional-key :agreement) s/Any
    (s/optional-key :ctime) s/Inst
    (s/optional-key :utime) s/Inst
+   (s/optional-key :trust_level) s/Int
    (s/optional-key :trust_access) (s/maybe s/Str)
    (s/optional-key :trust_visible) (s/maybe s/Str)})

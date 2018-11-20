@@ -203,7 +203,7 @@
                    (let [listing (assoc listing :userid userid)
                         ;; _ (println userid)
                         result (store/create-listing listing)]
-                    (println result)
+                    ;; (println result)
                     {:status  200
                     :headers {"Content-Type" "application/json"}
                     :body    result
