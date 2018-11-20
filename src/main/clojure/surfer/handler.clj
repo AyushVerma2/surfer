@@ -169,6 +169,11 @@
              :summary "Create a listing on the marketplace. Marketplace will return a new listing ID"
              (throw (UnsupportedOperationException.)))
     
+    (GET "/listings" request 
+             :summary "Gets all current listings from the marketplace"
+             :return [schemas/Listing] 
+             (throw (UnsupportedOperationException.)))
+    
     (GET "/listings/:id" [id] 
              :summary "Gets data for a specified listing"
              (throw (UnsupportedOperationException.)))
