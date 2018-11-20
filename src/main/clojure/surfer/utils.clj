@@ -48,7 +48,12 @@
     (valid-id? id 64)))
 
 (defn valid-asset-id? 
-  "Returns true iff given a valid user id string."
+  "Returns true iff given a valid asset id string."
+  ([id]
+    (valid-id? id 64)))
+
+(defn valid-listing-id? 
+  "Returns true iff given a valid listing id string."
   ([id]
     (valid-id? id 64)))
 

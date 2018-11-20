@@ -1,11 +1,15 @@
 (ns surfer.store
   (:require [surfer.utils :as u]
             [clojure.data.json :as json]
-            [clojure.java.jdbc :as jdbc])
+            [clojure.java.jdbc :as jdbc]
+            [cemerick.friend 
+                     [credentials :as creds]])
   (:import [java.time LocalDateTime]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
+
+(declare register-user)
 
 ;; ====================================================
 ;; Database setup and management
@@ -39,7 +43,7 @@
        info VARCHAR,
        agreement VARCHAR,
        trust_level INT, 
-       trust_visbile CHAR(64), 
+       trust_visible CHAR(64), 
        trust_access CHAR(64), 
        ctime TIMESTAMP NOT NULL,
        utime TIMESTAMP
@@ -57,6 +61,13 @@
        ctime TIMESTAMP NOT NULL
      );"
     )
+    
+    (register-user {:id "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
+                    :username "test" 
+                    :password (creds/hash-bcrypt "foobar")} )
+    (register-user {:id "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
+                    :username "Aladdin" 
+                    :password (creds/hash-bcrypt "OpenSesame")} )
   
     (jdbc/execute! db 
       "CREATE UNIQUE INDEX IF NOT EXISTS IX_USERNAME
@@ -124,6 +135,37 @@
 ;; ===================================================
 ;; Listing management
 
+(defn get-listing 
+  "Gets a listing map from the data store.
+   Returns nil if not found"
+  ([id]
+    (let [rs (jdbc/query db ["select * from Listings where id = ?" id])]
+      (if (empty? rs)
+        nil ;; user not found
+        (first rs)))))
+
+(defn get-listings 
+  "Gets a full list of listings from thge marketplace"
+  ([]
+    (let [rs (jdbc/query db ["select * from Listings"])]
+      rs)))
+
+(defn create-listing 
+  "Creates in the data store. Returns the New Listing."
+  ([listing]
+    ;; (println listing) 
+    (let [id (u/new-random-id)
+          userid (:userid listing)
+          insert-data {:id id
+                       :userid userid
+                       :assetid (:assetid listing)
+                       :info (:info listing) 
+                       :agreement (:agreement listing)
+                       :ctime (LocalDateTime/now)
+                       }]
+      (jdbc/insert! db "Listings" insert-data)
+      (dissoc insert-data :ctime))))
+
 ;; ===================================================
 ;; User management
 
@@ -165,7 +207,7 @@
 
    Returns the new user ID, or nil if creation failed."
   ([user-data]
-    (let [id (u/new-random-id)
+    (let [id (or (:id user-data) (u/new-random-id))
           username (:username user-data)
           rs (jdbc/query db ["select * from Users where id = ?" id])
           rs2 (jdbc/query db ["select * from Users where username = ?" username])]

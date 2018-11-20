@@ -9,6 +9,7 @@
     [surfer.utils :as u]
     [schema.core :as s]
     [clojure.data.json :as json]
+    [clojure.pprint :as pprint :refer [pprint]]
     [surfer.ckan :as ckan]
     [ring.util.response :as response]
     [ring.util.request :as request]
@@ -21,10 +22,23 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
+;; =========================================
+;; utility functions
+
 (defn add-middleware [route middleware]
   (let [handler (or (:handler route) (throw (Error. "Expected a :handler in the route")))]
     (compojure.api.routes/map->Route 
       (assoc route :handler (middleware handler)))))
+
+(defn json-from-input-stream 
+  "Gets a JSON structure from an input stream"
+  ([^InputStream input-stream]
+  (let [_ (.reset input-stream)
+        ^String body (slurp input-stream)]
+     (json/read-str body :key-fn keyword))))
+
+;; ==========================================
+;; Meta API
 
 (def meta-api 
   (routes     
@@ -134,7 +148,7 @@
                     :description "Market API for Ocean Marketplace"}
              :tags [{:name "Market API", :description "Market API for Ocean Marketplace"}]
              ;;:consumes ["application/json"]
-           ;;:produces ["application/json"]
+             :produces ["application/json"]
            }}}
     
     ;; ===========================================
@@ -146,7 +160,16 @@
     
     (GET "/users/:id" [id] 
              :summary "Gets data for a specified user"
-             (throw (UnsupportedOperationException.)))       
+             :return s/Any
+             (or 
+               (when-let [user (store/get-user id)]
+                 ;; (println user)
+                 {:status  200
+                   :headers {"Content-Type" "application/json"}
+                   :body    {:id (:id user) 
+                             :username (:username user)}
+                   })
+               (response/not-found "Cannot find user with id: " id)))       
          
     (POST "/users" request 
          :query-params [username :- String, password :- String]
@@ -165,21 +188,55 @@
     ;; Asset listings
     
     (POST "/listings" request 
-             :body [listing schemas/Listing]
-             :summary "Create a listing on the marketplace. Marketplace will return a new listing ID"
-             (throw (UnsupportedOperationException.)))
+             ;; :body-params [listing :- schemas/Listing]
+             :body [listing-body  (s/maybe schemas/Listing)]
+             :return schemas/Listing
+             :summary "Create a listing on the marketplace. 
+                       Marketplace will return a new listing record"
+             ;; (println (:body request) )
+             (let [listing (json-from-input-stream (:body request))
+                   auth (friend/current-authentication request)
+                   username (:identity auth)]
+               ;; (println listing)
+               (if-let [userid (:id (store/get-user-by-name username))]
+                 (if-let [asset (store/lookup (:assetid listing))]
+                   (let [listing (assoc listing :userid userid)
+                        ;; _ (println userid)
+                        result (store/create-listing listing)]
+                    (println result)
+                    {:status  200
+                    :headers {"Content-Type" "application/json"}
+                    :body    result
+                   })
+                   {:status 400
+                    :body "Invalid asset id - must register asset first"
+                    })
+                 {:status 401
+                  :body (str "Must be logged in as a user to create a listing, got username: " username)})))
     
     (GET "/listings" request 
              :summary "Gets all current listings from the marketplace"
              :return [schemas/Listing] 
-             (throw (UnsupportedOperationException.)))
+             (let [listings (store/get-listings)]
+               {:status 200
+                :headers {"Content-Type" "application/json"}
+                :body listings}))
     
     (GET "/listings/:id" [id] 
              :summary "Gets data for a specified listing"
-             (throw (UnsupportedOperationException.)))
+             :return schemas/Listing
+             (if-let [listing (store/get-listing id)]
+               {:status  200
+                :headers {"Content-Type" "application/json"}
+                :body    listing
+                }
+               (response/not-found (str "No listing found for id: " id))))
     
     (PUT "/listings/:id" [id] 
              :summary "Updates data for a specified listing"
+             :body [listing-body  (s/maybe schemas/Listing)]
+             :return schemas/Listing
+
              (throw (UnsupportedOperationException.)))
     ))
 
@@ -221,6 +278,7 @@
     {:api {:invalid-routes-fn nil} ;; supress warning on child routes
      :exceptions {:handlers {:compojure.api.exception/default 
                             (fn [ex ex-data request]
+                              (.printStackTrace ^Throwable ex)
                               (slingshot/throw+ ex))
                             }}
      } 
@@ -290,7 +348,7 @@
 
    Returns an authentication map, including the :identity and :roles set"
   ([creds]
-    (or (creds/bcrypt-credential-fn @users creds)
+    (or ;; (creds/bcrypt-credential-fn @users creds)
         (if-let [username (:username creds)]
           (let [password (:password creds)
                 user (store/get-user-by-name username)]

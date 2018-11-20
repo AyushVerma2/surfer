@@ -65,6 +65,12 @@
     (let [r4 (client/get (str BASE_URL "api/v1/assets/" id) AUTH_HEADERS)]
       (is (= 200 (:status r4)))
       (is (= "This is my test data" (:body r4))))
+    
+    ;; test listing
+    (let [ldata (json/write-str {:assetid id})
+          r5 (client/post (str BASE_URL "api/v1/market/listings") 
+                          (merge AUTH_HEADERS
+                               {:body ldata}))])
     ))
 
 (deftest test-no-asset 
