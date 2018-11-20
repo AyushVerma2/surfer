@@ -3,6 +3,8 @@
     [compojure.api.sweet :refer :all]
     [ring.middleware.format :refer [wrap-restful-format]]
     [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
+    [ring.swagger.upload :as upload]
+    [ring.middleware.multipart-params :refer [wrap-multipart-params]]
     [surfer.store :as store]
     [ocean.schemas :as schemas]
     [surfer.storage :as storage]
@@ -14,6 +16,7 @@
     [ring.util.response :as response]
     [ring.util.request :as request]
     [slingshot.slingshot :as slingshot]
+    [clojure.java.io :as io]
     [cemerick.friend :as friend]
     [cemerick.friend [workflows :as workflows]
                      [credentials :as creds]])
@@ -139,7 +142,19 @@
                ))
             (response/created (str "/api/v1/assets/" id)))
           (response/not-found (str "Attempting to store unregistered asset [" id "]")))
-    )))
+    )
+   
+   (POST "/:id" []
+               :multipart-params [file :- upload/TempFileUpload]
+               :middleware [wrap-multipart-params]
+               :path-params [id :- s/Str]
+               :return s/Str
+               :summary "upload an asset"
+    (if-let [meta (store/lookup-json id)]
+      (do 
+        (storage/save id (io/input-stream file))
+        (response/created (str "/api/v1/assets/" id)))
+      (response/not-found (str "Attempting to store unregistered asset [" id "]"))))))
 
 (def market-api 
   (routes     
