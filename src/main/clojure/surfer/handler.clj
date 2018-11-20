@@ -348,7 +348,7 @@
 
    Returns an authentication map, including the :identity and :roles set"
   ([creds]
-    (or ;; (creds/bcrypt-credential-fn @users creds)
+    (or (creds/bcrypt-credential-fn @users creds)
         (if-let [username (:username creds)]
           (let [password (:password creds)
                 user (store/get-user-by-name username)]
