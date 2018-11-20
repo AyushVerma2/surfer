@@ -10,7 +10,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(declare register-user generate-test-data)
+(declare register-user generate-test-data create-asset)
 
 ;; ====================================================
 ;; Database setup and management
@@ -97,14 +97,22 @@
                   :password (creds/hash-bcrypt "foobar")} )
   (register-user {:id "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
                   :username "Aladdin" 
-                  :password (creds/hash-bcrypt "OpenSesame")} )
+                  :password (creds/hash-bcrypt "OpenSesame")})
+  
+  (let [assetid (register-asset (json/write-str {:name "Test Asset"
+                                    :description "A sample asset for testing purposes"}))]
+    (create-listing {:userid "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
+                     :assetid assetid
+                     :info {:title "Ocean Test Asset"
+                            :custom "Some custom information"}})
+    ) 
   )
 
 ;; =========================================================
 ;; Asset management and metadata
 
 (defn register-asset 
-  "Regiaters asset metadata in the data store. Returns the Asset ID as a string."
+  "Registers asset metadata in the data store. Returns the Asset ID as a string."
   ([^String asset-metadata-str]
     (let [hash (u/hex-string (u/keccak256 asset-metadata-str))]
       (register-asset hash asset-metadata-str)))
@@ -145,10 +153,13 @@
 ;; Listing management
 
 (defn clean-listing 
-  "Utility function to clean data from an asset listing"
+  "Utility function to clean database record returned from an asset listing"
   ([listing]
-    ;; (println listing)
-    (dissoc listing :utime :ctime)))
+    (let [info (when-let [info-str (:info listing)] 
+                 (json/read-str info-str :key-fn keyword))
+          listing (if info (assoc listing :info info) listing)]
+      (dissoc listing :utime :ctime) ;; todo figure out how to coerce these for JSON output
+      )))
 
 (defn get-listing 
   "Gets a listing map from the data store.
@@ -171,10 +182,12 @@
     ;; (println listing) 
     (let [id (u/new-random-id)
           userid (:userid listing)
+          info (:info listing)
+          info (when info (json/write-str info))
           insert-data {:id id
                        :userid userid
                        :assetid (:assetid listing)
-                       :info (:info listing) 
+                       :info info 
                        :agreement (:agreement listing)
                        :trust_level (int (or (:trust_level listing) 0))
                        :ctime (LocalDateTime/now)

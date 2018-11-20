@@ -70,7 +70,8 @@
     (let [ldata (json/write-str {:assetid id})
           r5 (client/post (str BASE_URL "api/v1/market/listings") 
                           (merge AUTH_HEADERS
-                               {:body ldata}))])
+                               {:body ldata
+                                :info {:title "Blah blah"}}))])
     )
   
     (try+ 
