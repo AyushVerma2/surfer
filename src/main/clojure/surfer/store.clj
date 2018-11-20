@@ -10,7 +10,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(declare register-user generate-test-data create-asset)
+(declare register-user generate-test-data register-asset)
 
 ;; ====================================================
 ;; Database setup and management
