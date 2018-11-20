@@ -29,8 +29,9 @@
    :links [AssetLink]})
 
 (s/defschema ListingInfo
-  {:title s/Str
-   :description s/Str
+  {(s/optional-key :title) s/Str
+   (s/optional-key :description) s/Str
+   s/Keyword s/Any
    })
 
 (s/defschema Listing
