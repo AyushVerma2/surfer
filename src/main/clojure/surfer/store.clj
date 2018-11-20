@@ -7,6 +7,8 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
+;; ====================================================
+;; Database setup and management
 
 (def db {:dbtype "h2"
          :dbname "~/surfertest"})
@@ -78,6 +80,9 @@
     (jdbc/execute! db "truncate TABLE Users;")
   ))
 
+;; =========================================================
+;; Asset management and metadata
+
 (defn register-asset 
   "Regiaters asset metadata in the data store. Returns the Asset ID as a string."
   ([^String asset-metadata-str]
@@ -115,6 +120,9 @@
   ([]
     (let [rs (jdbc/query db ["select id from Metadata;"])]
       (map :id rs))))
+
+;; ===================================================
+;; Listing management
 
 ;; ===================================================
 ;; User management
