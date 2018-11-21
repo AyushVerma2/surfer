@@ -5,6 +5,7 @@
     [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
     [ring.swagger.upload :as upload]
     [ring.middleware.multipart-params :refer [wrap-multipart-params]]
+    [ring.middleware.cors :refer [wrap-cors]]
     [surfer.store :as store]
     [ocean.schemas :as schemas]
     [surfer.storage :as storage]
@@ -412,7 +413,11 @@
      
      (add-middleware
        api-routes
-       api-auth-middleware
+       (comp 
+         api-auth-middleware 
+         #(wrap-cors % :access-control-allow-origin #".*"
+                       :access-control-allow-credentials true
+                       :access-control-allow-methods [:get :put :post :delete :options]))
      )
    )) 
 

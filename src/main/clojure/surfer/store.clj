@@ -1,4 +1,8 @@
 (ns surfer.store
+  "Namespace that, manages the data store for the Agent.
+
+   Currenty implemented using JDBC with the H2 embedded database. Other database implementations
+   may be future options."
   (:require [surfer.utils :as u]
             [clojure.data.json :as json]
             [clojure.java.jdbc :as jdbc]
