@@ -16,6 +16,10 @@
 (s/defschema AssetType
   (s/enum "dataset", "algorithm", "container", "workflow", "other"))
 
+(s/defschema ListingStatus
+  (s/enum "published", "unpublished", "suspended"))
+
+
 (s/defschema AssetLink
   {:name s/Str
    :type s/Str
@@ -39,6 +43,7 @@
    :assetid AssetID
    :userid UserID
    (s/optional-key :info) (s/maybe ListingInfo)
+   (s/optional-key :status) (s/maybe ListingStatus)
    (s/optional-key :agreement) s/Any
    (s/optional-key :ctime) s/Inst
    (s/optional-key :utime) s/Inst

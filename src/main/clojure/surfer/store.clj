@@ -42,6 +42,7 @@
        userid CHAR(64) NOT NULL,
        assetid CHAR(64) NOT NULL, 
        info VARCHAR,
+       status VARCHAR(16),
        agreement VARCHAR,
        trust_level INT, 
        trust_visible CHAR(64), 
@@ -187,6 +188,7 @@
           insert-data {:id id
                        :userid userid
                        :assetid (:assetid listing)
+                       :status (or (:status listing) "unpublished") 
                        :info info 
                        :agreement (:agreement listing)
                        :trust_level (int (or (:trust_level listing) 0))
