@@ -178,7 +178,7 @@
       (map clean-listing rs))))
 
 (defn create-listing 
-  "Creates in the data store. Returns the new Listing."
+  "Creates a listing in the data store. Returns the new Listing."
   ([listing]
     ;; (println listing) 
     (let [id (u/new-random-id)
@@ -198,6 +198,29 @@
       (jdbc/insert! db "Listings" insert-data)
       (clean-listing insert-data) ;; return the cleaned listing
       )))
+
+(defn update-listing 
+  "Updates a listing in the data store. Returns the new Listing.
+   Uses the Listing ID provided in the listing record."
+  ([listing]
+    ;; (println listing) 
+      (let [id (:id listing)
+            userid (:userid listing)
+            info (:info listing)
+            info (when info (json/write-str info))
+            update-data {:id id
+                         :userid userid
+                         :assetid (:assetid listing)
+                         :status (:status listing) 
+                         :info info 
+                         :agreement (:agreement listing)
+                         :trust_level (:trust_level listing)
+                         ;; :ctime deliberately excluded
+                         :utime (LocalDateTime/now)
+                         }]
+      (jdbc/update! db "Listings" update-data ["id = ?" id])
+      (get-listing id) ;; return the updated listing
+        )))
 
 ;; ===================================================
 ;; User management

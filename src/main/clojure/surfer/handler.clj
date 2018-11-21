@@ -40,6 +40,14 @@
         ^String body (slurp input-stream)]
      (json/read-str body :key-fn keyword))))
 
+(defn get-current-userid 
+  "Gets the current user ID from a request, or nil if not registered / logged in"
+  ([request]
+    (let [auth (friend/current-authentication request)
+          username (:identity auth)
+          userid (:id (store/get-user-by-name username))]
+      userid)))
+
 ;; ==========================================
 ;; Meta API
 
@@ -209,11 +217,9 @@
              :summary "Create a listing on the marketplace. 
                        Marketplace will return a new listing record"
              ;; (println (:body request) )
-             (let [listing (json-from-input-stream (:body request))
-                   auth (friend/current-authentication request)
-                   username (:identity auth)]
+             (let [listing (json-from-input-stream (:body request))]
                ;; (println listing)
-               (if-let [userid (:id (store/get-user-by-name username))]
+               (if-let [userid (get-current-userid request)]
                  (if-let [asset (store/lookup (:assetid listing))]
                    (let [listing (assoc listing :userid userid)
                         ;; _ (println userid)
@@ -227,7 +233,7 @@
                     :body "Invalid asset id - must register asset first"
                     })
                  {:status 401
-                  :body (str "Must be logged in as a user to create a listing, got username: " username)})))
+                  :body (str "Must be logged in as a user to create a listing")})))
     
     (GET "/listings" request 
              :summary "Gets all current listings from the marketplace"
@@ -247,12 +253,22 @@
                 }
                (response/not-found (str "No listing found for id: " id))))
     
-    (PUT "/listings/:id" [id] 
+    (PUT "/listings/:id" {{:keys [id]} :params :as request} 
              :summary "Updates data for a specified listing"
              :body [listing-body  (s/maybe schemas/Listing)]
              :return schemas/Listing
-
-             (throw (UnsupportedOperationException.)))
+             (let [listing (json-from-input-stream (:body request))
+                   old-listing (store/get-listing id)
+                   _ (when (not old-listing) (throw (IllegalArgumentException. "Listing ID does not exist: "))) 
+                   ownerid (:userid old-listing)
+                   userid (get-current-userid request)]
+               (if (= ownerid userid) ;; strong ownership enforcement!
+                 (let [new-listing (store/update-listing listing)] 
+                   {:status 200
+                    :headers {"Content-Type" "application/json"}
+                    :body    new-listing})
+                 {:status 403
+                  :body "Can't modify listing: only listing owner can do so"})))
     ))
 
 (def admin-api 
