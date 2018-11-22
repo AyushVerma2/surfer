@@ -414,10 +414,11 @@
      (add-middleware
        api-routes
        (comp 
-         api-auth-middleware 
          #(wrap-cors % :access-control-allow-origin #".*"
                        :access-control-allow-credentials true
-                       :access-control-allow-methods [:get :put :post :delete :options]))
+                       :access-control-allow-methods [:get :put :post :delete :options])
+         api-auth-middleware 
+         )
      )
    )) 
 

@@ -2,10 +2,13 @@
   (:require
     [surfer.utils :as u]
     [schema.core :as s]
+    [ring.swagger.json-schema :as rjs]
     [schema-generators.generators :as g]))
 
 (s/defschema AssetID
-  (s/constrained s/Str u/valid-asset-id? "Valid Asset ID"))
+  (rjs/field
+    (s/constrained s/Str u/valid-asset-id? "Valid Asset ID")
+    {:example "1a6889682e624ac54571dc2ab1b4c9a9ba16b2b3f70a035ce793d6704a04edb9"}))
 
 (s/defschema UserID
   (s/constrained s/Str u/valid-user-id? "Valid User ID"))

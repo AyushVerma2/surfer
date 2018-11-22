@@ -20,7 +20,25 @@
 			<name>Clojars repository</name>
 			<url>https://clojars.org/repo</url>
 		</repository>
+		<repository>
+			<id>maven-snapshots</id>
+			<url>http://oss.sonatype.org/content/repositories/snapshots</url>
+			<layout>default</layout>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
 	</repositories>
+
+	<distributionManagement>
+		<snapshotRepository>
+			<id>maven-snapshots</id>
+			<url>http://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
 
 	<scm>
 		<connection>scm:git:git@github.com:oceanprotocol/${project.artifactId}.git</connection>
@@ -121,13 +139,12 @@
 			<artifactId>friend</artifactId>
 			<version>0.2.3</version>
 		</dependency>
-		
-		<dependency>
-			<groupId>com.oceanprotocol</groupId>
-			<artifactId>ocean-java</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
 
+<!-- 		<dependency> -->
+<!-- 			<groupId>com.oceanprotocol</groupId> -->
+<!-- 			<artifactId>ocean-java</artifactId> -->
+<!-- 			<version>0.0.1-SNAPSHOT</version> -->
+<!-- 		</dependency> -->
 
 		<dependency>
 			<groupId>com.h2database</groupId>
@@ -207,12 +224,12 @@
 				<directory>src/main/resources</directory>
 			</resource>
 		</resources>
-		
+
 		<testResources>
-            <testResource>
-                <directory>src/test/clojure</directory>
-            </testResource>
-        </testResources>
+			<testResource>
+				<directory>src/test/clojure</directory>
+			</testResource>
+		</testResources>
 	</build>
 
 </project>
