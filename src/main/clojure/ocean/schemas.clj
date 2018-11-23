@@ -30,7 +30,7 @@
   (s/enum "dataset", "algorithm", "container", "workflow", "other"))
 
 (s/defschema ListingStatus
-  (s/enum "published", "unpublished", "suspended"))
+  (s/enum "unpublished", "published", "suspended"))
 
 
 (s/defschema AssetLink

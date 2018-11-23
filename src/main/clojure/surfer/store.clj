@@ -174,7 +174,7 @@
   "Gets a listing map from the data store.
    Returns nil if not found"
   ([id]
-    (let [rs (jdbc/query db ["select * from Listings where id = ?" id])]
+    (let [rs (jdbc/query db ["select * from Listings where id = ? order by ctime desc" id])]
       (if (empty? rs)
         nil ;; user not found
         (clean-listing (first rs))))))
@@ -183,7 +183,12 @@
   "Gets a full list of listings from thge marketplace"
   ([]
     (let [rs (jdbc/query db ["select * from Listings order by ctime desc"])]
-      (map clean-listing rs))))
+      (map clean-listing rs)))
+  ([opts]
+    (if-let [userid (:userid opts)]
+      (let [rs (jdbc/query db ["select * from Listings where userid = ? order by ctime desc" userid])]
+        (map clean-listing rs))
+      (get-listings))))
 
 (defn create-listing 
   "Creates a listing in the data store. Returns the new Listing."

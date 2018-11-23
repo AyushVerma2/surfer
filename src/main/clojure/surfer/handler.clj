@@ -236,10 +236,17 @@
                  {:status 401
                   :body (str "Must be logged in as a user to create a listing")})))
     
-    (GET "/listings" request 
+   
+        (GET "/listings" request 
+             :query-params [{username :- String nil} 
+                            {userid :- String nil} ]
              :summary "Gets all current listings from the marketplace"
              :return [schemas/Listing] 
-             (let [listings (store/get-listings)]
+             (let [userid (if (not (empty? username)) 
+                            (:id (store/get-user-by-name username))
+                            userid)
+                   opts (if userid {:userid userid} nil)
+                   listings (store/get-listings opts)]
                {:status 200
                 :headers {"Content-Type" "application/json"}
                 :body listings}))
@@ -259,12 +266,15 @@
              :body [listing-body  (s/maybe schemas/Listing)]
              :return schemas/Listing
              (let [listing (json-from-input-stream (:body request))
+                   
+                   ;; check the exitsing listing
                    old-listing (store/get-listing id)
                    _ (when (not old-listing) (throw (IllegalArgumentException. "Listing ID does not exist: "))) 
+                   
                    ownerid (:userid old-listing)
                    userid (get-current-userid request)
                    
-                   listing (merge old-listing listing) ;; merge changes 
+                   listing (merge old-listing listing) ;; merge changes. This allows single field edits etc.
                    listing (assoc listing :id id) ;; ensure ID is present.
                    ]
                (if (= ownerid userid) ;; strong ownership enforcement!
