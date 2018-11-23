@@ -87,6 +87,11 @@
     (.doFinal md result 0)
     result))
 
+(defn remove-nil-values 
+  "Removes nil values from a map. Useful for eliminating blank optional values."
+  ([m]
+    (reduce (fn [m [k v]] (if (nil? v) (dissoc m k) m)) m m)))
+
 (defn new-random-id 
   "Creates a new random hex ID of the given length. 
 

@@ -4,6 +4,7 @@
     [clj-http.client :as client]
     [clojure.data.json :as json]
     [surfer.utils :as utils]
+    [surfer.ckan :as ckan]
     [slingshot.slingshot :refer [try+ throw+]]
     [surfer.systems :refer [base-system]]
     [system.repl :refer [set-init! go start reset stop]]

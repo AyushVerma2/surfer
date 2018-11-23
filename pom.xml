@@ -36,6 +36,9 @@
 	<distributionManagement>
 		<snapshotRepository>
 			<id>maven-snapshots</id>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
 			<url>http://oss.sonatype.org/content/repositories/snapshots</url>
 		</snapshotRepository>
 	</distributionManagement>
@@ -140,11 +143,11 @@
 			<version>0.2.3</version>
 		</dependency>
 
-<!-- 		<dependency> -->
-<!-- 			<groupId>com.oceanprotocol</groupId> -->
-<!-- 			<artifactId>ocean-java</artifactId> -->
-<!-- 			<version>0.0.1-SNAPSHOT</version> -->
-<!-- 		</dependency> -->
+		<!-- <dependency> -->
+		<!-- <groupId>com.oceanprotocol</groupId> -->
+		<!-- <artifactId>ocean-java</artifactId> -->
+		<!-- <version>0.0.1-SNAPSHOT</version> -->
+		<!-- </dependency> -->
 
 		<dependency>
 			<groupId>com.h2database</groupId>

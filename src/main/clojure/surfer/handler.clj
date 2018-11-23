@@ -290,6 +290,17 @@
              (friend/authorize #{:admin}
                (store/drop-db!)
                (response/response "Successful")))
+
+        (POST "/ckan-import" [] 
+             :query-params [userid :- String, repo :- String, count :- s/Int]
+             :summary "Imports assets from a CKAN repository"
+             (friend/authorize #{:admin}
+               (let [userid (or userid (get-current-userid) (throw (IllegalArgumentException. "No valid userid")))]
+                 (let [all-names (ckan/package-list repo)
+                       names (if count (take count (shuffle all-names)) all-names)]
+                   (binding [ckan/*import-userid* userid]
+                     (ckan/import-packages repo names)))) 
+               ))
  
     (POST "/clear-db" [] 
              :summary "Clears the current database. DANGER."
