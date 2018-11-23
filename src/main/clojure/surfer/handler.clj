@@ -262,7 +262,11 @@
                    old-listing (store/get-listing id)
                    _ (when (not old-listing) (throw (IllegalArgumentException. "Listing ID does not exist: "))) 
                    ownerid (:userid old-listing)
-                   userid (get-current-userid request)]
+                   userid (get-current-userid request)
+                   
+                   listing (merge old-listing listing) ;; merge changes 
+                   listing (assoc listing :id id) ;; ensure ID is present.
+                   ]
                (if (= ownerid userid) ;; strong ownership enforcement!
                  (let [new-listing (store/update-listing listing)] 
                    {:status 200
@@ -291,15 +295,15 @@
                (store/drop-db!)
                (response/response "Successful")))
 
-        (POST "/ckan-import" [] 
+      (POST "/ckan-import" [] 
              :query-params [userid :- String, repo :- String, count :- s/Int]
              :summary "Imports assets from a CKAN repository"
              (friend/authorize #{:admin}
                (let [userid (or userid (get-current-userid) (throw (IllegalArgumentException. "No valid userid")))]
-                 (let [all-names (ckan/package-list repo)
-                       names (if count (take count (shuffle all-names)) all-names)]
-                   (binding [ckan/*import-userid* userid]
-                     (ckan/import-packages repo names)))) 
+               (let [all-names (ckan/package-list repo)
+                     names (if count (take count (shuffle all-names)) all-names)]
+                 (binding [ckan/*import-userid* userid]
+                   (ckan/import-packages repo names)))) 
                ))
  
     (POST "/clear-db" [] 

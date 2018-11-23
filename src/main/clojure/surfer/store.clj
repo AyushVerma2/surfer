@@ -219,14 +219,14 @@
             userid (:userid listing)
             info (:info listing)
             info (when info (json/write-str info))
-            update-data {:id id
-                         :userid userid
-                         :assetid (:assetid listing)
-                         :status (:status listing) 
-                         :info info 
-                         :agreement (:agreement listing)
-                         :trust_level (:trust_level listing)
-                         ;; :ctime deliberately excluded
+            update-data {;; :id                     ; id must already be correct!
+                           :userid userid
+                           :assetid (:assetid listing)
+                           :status (:status listing) 
+                           :info info 
+                           :agreement (:agreement listing)
+                           :trust_level (:trust_level listing)
+                           ;; :ctime deliberately excluded
                          :utime (LocalDateTime/now)
                          }]
       (jdbc/update! db "Listings" update-data ["id = ?" id])
