@@ -1,0 +1,7 @@
+{:name "Ocean Marketplace Test Server"
+ 
+ ;; Specify the location of the default users and passwords to be generated at Startup
+ ;; and database refresh. Should NOT be committed to SCM, for obvious reasons.
+ :user-config "surfer-users.edn"
+ 
+ }
