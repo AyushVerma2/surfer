@@ -238,8 +238,8 @@
     
    
         (GET "/listings" request 
-             :query-params [{username :- String nil} 
-                            {userid :- String nil} ]
+             :query-params [{username :- schemas/Username nil} 
+                            {userid :- schemas/UserID nil} ]
              :summary "Gets all current listings from the marketplace"
              :return [schemas/Listing] 
              (let [userid (if (not (empty? username)) 
@@ -306,7 +306,9 @@
                (response/response "Successful")))
 
       (POST "/ckan-import" [] 
-             :query-params [userid :- String, repo :- String, count :- s/Int]
+             :query-params [userid :- String, 
+                            repo :- String, 
+                            count :- s/Int]
              :summary "Imports assets from a CKAN repository"
              (friend/authorize #{:admin}
                (let [userid (or userid (get-current-userid) (throw (IllegalArgumentException. "No valid userid")))]

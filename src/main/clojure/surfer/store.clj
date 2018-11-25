@@ -180,7 +180,7 @@
         (clean-listing (first rs))))))
 
 (defn get-listings 
-  "Gets a full list of listings from thge marketplace"
+  "Gets a full list of listings from the marketplace"
   ([]
     (let [rs (jdbc/query db ["select * from Listings order by ctime desc"])]
       (map clean-listing rs)))
