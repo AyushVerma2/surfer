@@ -196,7 +196,8 @@
                (response/not-found "Cannot find user with id: " id)))       
          
     (POST "/users" request 
-         :query-params [username :- String, password :- String]
+         :query-params [username :- schemas/Username, 
+                        password :- String]
          :return schemas/UserID
          :summary "Attempts to register a new user"
          (let [crypt-pw (creds/hash-bcrypt password)
@@ -305,13 +306,13 @@
                (store/drop-db!)
                (response/response "Successful")))
 
-      (POST "/ckan-import" [] 
-             :query-params [userid :- String, 
+      (POST "/ckan-import" request 
+             :query-params [{userid :- schemas/UserID nil}, 
                             repo :- String, 
-                            count :- s/Int]
+                            {count :- s/Int 10}]
              :summary "Imports assets from a CKAN repository"
              (friend/authorize #{:admin}
-               (let [userid (or userid (get-current-userid) (throw (IllegalArgumentException. "No valid userid")))]
+               (let [userid (or userid (get-current-userid request) (throw (IllegalArgumentException. "No valid userid")))]
                (let [all-names (ckan/package-list repo)
                      names (if count (take count (shuffle all-names)) all-names)]
                  (binding [ckan/*import-userid* userid]
