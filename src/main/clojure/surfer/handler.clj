@@ -300,12 +300,8 @@
                listingid (:listingid purchase)
                listing (store/get-listing listingid)]
            (cond 
-             (not userid) {:status 400
-                            :body (str "Cannot create a purchase unless logged in")
-                            }
-             (not listing) {:status 400
-                            :body (str "Invalid purchase request - listing does not exist: " listingid)
-                            }
+             (not userid) (response/bad-request (str "Cannot create a purchase unless logged in"))
+             (not listing) (response/bad-request (str "Invalid purchase request - listing does not exist: " listingid))
              :else (let [purchase (assoc purchase :userid userid)
                          result (store/create-purchase purchase)]
                      ;; (println result)
