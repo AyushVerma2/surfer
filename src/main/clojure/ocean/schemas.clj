@@ -2,8 +2,15 @@
   (:require
     [surfer.utils :as u]
     [schema.core :as s]
+    [clojure.data.json :as json]
     [ring.swagger.json-schema :as rjs]
     [schema-generators.generators :as g]))
+
+;; hack to allow data.json to output dates
+(extend-protocol clojure.data.json/JSONWriter
+  java.time.Instant
+  (-write [^java.time.Instant object out]
+    (clojure.data.json/write (str object) out)))
 
 (s/defschema AssetID
   (rjs/field
@@ -63,7 +70,8 @@
    :description s/Str
    :type AssetType
    :dateCreated s/Inst
-   :links [AssetLink]})
+   (s/optional-key :tags) [s/Str]
+   (s/optional-key :links) [AssetLink]})
 
 ;; ===========================================================
 ;; Listings

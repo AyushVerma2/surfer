@@ -3,16 +3,22 @@
     [clj-http.client :as client]
     [surfer.store :as store]
     [surfer.utils :as utils]
-    [clojure.data.json :as json]))
+    [clojure.data.json :as json]
+    )
+  (:import [java.time Instant]
+           [java.util Date]))
 
 (def ^:dynamic *import-userid* nil)
 
 (defn convert-meta
   "Converts metadata from a CKAN asset to a Ocean Asset"
   ([pack]
-    {:name (:name pack)
-     :license (:license_title pack)
-}))
+    (let [base {:name (:name pack)
+                                         :license (:license_title pack)
+                                         :tags (seq (map :name (:tags pack)))
+                                         }
+          meta base] 
+      (utils/remove-nil-values meta))))
 
 (defn api-call [url]
   (let [body (:body (client/get url))
@@ -41,7 +47,10 @@
   "Import a package from the CKAN repo and list on the marketplace"
   ([repo package-name]
     (let [pdata (package-show repo package-name)
-          odata (convert-meta pdata)
+          odata (convert-meta pdata) ;; base metadata conversion
+          extra-data (utils/remove-nil-values ;; extra fields related to import
+                       {:dateCreated (Instant/now)})
+          odata (merge odata extra-data)
           assetid (store/register-asset (json/write-str odata))]
       (store/create-listing 
         {:assetid assetid

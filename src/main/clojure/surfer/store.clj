@@ -8,7 +8,7 @@
             [clojure.java.jdbc :as jdbc]
             [cemerick.friend 
                      [credentials :as creds]])
-  (:import [java.time LocalDateTime]
+  (:import [java.time Instant]
            [java.util Date]))
 
 (set! *warn-on-reflection* true)
@@ -153,7 +153,7 @@
         (jdbc/insert! db "Metadata" 
                       {:id hash 
                        :metadata asset-metadata-str
-                       :utime (LocalDateTime/now)}))
+                       :utime (Instant/now)}))
       hash)))
 
 
@@ -189,9 +189,10 @@
   ([listing]
     (let [info (when-let [info-str (:info listing)] 
                  (json/read-str info-str :key-fn keyword))
-          listing (if info (assoc listing :info info) listing)]
-      (dissoc listing :utime :ctime) ;; todo figure out how to coerce these for JSON output
-      )))
+          listing (if info (assoc listing :info info) listing)
+          ;; listing  (dissoc listing :utime :ctime) ;; todo figure out how to coerce these for JSON output
+          ]
+      listing)))
 
 (defn get-listing 
   "Gets a listing map from the data store.
@@ -228,9 +229,8 @@
                        :userid userid
                        :assetid (:assetid listing)
                        :trust_level (int (or (:trust_level listing) 0))
-                       :ctime (LocalDateTime/now)
-                       :utime (LocalDateTime/now)
-                       
+                       :ctime (Instant/now)
+                       :utime (Instant/now)
                        :status (or (:status listing) "unpublished") 
                        :info info 
                        :agreement (:agreement listing)
@@ -256,7 +256,7 @@
                            :agreement (:agreement listing)
                            :trust_level (:trust_level listing)
                            ;; :ctime deliberately excluded
-                           :utime (LocalDateTime/now) ;; utime = current time
+                           :utime (Instant/now) ;; utime = current time
                          }]
       (jdbc/update! db "Listings" update-data ["id = ?" id])
       (get-listing id) ;; return the updated listing
@@ -309,8 +309,8 @@
           insert-data (u/remove-nil-values {:id id
                                             :userid userid
                                             :listingid (:listingid purchase)
-                                            :ctime (LocalDateTime/now)
-                                            :utime (LocalDateTime/now)                      
+                                            :ctime (Instant/now)
+                                            :utime (Instant/now)                      
                                             :status (or (:status purchase) "wishlist") 
                                             :info info 
                                             :agreement (:agreement purchase)
@@ -335,7 +335,7 @@
                            :info info 
                            :agreement (:agreement purchase)
                            ;; :ctime deliberately excluded
-                           :utime (LocalDateTime/now) ;; utime = current time
+                           :utime (Instant/now) ;; utime = current time
                          }]
       (jdbc/update! db "Purchases" update-data ["id = ?" id])
       (get-purchase id) ;; return the updated purchase
@@ -393,5 +393,5 @@
                        :password (:password user-data)
                        :status "Active" 
                        :metadata (json/write-str (or (:metadata user-data) {})) 
-                       :ctime (LocalDateTime/now)})
+                       :ctime (Instant/now)})
          id))))
