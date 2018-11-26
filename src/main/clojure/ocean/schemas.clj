@@ -12,6 +12,9 @@
   (-write [^java.time.Instant object out]
     (clojure.data.json/write (str object) out)))
 
+;; =========================================================
+;; Identifiers
+
 (s/defschema AssetID
   (rjs/field
     (s/constrained s/Str u/valid-asset-id? "Valid Asset ID")
@@ -44,6 +47,15 @@
      :description "A valid username for a user registered on the marketplace"}))
 
 ;; =====================================================
+;; Common data types
+(s/defschema Instant
+  (rjs/field
+    java.time.Instant
+    {:example "2018-11-26T13:27:45.542Z"
+     :description "A timestamp defining an instant in UTC time"}))
+
+
+;; =====================================================
 ;; Assets
 
 (s/defschema AssetLinkType
@@ -69,7 +81,7 @@
   {:name s/Str
    :description s/Str
    :type AssetType
-   :dateCreated s/Inst
+   :dateCreated Instant
    (s/optional-key :tags) [s/Str]
    (s/optional-key :links) [AssetLink]})
 
@@ -92,8 +104,8 @@
    (s/optional-key :info) (s/maybe ListingInfo)
    (s/optional-key :status) (s/maybe ListingStatus)
    (s/optional-key :agreement) s/Any
-   (s/optional-key :ctime) s/Inst
-   (s/optional-key :utime) s/Inst
+   (s/optional-key :ctime) Instant
+   (s/optional-key :utime) Instant
    (s/optional-key :trust_level) s/Int
    (s/optional-key :trust_access) (s/maybe s/Str)
    (s/optional-key :trust_visible) (s/maybe s/Str)})
@@ -111,6 +123,6 @@
    (s/optional-key :status) (s/maybe PurchaseStatus)
    (s/optional-key :info) (s/maybe ListingInfo)
    (s/optional-key :agreement) s/Any
-   (s/optional-key :ctime) s/Inst
-   (s/optional-key :utime) s/Inst})
+   (s/optional-key :ctime) Instant
+   (s/optional-key :utime) Instant})
 

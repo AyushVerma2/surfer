@@ -191,6 +191,8 @@
                  (json/read-str info-str :key-fn keyword))
           listing (if info (assoc listing :info info) listing)
           ;; listing  (dissoc listing :utime :ctime) ;; todo figure out how to coerce these for JSON output
+          ;; listing (assoc listing :utime (.toInstant ^java.sql.Timestamp (:utime listing)))
+          ;; listing (assoc listing :ctime (.toInstant ^java.sql.Timestamp (:ctime listing)))
           ]
       listing)))
 
@@ -225,12 +227,13 @@
           userid (:userid listing)
           info (:info listing)
           info (when info (json/write-str info))
+          instant-now (Instant/now)
           insert-data {:id id
                        :userid userid
                        :assetid (:assetid listing)
                        :trust_level (int (or (:trust_level listing) 0))
-                       :ctime (Instant/now)
-                       :utime (Instant/now)
+                       :ctime instant-now
+                       :utime instant-now
                        :status (or (:status listing) "unpublished") 
                        :info info 
                        :agreement (:agreement listing)
@@ -272,7 +275,6 @@
     (let [info (when-let [info-str (:info purchase)] 
                  (json/read-str info-str :key-fn keyword))
           purchase (if info (assoc purchase :info info) purchase)]
-      (dissoc purchase :utime :ctime) ;; todo figure out how to coerce these for JSON output
       )))
 
 (defn get-purchase
@@ -306,11 +308,12 @@
           userid (:userid purchase)
           info (:info purchase)
           info (when info (json/write-str info))
+          instant-now (Instant/now)
           insert-data (u/remove-nil-values {:id id
                                             :userid userid
                                             :listingid (:listingid purchase)
-                                            :ctime (Instant/now)
-                                            :utime (Instant/now)                      
+                                            :ctime instant-now
+                                            :utime instant-now                     
                                             :status (or (:status purchase) "wishlist") 
                                             :info info 
                                             :agreement (:agreement purchase)
