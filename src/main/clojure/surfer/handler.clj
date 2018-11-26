@@ -63,7 +63,7 @@
              }}}
     
     (GET "/data/" request 
-        :summary "A list of assets where metadata is available"
+        :summary "Gets a list of assets where metadata is available"
         :return [schemas/AssetID]
         {:status  200
          :headers {"Content-Type" "application/json"}
@@ -219,9 +219,10 @@
              :summary "Create a listing on the marketplace. 
                        Marketplace will return a new listing record"
              ;; (println (:body request) )
-             (let [listing (json-from-input-stream (:body request))]
+             (let [listing (json-from-input-stream (:body request))
+                   userid (get-current-userid request)]
                ;; (println listing)
-               (if-let [userid (get-current-userid request)]
+               (if userid
                  (if-let [asset (store/lookup (:assetid listing))]
                    (let [listing (assoc listing :userid userid)
                         ;; _ (println userid)
@@ -330,12 +331,13 @@
     (GET "/purchases/:id" [id] 
              :summary "Gets data for a specified purchase"
              :return schemas/Purchase
-             (if-let [purchase (store/get-purchase id)]
-               {:status  200
-                :headers {"Content-Type" "application/json"}
-                :body    purchase
-                }
-               (response/not-found (str "No purchase found for id: " id))))
+             (let [purchase (store/get-purchase id)]
+               (cond
+                 purchase {:status  200
+                           :headers {"Content-Type" "application/json"}
+                           :body    purchase
+                           }
+                 :else (response/not-found (str "No purchase found for id: " id)))))
     
     (PUT "/purchases/:id" {{:keys [id]} :params :as request} 
              :summary "Updates data for a specified Purchase"
@@ -373,15 +375,16 @@
            }}}
     
     ;; ===========================================
-    ;; Marketplace database management
+    ;; Admin tools
     
-    (POST "/drop-db" [] 
-             :summary "Drops the current database. DANGER."
-             (friend/authorize #{:admin}
-               (store/drop-db!)
-               (response/response "Successful")))
-
-      (POST "/ckan-import" request 
+    (GET "/auth" request
+         :summary "Gets the authentication map for the current user. Useful for debugging."
+         (response/response (friend/current-authentication request)))
+    
+    ;; ===========================================
+    ;; CKAN Functionality
+    
+         (POST "/ckan-import" request 
              :query-params [{userid :- schemas/UserID nil}, 
                             repo :- String, 
                             {count :- s/Int 10}]
@@ -393,7 +396,16 @@
                  (binding [ckan/*import-userid* userid]
                    (ckan/import-packages repo names)))) 
                ))
- 
+    
+    ;; ===========================================
+    ;; Marketplace database management
+    
+    (POST "/drop-db" [] 
+             :summary "Drops the current database. DANGER."
+             (friend/authorize #{:admin}
+               (store/drop-db!)
+               (response/response "Successful")))
+
     (POST "/clear-db" [] 
              :summary "Clears the current database. DANGER."
              (friend/authorize #{:admin}
@@ -492,7 +504,8 @@
                     (= password (:password user))
                     (= "Active" (:status user))))
             {:identity username
-             :roles #{:user}})))))
+             :roles #{:user}
+             :userid (:id user)})))))
 
 (defn api-auth-middleware 
   "Middlware for API authentications"
