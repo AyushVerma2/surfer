@@ -85,6 +85,13 @@
         ))
   )
 
+(deftest test-get-purchases
+  (let [r1 (client/get (str BASE_URL "api/v1/market/purchases") 
+                        (merge AUTH_HEADERS
+                               {:body nil}))
+        result (json/read-str (:body r1))]
+    (is (= 200 (:status r1)))))
+
 (deftest test-no-asset 
   (try+ 
       (client/get (str BASE_URL "api/v1/meta/data/" 

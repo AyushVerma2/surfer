@@ -191,8 +191,8 @@
                  (json/read-str info-str :key-fn keyword))
           listing (if info (assoc listing :info info) listing)
           ;; listing  (dissoc listing :utime :ctime) ;; todo figure out how to coerce these for JSON output
-          ;; listing (assoc listing :utime (.toInstant ^java.sql.Timestamp (:utime listing)))
-          ;; listing (assoc listing :ctime (.toInstant ^java.sql.Timestamp (:ctime listing)))
+          listing (assoc listing :utime (u/to-instant (:utime listing)))
+          listing (assoc listing :ctime (u/to-instant (:ctime listing)))
           ]
       listing)))
 
@@ -208,7 +208,7 @@
 (defn get-listings 
   "Gets a full list of listings from the marketplace"
   ([]
-    (let [rs (jdbc/query db ["select * from Listings order by ctime desc"])]
+    (let [rs (jdbc/query db ["select * from Listings where status = 'published' order by ctime desc"])]
       (map clean-listing rs)))
   ([opts]
     (if-let [userid (:userid opts)]
@@ -274,8 +274,10 @@
   ([purchase]
     (let [info (when-let [info-str (:info purchase)] 
                  (json/read-str info-str :key-fn keyword))
-          purchase (if info (assoc purchase :info info) purchase)]
-      )))
+          purchase (if info (assoc purchase :info info) purchase) 
+          purchase (assoc purchase :utime (u/to-instant (:utime purchase)))
+          purchase (assoc purchase :ctime (u/to-instant (:ctime purchase)))]
+       purchase)))
 
 (defn get-purchase
   "Gets a purchase map from the data store.

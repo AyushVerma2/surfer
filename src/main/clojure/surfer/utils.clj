@@ -4,7 +4,10 @@
     [java.security MessageDigest]
     [java.util UUID]
     [java.nio.charset StandardCharsets]
-    [org.bouncycastle.crypto.digests KeccakDigest] ))
+    [org.bouncycastle.crypto.digests KeccakDigest] )
+  (:import [java.time Instant]
+           [java.util Date]
+           [java.sql Timestamp]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -13,12 +16,68 @@
 
 (def EMPTY-BYTES (byte-array 0))
 
+;; ==================================================
+;; Time handling
+
+(defn to-instant ^java.time.Instant [ob]
+  (cond 
+    (instance? java.time.Instant ob) ob
+    (instance? java.sql.Timestamp ob) (.toInstant ^java.sql.Timestamp ob)
+    (instance? java.util.Date ob) (.toInstant ^java.util.Date ob)
+    :else nil))
+
+;; ==================================================
+;; Bytes
+
 (defn to-bytes ^bytes [data]
   (cond
     (string? data) (.getBytes ^String data StandardCharsets/UTF_8)
     (= (class data) array-of-bytes-type) data
     (nil? data) EMPTY-BYTES
     :else (throw (IllegalArgumentException. (str "Can't convert to bytes: " (class data))))))
+
+
+;; ======================================================
+;; Hex utilities
+
+(defn hex [i]
+  (.charAt "0123456789abcdef" (mod i 16)))
+
+(defn byte-to-hex [^long b]
+  (str (hex (unsigned-bit-shift-right b 4)) (hex b) ))
+
+(defn hex-string [^bytes data]
+  (apply str (map byte-to-hex data)))
+
+(defn sha256 
+  "Compute sha256 hash of a message.
+
+   Returns an array of 32 bytes."
+  [msg]
+  (let [data (to-bytes msg)
+        md (MessageDigest/getInstance "SHA-256")]
+    (.digest md data)))
+
+(defn keccak256
+  "Compute keccak256 hash of a message.
+
+   Returns an array of 32 bytes."
+  [msg]
+  (let [data (to-bytes msg)
+        md (KeccakDigest. 256)
+        result (byte-array 32)]
+    (.update md data (int 0) (int (count data)))
+    (.doFinal md result 0)
+    result))
+
+(defn remove-nil-values 
+  "Removes nil values from a map. Useful for eliminating blank optional values."
+  ([m]
+    (reduce (fn [m [k v]] (if (nil? v) (dissoc m k) m)) m m)))
+
+
+;; ==================================================
+;; Identifiers
 
 (defn valid-id-char?
   "Returns true if c is a valid lowercase hex character."
@@ -63,40 +122,6 @@
   ([id]
     (valid-id? id 64)))
 
-(defn hex [i]
-  (.charAt "0123456789abcdef" (mod i 16)))
-
-(defn byte-to-hex [^long b]
-  (str (hex (unsigned-bit-shift-right b 4)) (hex b) ))
-
-(defn hex-string [^bytes data]
-  (apply str (map byte-to-hex data)))
-
-(defn sha256 
-  "Compute sha256 hash of a message.
-
-   Returns an array of 32 bytes."
-  [msg]
-  (let [data (to-bytes msg)
-        md (MessageDigest/getInstance "SHA-256")]
-    (.digest md data)))
-
-(defn keccak256
-  "Compute keccak256 hash of a message.
-
-   Returns an array of 32 bytes."
-  [msg]
-  (let [data (to-bytes msg)
-        md (KeccakDigest. 256)
-        result (byte-array 32)]
-    (.update md data (int 0) (int (count data)))
-    (.doFinal md result 0)
-    result))
-
-(defn remove-nil-values 
-  "Removes nil values from a map. Useful for eliminating blank optional values."
-  ([m]
-    (reduce (fn [m [k v]] (if (nil? v) (dissoc m k) m)) m m)))
 
 (defn new-random-id 
   "Creates a new random hex ID of the given length. 
@@ -112,3 +137,4 @@
       (if (> bs 0)
         (str (new-random-id bs) tail)
         tail))))
+
