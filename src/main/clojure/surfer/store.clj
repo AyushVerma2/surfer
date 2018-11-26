@@ -14,7 +14,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(declare register-user generate-test-data register-asset create-listing)
+(declare register-user generate-test-data register-asset create-listing create-purchase)
 
 ;; ====================================================
 ;; Database setup and management
@@ -130,7 +130,13 @@
                      :assetid assetid
                      :info {:title "Ocean Test Asset"
                             :custom "Some custom information"}})
+    
+    (create-purchase {:userid "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
+                      :listingid "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102" 
+                      :info nil
+                      :status "wishlist"})
     ) 
+ 
   )
 
 ;; =========================================================
@@ -178,7 +184,8 @@
 ;; Listing management
 
 (defn clean-listing 
-  "Utility function to clean database record returned from an asset listing"
+  "Utility function to clean database record returned from an asset listing
+   into appropriate data structure format"
   ([listing]
     (let [info (when-let [info-str (:info listing)] 
                  (json/read-str info-str :key-fn keyword))
@@ -190,7 +197,7 @@
   "Gets a listing map from the data store.
    Returns nil if not found"
   ([id]
-    (let [rs (jdbc/query db ["select * from Listings where id = ? order by ctime desc" id])]
+    (let [rs (jdbc/query db ["select * from Listings where id = ?" id])]
       (if (empty? rs)
         nil ;; user not found
         (clean-listing (first rs))))))
@@ -257,6 +264,82 @@
 
 ;; ===================================================
 ;; Purchase management
+
+(defn clean-purchase 
+  "Utility function to clean database record returned from an asset purchase
+   into appropriate data structure format"
+  ([purchase]
+    (let [info (when-let [info-str (:info purchase)] 
+                 (json/read-str info-str :key-fn keyword))
+          purchase (if info (assoc purchase :info info) purchase)]
+      (dissoc purchase :utime :ctime) ;; todo figure out how to coerce these for JSON output
+      )))
+
+(defn get-purchase
+  "Gets a purchase map from the data store.
+   Returns nil if not found"
+  ([id]
+    (let [rs (jdbc/query db ["select * from Purchases where id = ?" id])]
+      (if (empty? rs)
+        nil ;; user not found
+        (clean-purchase (first rs))))))
+
+(defn get-purchases 
+  "Gets a full list of purchases from the marketplace"
+  ([]
+    (let [rs (jdbc/query db ["select * from Purchases order by ctime desc"])]
+      (map clean-purchase rs)))
+  ([opts]
+    (if-let [userid (:userid opts)]
+      (let [rs (jdbc/query db ["select * from Purchases where userid = ? order by ctime desc" userid])]
+        (map clean-purchase rs))
+      (get-purchases))))
+
+(defn create-purchase 
+  "Creates a purchase in the data store. Returns the new Purchase."
+  ([purchase]
+    ;; (println listing) 
+    (let [id (or
+               (if-let [givenid (:id purchase)]
+                 (and (u/valid-purchase-id? givenid) (not (get-purchase givenid)) givenid))
+               (u/new-random-id))
+          userid (:userid purchase)
+          info (:info purchase)
+          info (when info (json/write-str info))
+          insert-data (u/remove-nil-values {:id id
+                                            :userid userid
+                                            :listingid (:listingid purchase)
+                                            :ctime (LocalDateTime/now)
+                                            :utime (LocalDateTime/now)                      
+                                            :status (or (:status purchase) "wishlist") 
+                                            :info info 
+                                            :agreement (:agreement purchase)
+                                            })]
+      (jdbc/insert! db "Purchases" insert-data)
+      (clean-purchase insert-data) ;; return the cleaned purchase
+      )))
+
+(defn update-purchase 
+  "Updates a purchase in the data store. Returns the new Purchase.
+   Uses the Purchase ID provided in the purchase record."
+  ([purchase]
+    ;; (println listing) 
+      (let [id (:id purchase)
+            userid (:userid purchase)
+            info (:info purchase)
+            info (when info (json/write-str info))
+            update-data {;; :id                     ; id must already be correct!
+                           :userid userid
+                           :listingid (:listingid purchase)
+                           :status (:status purchase) 
+                           :info info 
+                           :agreement (:agreement purchase)
+                           ;; :ctime deliberately excluded
+                           :utime (LocalDateTime/now) ;; utime = current time
+                         }]
+      (jdbc/update! db "Purchases" update-data ["id = ?" id])
+      (get-purchase id) ;; return the updated purchase
+        )))
 
 ;; ===================================================
 ;; User management

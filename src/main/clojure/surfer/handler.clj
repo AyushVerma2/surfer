@@ -285,6 +285,85 @@
                     :body    new-listing})
                  {:status 403
                   :body "Can't modify listing: only listing owner can do so"})))
+    
+    ;; ==================================================
+    ;; Asset purchases
+    
+    (POST "/purchases" request 
+          :body [purchase-body  (s/maybe schemas/Purchase)]
+          :return schemas/Purchase
+          :summary "Create a new purchase on the marketplace. 
+                       Marketplace will return a new Purchase record"
+             ;; (println (:body request) )
+         (let [purchase (json-from-input-stream (:body request))
+               userid (get-current-userid request)
+               listingid (:listingid purchase)
+               listing (store/get-listing listingid)]
+           (cond 
+             (not userid) {:status 400
+                            :body (str "Cannot create a purchase unless logged in")
+                            }
+             (not listing) {:status 400
+                            :body (str "Invalid purchase request - listing does not exist: " listingid)
+                            }
+             :else (let [purchase (assoc purchase :userid userid)
+                         result (store/create-purchase purchase)]
+                     ;; (println result)
+                     {:status  200
+                      :headers {"Content-Type" "application/json"}
+                      :body    result
+                      })
+             )))
+    
+   
+        (GET "/purchases" request 
+             :query-params [{username :- schemas/Username nil} 
+                            {userid :- schemas/UserID nil} ]
+             :summary "Gets all current purchases from the marketplace by user"
+             :return [schemas/Purchase] 
+             ;; TODO access control
+             (let [userid (if (not (empty? username)) 
+                            (:id (store/get-user-by-name username))
+                            userid)
+                   opts (if userid {:userid userid} nil)
+                   purchases (store/get-purchases opts)]
+               {:status 200
+                :headers {"Content-Type" "application/json"}
+                :body purchases}))
+    
+    (GET "/purchases/:id" [id] 
+             :summary "Gets data for a specified purchase"
+             :return schemas/Purchase
+             (if-let [purchase (store/get-purchase id)]
+               {:status  200
+                :headers {"Content-Type" "application/json"}
+                :body    purchase
+                }
+               (response/not-found (str "No purchase found for id: " id))))
+    
+    (PUT "/purchases/:id" {{:keys [id]} :params :as request} 
+             :summary "Updates data for a specified Purchase"
+             :body [purchase-body  (s/maybe schemas/Purchase)]
+             :return schemas/Purchase
+             (let [purchase (json-from-input-stream (:body request))
+                   
+                   ;; check the exitsing purchase
+                   old-purchase (store/get-purchase id)
+                   _ (when (not old-purchase) (throw (IllegalArgumentException. "Purchase ID does not exist: "))) 
+                   
+                   ownerid (:userid old-purchase)
+                   userid (get-current-userid request)
+                   
+                   purchase (merge old-purchase purchase) ;; merge changes. This allows single field edits etc.
+                   purchase (assoc purchase :id id) ;; ensure ID is present.
+                   ]
+               (if (= ownerid userid) ;; strong ownership enforcement!
+                 (let [new-purchase (store/update-purchase purchase)] 
+                   {:status 200
+                    :headers {"Content-Type" "application/json"}
+                    :body    new-purchase})
+                 {:status 403
+                  :body "Can't modify purchase: only purchase owner can do so"})))
     ))
 
 (def admin-api 
