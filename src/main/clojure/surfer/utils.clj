@@ -1,4 +1,5 @@
 (ns surfer.utils
+  "Utility functions for Ocean Ecosystem and Marketplaces"
   (:import 
     [java.security MessageDigest]
     [java.util UUID]
@@ -54,6 +55,11 @@
 
 (defn valid-listing-id? 
   "Returns true iff given a valid listing id string."
+  ([id]
+    (valid-id? id 64)))
+
+(defn valid-purchase-id? 
+  "Returns true iff given a valid purchase id string."
   ([id]
     (valid-id? id 64)))
 

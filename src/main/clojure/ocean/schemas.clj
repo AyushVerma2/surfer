@@ -20,6 +20,13 @@
     (s/constrained s/Str u/valid-listing-id? "Valid Listing ID")
     {:example "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"}))
 
+
+(s/defschema PurchaseID
+  (rjs/field
+    (s/constrained s/Str u/valid-purchase-id? "Valid Purchase ID")
+    {:example "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"}))
+
+
 (s/defschema Username
   (rjs/field
     s/Str
@@ -28,10 +35,6 @@
 
 (s/defschema AssetType
   (s/enum "dataset", "algorithm", "container", "workflow", "other"))
-
-(s/defschema ListingStatus
-  (s/enum "unpublished", "published", "suspended"))
-
 
 (s/defschema AssetLink
   {:name s/Str
@@ -44,6 +47,12 @@
    :type AssetType
    :dateCreated s/Inst
    :links [AssetLink]})
+
+;; ===========================================================
+;; Listings
+
+(s/defschema ListingStatus
+  (s/enum "unpublished", "published", "suspended"))
 
 (s/defschema ListingInfo
   {(s/optional-key :title) s/Str
@@ -63,3 +72,20 @@
    (s/optional-key :trust_level) s/Int
    (s/optional-key :trust_access) (s/maybe s/Str)
    (s/optional-key :trust_visible) (s/maybe s/Str)})
+
+;; ============================================================
+;; Purchases
+
+(s/defschema PurchaseStatus
+  (s/enum "wishlist", "ordered", "delivered"))
+
+(s/defschema Purchase
+  {:id PurchaseID
+   :listingid ListingID
+   :userid UserID
+   (s/optional-key :status) (s/maybe PurchaseStatus)
+   (s/optional-key :info) (s/maybe ListingInfo)
+   (s/optional-key :agreement) s/Any
+   (s/optional-key :ctime) s/Inst
+   (s/optional-key :utime) s/Inst})
+

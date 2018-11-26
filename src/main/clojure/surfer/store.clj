@@ -55,6 +55,20 @@
        utime TIMESTAMP
      );"
     )
+    
+    ;; Purchases
+    (jdbc/execute! db 
+    "CREATE TABLE IF NOT EXISTS Purchases ( 
+       id CHAR(64) NOT NULL PRIMARY KEY, 
+       userid CHAR(64) NOT NULL,
+       listingid CHAR(64), 
+       info VARCHAR,
+       status VARCHAR(16),
+       agreement VARCHAR,
+       ctime TIMESTAMP NOT NULL,
+       utime TIMESTAMP
+     );"
+    )
   
     ;; Users
     (jdbc/execute! db 
@@ -82,6 +96,7 @@
   ([db]
     (jdbc/execute! db "drop TABLE IF EXISTS Metadata;")
     (jdbc/execute! db "drop TABLE IF EXISTS Listings;")
+    (jdbc/execute! db "drop TABLE IF EXISTS Purchases;")
     (jdbc/execute! db "drop TABLE IF EXISTS Users;")
     (jdbc/execute! db "drop INDEX IF EXISTS IX_USERNAME;")));
 
@@ -90,6 +105,7 @@
   ([db]
     (jdbc/execute! db "truncate TABLE Metadata;")
     (jdbc/execute! db "truncate TABLE Listings;")
+    (jdbc/execute! db "truncate TABLE Purchases;")
     (jdbc/execute! db "truncate TABLE Users;")
   ))
 
@@ -204,12 +220,13 @@
           insert-data {:id id
                        :userid userid
                        :assetid (:assetid listing)
-                       :status (or (:status listing) "unpublished") 
-                       :info info 
-                       :agreement (:agreement listing)
                        :trust_level (int (or (:trust_level listing) 0))
                        :ctime (LocalDateTime/now)
                        :utime (LocalDateTime/now)
+                       
+                       :status (or (:status listing) "unpublished") 
+                       :info info 
+                       :agreement (:agreement listing)
                        }]
       (jdbc/insert! db "Listings" insert-data)
       (clean-listing insert-data) ;; return the cleaned listing
@@ -232,11 +249,14 @@
                            :agreement (:agreement listing)
                            :trust_level (:trust_level listing)
                            ;; :ctime deliberately excluded
-                         :utime (LocalDateTime/now)
+                           :utime (LocalDateTime/now) ;; utime = current time
                          }]
       (jdbc/update! db "Listings" update-data ["id = ?" id])
       (get-listing id) ;; return the updated listing
         )))
+
+;; ===================================================
+;; Purchase management
 
 ;; ===================================================
 ;; User management
