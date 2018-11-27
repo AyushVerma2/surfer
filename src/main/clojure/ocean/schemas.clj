@@ -54,6 +54,11 @@
     {:example "2018-11-26T13:27:45.542Z"
      :description "A timestamp defining an instant in UTC time"}))
 
+(s/defschema TokenValue 
+  (rjs/field
+    (s/constrained s/Str u/valid-token-value? "Valid Token Value (decimal string)")
+    {:example "1.0"
+     :description "A quantity of Ocean tokens represented as a decimal string."}))
 
 ;; =====================================================
 ;; Assets
@@ -83,7 +88,8 @@
    :type AssetType
    :dateCreated Instant
    (s/optional-key :tags) [s/Str]
-   (s/optional-key :links) [AssetLink]})
+   (s/optional-key :links) [AssetLink]
+   s/Keyword s/Any})
 
 ;; ===========================================================
 ;; Listings
@@ -109,6 +115,11 @@
    (s/optional-key :trust_level) s/Int
    (s/optional-key :trust_access) (s/maybe s/Str)
    (s/optional-key :trust_visible) (s/maybe s/Str)})
+
+(s/defschema Agreement
+  {(s/optional-key :price) (s/maybe s/Str)
+   s/Keyword s/Any
+   })
 
 ;; ============================================================
 ;; Purchases

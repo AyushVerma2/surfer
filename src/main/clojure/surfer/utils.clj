@@ -122,6 +122,19 @@
   ([id]
     (valid-id? id 64)))
 
+(defn parse-bigdecimal 
+  "Attempts to parse a string to a BigDecimal value. Returns nil if not possible."
+  ([s]
+    (try 
+      (java.math.BigDecimal. (str s))
+      (catch java.lang.NumberFormatException e nil))))
+
+(defn valid-token-value? 
+  "Returns true if and only if the input is a valid Token value"
+  ([s]
+    (boolean
+      (parse-bigdecimal s)))) 
+
 
 (defn new-random-id 
   "Creates a new random hex ID of the given length. 
