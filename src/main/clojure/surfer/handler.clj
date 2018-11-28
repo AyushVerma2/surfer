@@ -156,7 +156,7 @@
    (POST "/:id" []
                :multipart-params [file :- upload/TempFileUpload]
                :middleware [wrap-multipart-params]
-               :path-params [id :- s/Str]
+               :path-params [id :- schemas/AssetID]
                :return s/Str
                :summary "upload an asset"
     (if-let [meta (store/lookup-json id)]
@@ -164,6 +164,22 @@
         (storage/save id (io/input-stream file))
         (response/created (str "/api/v1/assets/" id)))
       (response/not-found (str "Attempting to store unregistered asset [" id "]"))))))
+
+
+(def trust-api 
+  (routes     
+    {:swagger
+     {:data {:info {:title "Trust API"
+                    :description "Trust API for Ocean Marketplace"}
+             :tags [{:name "Trust API", :description "Trust API for Ocean Marketplace"}]
+             ;;:consumes ["application/json"]
+             :produces ["application/json"]
+           }}}
+    
+       (GET "/groups" [] 
+             :summary "Gets the list of current groups"
+             (throw (UnsupportedOperationException. "Not yet implemented!")))
+ ))
 
 (def market-api 
   (routes     
@@ -184,6 +200,7 @@
     
     (GET "/users/:id" [id] 
              :summary "Gets data for a specified user"
+             :path-params [id :- schemas/UserID]
              :return s/Any
              (or 
                (when-let [user (store/get-user id)]
@@ -255,6 +272,7 @@
     
     (GET "/listings/:id" [id] 
              :summary "Gets data for a specified listing"
+             :path-params [id :- schemas/ListingID]
              :return schemas/Listing
              (if-let [listing (store/get-listing id)]
                {:status  200
@@ -265,6 +283,7 @@
     
     (PUT "/listings/:id" {{:keys [id]} :params :as request} 
              :summary "Updates data for a specified listing"
+             :path-params [id :- schemas/ListingID]
              :body [listing-body  (s/maybe schemas/Listing)]
              :return schemas/Listing
              (let [listing (json-from-input-stream (:body request))
@@ -449,6 +468,7 @@
       :tags ["Meta API"]
       meta-api)
     
+    
     (context "/api/v1/assets" []
       :tags ["Storage API"]
       storage-api)
@@ -457,6 +477,10 @@
       :tags ["Market API"]
       market-api)
     
+     (context "/api/v1/trust" []
+      :tags ["Trust API"]
+      trust-api)
+     
     (context "/api/v1/market-admin" []
       :tags ["Market Admin API"]
       admin-api)

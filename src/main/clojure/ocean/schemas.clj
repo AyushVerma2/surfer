@@ -52,7 +52,7 @@
   (rjs/field
     java.time.Instant
     {:example "2018-11-26T13:27:45.542Z"
-     :description "A timestamp defining an instant in UTC time"}))
+     :description "A timestamp defining an instant in UTC time (ISO-8601)"}))
 
 (s/defschema TokenValue 
   (rjs/field
@@ -70,6 +70,7 @@
   (s/enum "download",         ;; a direct download URL, intended for free/open assets
           "sample",           ;; a link to a sample dataset for this asset
           "previous-version", ;; a link to a previous version of this asset
+          "format",           ;; a link to a resource that describes the format of this asset
           "source"            ;; a URL for the source, e.g. a website
           ))
 
