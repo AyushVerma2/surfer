@@ -61,6 +61,9 @@
      :description "A quantity of Ocean tokens represented as a decimal string."}))
 
 ;; =====================================================
+;; Users
+
+;; =====================================================
 ;; Assets
 
 (s/defschema AssetLinkType
@@ -133,7 +136,7 @@
    :userid UserID
    (s/optional-key :status) (s/maybe PurchaseStatus)
    (s/optional-key :info) (s/maybe ListingInfo)
-   (s/optional-key :agreement) s/Any
+   (s/optional-key :agreement) (s/maybe Agreement)
    (s/optional-key :ctime) (s/maybe Instant)
    (s/optional-key :utime) (s/maybe Instant)})
 
