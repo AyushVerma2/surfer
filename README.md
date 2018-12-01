@@ -1,15 +1,35 @@
-# surfer
+# Surfer
 
-Surfer provides a reference implementation of an Ocean Agent with the following capabilities:
+Surfer provides a standalone reference implementation of an Ocean Agent with the following capabilities:
 
 - Meta API for serving Ocean Asset Metadata
 - Market API for serving as an Ocean Marketplace backend
 - Common Storage API for asset data
 - CKAN Dataset Import
 
+Surfer is a component of the Ocean Reference Marketplace, fulfilling the role of a Marketplace Agent.
+Marketplace operators are free to use Surfer or another compatible implementation of the relevant APIs 
+for their marketplace.
+
 ## Motivation
 
+An Ocean marketplace requires the use of one or more Ocean Agents that perform off-chain functionality.
+Surfer provides an implementation of this functionality as a reference implementation for the ecosystem,
+and as a open source product that Marketplace operators can use.
+
+Surfer is designed so that it can be relatively easily configured and/or customised to support specific 
+requirements of a marketplace operator.
+
+## Key functionality and use cases
+
 ### Meta API
+
+The Meta API is an implementation of OEP 15, enabling access to asset metadata stored in surfer.
+
+Authentication for Meta API access is handled by the marketplace. Access control rules can be 
+configured by the marketplace operator, however default recommended behaviour is:
+- metadata write access is restricted to registered marketplace users
+- metadata read access is public
 
 ### CKAN Import
 
