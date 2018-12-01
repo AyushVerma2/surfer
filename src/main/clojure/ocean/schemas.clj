@@ -121,7 +121,7 @@
    (s/optional-key :trust_visible) (s/maybe s/Str)})
 
 (s/defschema Agreement
-  {(s/optional-key :price) (s/maybe s/Str)
+  {(s/optional-key :price) (s/maybe TokenValue)
    s/Keyword s/Any
    })
 
