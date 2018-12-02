@@ -1,29 +1,7 @@
-{;; This file is a configuration file for the Ocean reference marketplace agent
- 
- ;; Define key metadata about the Agent deployment 
- :agent {
-   ;; specify the name of the Agent
-   :name "Ocean Marketplace Test Server v0.1"
- 
-   ;; Provide a descriptive paragraph explaing the role/purpose of the Agent
-         :description "Ocean marketplace deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."
- }
- 
- ;; Define the identity of the marketplace operator
- :operator {:name "DEX"
-            :url "https://www.dex.sg"
-            }
- 
- ;; Define security configuration for startup and execution
- :security {
-   ;; Specify the location of the default users and passwords to be generated at Startup
-   ;; and database refresh. Should NOT be committed to SCM, for obvious reasons.
-   ;; if the configuration file is not found, default users will be created with credentials written
-   ;; to the file specified.
-   :user-config "surfer-users.edn"
- } 
- 
- ;; Define logging configuration
- :logging {
- }
-}
+{:agent
+ {:name "Ocean Marketplace Test Server v0.1",
+  :description
+  "Ocean marketplace deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."},
+ :operator {:name "DEX", :url "https://www.dex.sg"},
+ :security {:user-config "surfer-users.edn"},
+ :logging {}}
