@@ -48,11 +48,11 @@ Surfer provides a simple service that:
 
 Surfer can be executed from the source tree using Maven.
 
-1. Clone / download the surfer repository from GitHub
-2. In the root directory run `nohup mvn clean install exec:java &`
+1. Clone / download the surfer repository from GitHub (`git clone https://github.com/oceanprotocol/surfer` should work)
+2. In the surfer directory run `nohup mvn clean install exec:java &`
 3. Browse to `http://localhost/8080` for the Welcome page
 
-For production usage, the use of a reverse proxy such as nginx is recommended.
+For production usage, the use of a reverse proxy such as nginx for TLS is recommended.
 
 ### Interactive REPL use
 
