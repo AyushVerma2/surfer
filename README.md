@@ -46,7 +46,7 @@ Surfer provides a simple service that:
 
 ### Running Surfer in server mode
 
-Surfer can be executed using Maven.
+Surfer can be executed from the source tree using Maven.
 
 1. Clone / download the surfer repository from GitHub
 2. In the root directory run `nohup mvn clean install exec:java &`
