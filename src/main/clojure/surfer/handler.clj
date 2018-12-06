@@ -9,7 +9,7 @@
     [surfer.store :as store]
     [ocean.schemas :as schemas]
     [surfer.storage :as storage]
-    [surfer.utils :as u]
+    [surfer.utils :as utils]
     [schema.core :as s]
     [clojure.data.json :as json]
     [clojure.pprint :as pprint :refer [pprint]]
@@ -87,7 +87,7 @@
         (let [^InputStream body-stream (:body request)
               _ (.reset body-stream)
               ^String body (slurp body-stream)
-              hash (u/hex-string (u/keccak256 body))]
+              hash (utils/hex-string (utils/keccak256 body))]
           
           ;; (println (str (class body) ":" body )) 
           ;; (println (str (class metadata) ":" metadata )) 
@@ -107,7 +107,7 @@
           (let [^InputStream body-stream (:body request)
               _ (.reset body-stream)
               ^String body (slurp body-stream)        
-              hash (u/hex-string (u/keccak256 body))]
+              hash (utils/hex-string (utils/keccak256 body))]
           (if (= id hash)
             (store/register-asset id body) ;; OK, write to store
             (response/bad-request (str "Invalid ID for metadata, expected: " hash " got " id)))))
@@ -127,43 +127,60 @@
         :summary "Gets data for a specified asset ID"
         (if-let [meta (store/lookup-json id)]
           (if-let [body (storage/load-stream id)]
-            (let [ctype (meta "contentType")
-                  headers (if ctype {"Content-Type" ctype} {})]
-              {:status 200
-               :headers headers
-               :body body})
+            (let [ctype (or (:contentType meta) "application/octet-stream")
+                  return-filename (str "asset-" id)
+                  headers {"Content-Type" ctype
+                           "Content-Disposition" (str "attachment; filename=\"" return-filename "\"")}]
+              (utils/remove-nil-values 
+                {:status 200
+                 :headers headers
+                 :body body}))
             (response/not-found "Asset data not available."))
-          (response/not-found "Asset matadata not available.")))
+          (response/not-found "Asset metadata not available.")))
     
     (PUT "/:id" {{:keys [id]} :params :as request} 
         :coercion nil
-        :body [metadata nil]
+        :body [uploaded nil]
         :summary "Stores asset data for a given asset ID"
         ;; (println (:body request))
-        (if-let [meta (store/lookup-json id)]
-          (do 
-            (if-let [^InputStream body (:body request)]
-             (do ;; we have a body 
-               (.reset body)
-               (storage/save id body))
-             (do ;; no body, but valid id
-               (storage/save id (byte-array 0))
-               ))
-            (response/created (str "/api/v1/assets/" id)))
-          (response/not-found (str "Attempting to store unregistered asset [" id "]")))
-    )
+        (let [userid (get-current-userid request)
+              meta (store/lookup-json id)]
+          (cond 
+            (nil? userid) (response/status 
+                            (response/response "User not authenticated")
+                            401)
+            (not (map? uploaded)) (response/bad-request
+                                (str "Expected file upload, got body: " uploaded))
+            (nil? meta) (response/not-found (str "Attempting to store unregistered asset [" id "]")))
+            :else (let [file (:tempfile uploaded)] ;; we have a body 
+                    ;; (println request) 
+                    (storage/save id file)
+                    (response/created (str "/api/v1/assets/" id)))
+          ))
    
-   (POST "/:id" []
-               :multipart-params [file :- upload/TempFileUpload]
-               :middleware [wrap-multipart-params]
-               :path-params [id :- schemas/AssetID]
-               :return s/Str
-               :summary "upload an asset"
-    (if-let [meta (store/lookup-json id)]
-      (do 
-        (storage/save id (io/input-stream file))
-        (response/created (str "/api/v1/assets/" id)))
-      (response/not-found (str "Attempting to store unregistered asset [" id "]"))))))
+   (POST "/:id" request
+         :multipart-params [file :- upload/TempFileUpload]
+         :middleware [wrap-multipart-params]
+         :path-params [id :- schemas/AssetID]
+         :return s/Str
+         :summary "upload an asset"
+    (let [userid (get-current-userid request)
+          meta (store/lookup-json id)]
+      (cond 
+        (nil? userid) (response/status 
+                        (response/response "User not authenticated")
+                        401)
+        (nil? meta) (response/not-found (str "Attempting to store unregistered asset [" id "]")))
+        (not (map? file)) (response/bad-request
+                                (str "Expected file upload, got param: " file))
+        :else (if-let [tempfile (:tempfile file)] ;; we have a body 
+                (do 
+                  ;; (binding [*out* *err*] (pprint/pprint request))
+                  (storage/save id tempfile)
+                  (response/created (str "/api/v1/assets/" id)))
+                (response/bad-request
+                  (str "Expected map with :tempfile, got param: " file)))
+      ))))
 
 
 (def trust-api 

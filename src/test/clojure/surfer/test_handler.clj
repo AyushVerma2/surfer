@@ -3,6 +3,7 @@
     [surfer systems]
     [clj-http.client :as client]
     [clojure.data.json :as json]
+    [clojure.java.io :as io]
     [surfer.utils :as utils]
     [surfer.ckan :as ckan]
     [slingshot.slingshot :refer [try+ throw+]]
@@ -57,15 +58,21 @@
       ))
     
     ;; test upload
-    (let [r3 (client/put (str BASE_URL "api/v1/assets/" id) 
-                         (merge AUTH_HEADERS
-                               {:body "This is my test data"}))]
-      (is (= 201 (:status r3))))
+    (try+
+      (let [content (io/input-stream (io/resource "testfile.txt"))
+            r3 (client/post (str BASE_URL "api/v1/assets/" id) 
+                           (merge AUTH_HEADERS
+                               {:multipart [{:name "file"
+                                             :content content}]}))]
+        (is (= 201 (:status r3))))
+      (catch [:status 400] ex
+        (binding [*out* *err*] (println ex))
+        (is false)))
     
     ;; test download 
     (let [r4 (client/get (str BASE_URL "api/v1/assets/" id) AUTH_HEADERS)]
       (is (= 200 (:status r4)))
-      (is (= "This is my test data" (:body r4))))
+      (is (= "This is a test file" (:body r4))))
     
     ;; test POST listing
     (let [ldata (json/write-str {:assetid id})
