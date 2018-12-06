@@ -6,6 +6,7 @@
     [java.nio.charset StandardCharsets]
     [org.bouncycastle.crypto.digests KeccakDigest] )
   (:import [java.time Instant]
+           [java.io InputStream ByteArrayOutputStream]
            [java.util Date]
            [java.sql Timestamp]))
 
@@ -35,6 +36,20 @@
     (= (class data) array-of-bytes-type) data
     (nil? data) EMPTY-BYTES
     :else (throw (IllegalArgumentException. (str "Can't convert to bytes: " (class data))))))
+
+(defn bytes-from-stream 
+  "Fully reads an input stream into an array of bytes"
+  (^bytes [^InputStream is]
+    (let [max-size 10000000 ;; limit for loading
+          ^ByteArrayOutputStream bos (ByteArrayOutputStream.)
+          buff (byte-array 10000)]
+      (loop [loaded 0]
+        (when (> loaded max-size) (throw (Error. (str "Too much data, max size: " max-size))))
+        (let [len (int (.read is buff))]
+          (when (>= len 0)
+            (.write bos buff (int 0) (int len))
+            (recur (+ loaded len)))))
+      (.toByteArray bos))))
 
 
 ;; ======================================================
