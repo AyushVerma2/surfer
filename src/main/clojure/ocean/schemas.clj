@@ -92,6 +92,7 @@
    :type AssetType
    :dateCreated Instant
    (s/optional-key :tags) [s/Str]
+   (s/optional-key :contentType) s/Str
    (s/optional-key :links) [AssetLink]
    s/Keyword s/Any})
 

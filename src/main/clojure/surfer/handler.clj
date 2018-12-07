@@ -128,7 +128,7 @@
         (if-let [meta (store/lookup-json id)]
           (if-let [body (storage/load-stream id)]
             (let [ctype (or (:contentType meta) "application/octet-stream")
-                  return-filename (str "asset-" id)
+                  return-filename (str "asset-" id ".csv")
                   headers {"Content-Type" ctype
                            "Content-Disposition" (str "attachment; filename=\"" return-filename "\"")}]
               (utils/remove-nil-values 

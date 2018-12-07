@@ -10,14 +10,50 @@
 
 (def ^:dynamic *import-userid* nil)
 
+(def PROVENANCE_PREFIXES
+  {
+   "xsd" "http://www.w3.org/2001/XMLSchema#",
+   "prov" "http://www.w3.org/ns/prov#",
+   "ocn" "http://www.oceanprotocol.com/prov"
+  })
+
+(defn create-provenance 
+  "Creates import provenance from a CKAN asset."
+  [pack options]
+  (let [importer-label "ocn:importer"
+        activity-label "ocn:import"
+        entity-label "ocn:this"] 
+    {:prefix PROVENANCE_PREFIXES
+     :agent {importer-label {
+                             "prov:label" "Ocean CKAN Importer"
+                             "prov:type" "ocn:import"
+                             }}
+     :activity {"ocn:import" {"prov:label" "Compile the dataset",
+                               "prov:endTime" (Instant/now)
+                               "prov:type" "ocn:import"
+                               }}
+     :entity  {entity-label  {"prov:value"  {"$" (or (:name pack) "Unnamed dataset"),
+                                             "type" "xsd:string"}
+                              "prov:type" "ocn:dataset",
+                              ;; "ocn:id_resolver"   "did:ocn:marketplaceid"
+                              }}
+     "wasGeneratedBy" {"_:wGB4" {"prov:entity" entity-label,
+                                 "prov:activity" activity-label
+                                 }}
+     "wasAssociatedWith" {"_:wAW4" {"prov:agent" importer-label,
+                                    "prov:activity" activity-label
+                                    }}
+     })) 
+
 (defn convert-meta
   "Converts metadata from a CKAN asset to a Ocean Asset"
-  ([pack]
+  ([pack options]
     (let [base {:name (:name pack)
                 :description (:description pack) 
                 :license (:license_title pack)
                 :tags (seq (map :name (:tags pack)))
                 :type "dataset" 
+                :provenance (create-provenance pack options) 
                 }
           meta base] 
       (utils/remove-nil-values meta))))
@@ -50,8 +86,10 @@
 (defn import-package 
   "Import a package from the CKAN repo and list on the marketplace"
   ([repo package-name]
+    (import-package repo package-name {}))
+  ([repo package-name options]
     (let [pdata (package-show repo package-name)
-          odata (convert-meta pdata) ;; base metadata conversion
+          odata (convert-meta pdata options) ;; base metadata conversion
           extra-data (utils/remove-nil-values ;; extra fields related to import
                        {:dateCreated (Instant/now)})
           odata (merge odata extra-data)
