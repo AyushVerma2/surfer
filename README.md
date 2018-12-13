@@ -44,19 +44,20 @@ Surfer provides a simple service that:
 
 ## Docker
 ### Building the docker image
-1. Build the docker container, it takes a while ( ~7 minutes ) so relax and have a nice cup of tea..
+1. Clone / download the surfer repository from GitHub.
+2. Build the docker container, it takes a while ( ~7 minutes ) so relax and have a nice cup of tea..
 
 ```
 docker build -t surfer .
 ```
 
-2. After the building the docker container you can then run it by doing the following command
+3. After the building the docker container you can then run it by doing the following command:
 
 ```
 docker run -p 8080:8080 surfer
 ```
 
-3. Browse to `http://localhost/8080` for the Welcome page
+4. Browse to `http://localhost/8080` for the Welcome page.
 
 ## Example Usage
 
