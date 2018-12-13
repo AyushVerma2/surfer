@@ -54,7 +54,7 @@ After the building the docker container you can then run it by doing the followi
 
 ```
 docker run surfer
-``
+```
 
 ## Example Usage
 
