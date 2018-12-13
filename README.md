@@ -50,16 +50,26 @@ Surfer provides a simple service that:
 2. Build the docker container, it takes a while ( a lot of downloading for ~7 minutes ) so relax and have a nice cup of teh/kopi..
 
 ```
-docker build -t surfer .
+$ docker build -t surfer .
 ```
 
 3. After the building the docker container you can then run it by doing the following command:
 
 ```
-docker run -i -p 8080:8080 surfer
+$ docker run -i -p 8080:8080 surfer
 ```
 
 4. Browse to `http://localhost/8080` for the Welcome page.
+
+5. To stop the docker container, <control>-c does not seem to work, so you will need to call docker stop:
+```
+$ docker ps
+
+CONTAINER ID        IMAGE               COMMAND                  CREATED              STATUS              PORTS                    NAMES
+449fe0ec6cda        surfer              "/bin/sh -c 'mvn ins…"   About a minute ago   Up About a minute   0.0.0.0:8080->8080/tcp   wonderful_ardinghelli
+
+$ docker stop 449fe0ec6cda
+```
 
 ### Running Surfer in server mode
 
