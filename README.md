@@ -61,7 +61,7 @@ $ docker run -i -p 8080:8080 surfer
 
 4. Browse to `http://localhost/8080` for the Welcome page.
 
-5. To stop the docker container, <control>-c does not seem to work, so you will need to call docker stop:
+5. To stop the docker container, <<control>>-c does not seem to work, so you will need to call docker stop:
 ```
 $ docker ps
 
