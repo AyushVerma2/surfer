@@ -45,7 +45,7 @@ Surfer provides a simple service that:
 ## Docker
 ### Building the docker image
 1. Clone / download the surfer repository from GitHub.
-2. Build the docker container, it takes a while ( ~7 minutes ) so relax and have a nice cup of tea..
+2. Build the docker container, it takes a while ( a lot of downloading for ~7 minutes ) so relax and have a nice cup of tea..
 
 ```
 docker build -t surfer .
