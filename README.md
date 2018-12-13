@@ -73,13 +73,45 @@ $ docker stop 449fe0ec6cda
 
 ### Running Surfer in server mode
 
-Surfer can be executed using Maven.
+Surfer can be executed from the source tree using Maven.
 
-1. Clone / download the surfer repository from GitHub
-2. In the root directory run `nohup mvn clean install exec:java &`
+1. Clone / download the surfer repository from GitHub (`git clone https://github.com/oceanprotocol/surfer` should work)
+2. In the surfer directory run `nohup mvn clean install exec:java &`
 3. Browse to `http://localhost/8080` for the Welcome page
 
-For production usage, the use of a reverse proxy such as nginx is recommended.
+For production usage, the use of a reverse proxy such as nginx for TLS is recommended.
+
+Setup:
+```
+sud apt-get install nginx
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/conf.d/selfsigned.key -out /etc/nginx/conf.d/selfsigned.crt
+```
+
+`/etc/nginx/conf.d/proxy.conf` file as below:
+
+```
+server {
+  listen 80;
+  server_name localhost;
+
+  location / {
+    proxy_pass http://localhost:8080;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name localhost;
+  ssl_certificate /etc/nginx/conf.d/selfsigned.crt;
+  ssl_certificate_key /etc/nginx/conf.d/selfsigned.key;
+  ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+  ssl_ciphers HIGH:!aNULL:!MD5;
+
+  location / {
+    proxy_pass http://localhost:8080;
+  }
+}
+```
 
 ### Interactive REPL use
 

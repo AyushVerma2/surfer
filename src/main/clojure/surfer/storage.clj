@@ -9,7 +9,7 @@
 (def STORAGE-PATH (str (System/getProperty "user.home") "/.ocean"))
 (def checked-path (atom false))
 
-(defn- get-storage-path 
+(defn get-storage-path 
   "Gets a storage path given a valid asset ID"
   ([assetID]
     (when-not @checked-path
@@ -29,11 +29,6 @@
     (let [path (get-storage-path assetID)
           file (io/file path)]
       (io/copy data file))))
-
-(defn bytes-from-stream 
-  "Fully reads an input stream into an array of bytes"
-  (^bytes [^InputStream input-stream]
-    (let [dis (DataInputStream. input-stream)])))
 
 (defn load-stream 
   "Gets an input stream for the sepcified asset ID.
