@@ -42,8 +42,10 @@ Surfer provides a simple service that:
 - Offers a web-based interface for exploring the resulting Ocean assets
 - Hosts a Swagger interface for exploring the Surfer APIs
 
-## Docker
-### Building the docker image
+## Example Usage
+
+### Running Surfer as a docker image
+
 1. Clone / download the surfer repository from GitHub.
 2. Build the docker container, it takes a while ( a lot of downloading for ~7 minutes ) so relax and have a nice cup of teh/kopi..
 
@@ -58,8 +60,6 @@ docker run -i -p 8080:8080 surfer
 ```
 
 4. Browse to `http://localhost/8080` for the Welcome page.
-
-## Example Usage
 
 ### Running Surfer in server mode
 
