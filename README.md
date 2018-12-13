@@ -42,6 +42,20 @@ Surfer provides a simple service that:
 - Offers a web-based interface for exploring the resulting Ocean assets
 - Hosts a Swagger interface for exploring the Surfer APIs
 
+## Docker
+### Building the docker image
+First run the following command, it takes a while ( ~7 minutes ) so relax and have a nice cup of tea..
+
+```
+docker build -t surfer .
+```
+
+After the building the docker container you can then run it by doing the following command
+
+```
+docker run surfer
+``
+
 ## Example Usage
 
 ### Running Surfer in server mode
