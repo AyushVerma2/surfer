@@ -6,10 +6,13 @@
    ;; [h2 :refer [new-h2-database DEFAULT-MEM-SPEC DEFAULT-DB-SPEC]]
      ]
     [environ.core :refer [env]]
-    [surfer.handler :refer [app]]))
+    [surfer.handler :refer [app]]
+    [surfer.store :as store]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
+
+(if (env :surfer-create-db) (store/create-db!) )
 
 (defsystem base-system
   [;; :db (new-h2-database (select-database env) #(create-table! {} {:connection %}))
