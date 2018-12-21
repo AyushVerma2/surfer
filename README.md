@@ -52,6 +52,13 @@ Surfer can be executed from the source tree using Maven.
 2. In the surfer directory run `nohup mvn clean install exec:java &`
 3. Browse to `http://localhost/8080` for the Welcome page
 
+To update the server if already running:
+
+1. Pull the latest source in the surfer directory with `git pull`
+2. Find the currently running surfer process with `ps -ax`. It should be a process with a resonably high CPU usage and maven in the file path.
+3. Kill the currently running process e.g. `kill 18851`
+4. Run the latest version with `nohup mvn clean install exec:java &` as before
+
 For production usage, the use of a reverse proxy such as nginx for TLS is recommended.
 
 Setup:
