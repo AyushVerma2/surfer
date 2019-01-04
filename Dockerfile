@@ -43,6 +43,6 @@ ENV HTTP_PORT 8080
 
 RUN mvn clean install
 
-ENTRYPOINT mvn install exec:java
+# ENTRYPOINT mvn install exec:java
 EXPOSE 8080
 
