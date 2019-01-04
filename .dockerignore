@@ -1,0 +1,13 @@
+.editorconfig
+.eslintrc
+.git
+.gitignore
+.release-it.json
+.soliumignore
+.soliumrc.json
+.travis.yml
+node_modules
+build
+coverage
+package-lock.json
+target
