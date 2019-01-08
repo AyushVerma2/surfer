@@ -6,6 +6,9 @@
   (:require [surfer.utils :as u]
             [clojure.data.json :as json]
             [clojure.java.jdbc :as jdbc]
+            [ragtime.jdbc]
+            [ragtime.repl]
+            [ragtime.strategy]
             [cemerick.friend 
                      [credentials :as creds]])
   (:import [java.time Instant]
@@ -22,83 +25,17 @@
 (def db {:dbtype "h2"
          :dbname "~/surfertest"})
 
+(def ragtime-config 
+  {:datastore (ragtime.jdbc/sql-database db)
+   :migrations (ragtime.jdbc/load-resources "migrations")
+   :strategy ragtime.strategy/rebase})
+
+(ragtime.repl/migrate ragtime-config)
+
 (defn current-db []
   db)
 
 (Class/forName "org.h2.Driver")
-
-(defn create-db! 
-  ([] (create-db! (current-db)))
-  ([db] 
-  ;; Asset metadata
-    (jdbc/execute! db 
-    "CREATE TABLE IF NOT EXISTS Metadata ( 
-       id CHAR(64) NOT NULL PRIMARY KEY, 
-       metadata varchar NOT NULL, 
-       utime TIMESTAMP NOT NULL
-     );"
-    )
-  
-  ;; Listings
-    (jdbc/execute! db 
-    "CREATE TABLE IF NOT EXISTS Listings ( 
-       id CHAR(64) NOT NULL PRIMARY KEY, 
-       userid CHAR(64) NOT NULL,
-       assetid CHAR(64) NOT NULL, 
-       info VARCHAR,
-       status VARCHAR(16),
-       agreement VARCHAR,
-       trust_level INT, 
-       trust_visible CHAR(64), 
-       trust_access CHAR(64), 
-       ctime TIMESTAMP NOT NULL,
-       utime TIMESTAMP
-     );"
-    )
-    
-    ;; Purchases
-    (jdbc/execute! db 
-    "CREATE TABLE IF NOT EXISTS Purchases ( 
-       id CHAR(64) NOT NULL PRIMARY KEY, 
-       userid CHAR(64) NOT NULL,
-       listingid CHAR(64), 
-       info VARCHAR,
-       status VARCHAR(16),
-       agreement VARCHAR,
-       ctime TIMESTAMP NOT NULL,
-       utime TIMESTAMP
-     );"
-    )
-  
-    ;; Users
-    (jdbc/execute! db 
-    "CREATE TABLE IF NOT EXISTS Users ( 
-       id CHAR(64) NOT NULL PRIMARY KEY, 
-       username VARCHAR(64) NOT NULL, 
-       password varchar NOT NULL,
-       metadata varchar NOT NULL, 
-       status varchar(10) NOT NULL,
-       ctime TIMESTAMP NOT NULL
-     );"
-    )
-    
-    (jdbc/execute! db 
-      "CREATE UNIQUE INDEX IF NOT EXISTS IX_USERNAME
-       ON USERS(username) ;")
-    
-    (generate-test-data db)
-  )
-)
-
-
-(defn drop-db! 
-  ([] (drop-db! (current-db)))
-  ([db]
-    (jdbc/execute! db "drop TABLE IF EXISTS Metadata;")
-    (jdbc/execute! db "drop TABLE IF EXISTS Listings;")
-    (jdbc/execute! db "drop TABLE IF EXISTS Purchases;")
-    (jdbc/execute! db "drop TABLE IF EXISTS Users;")
-    (jdbc/execute! db "drop INDEX IF EXISTS IX_USERNAME;")));
 
 (defn truncate-db! 
   ([] (truncate-db! (current-db)))
@@ -112,32 +49,32 @@
 ;; =========================================================
 ;; Test data generation
 
-(defn generate-test-data [db]
-  (register-user {:id "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
-                  :username "test" 
-                  :password (creds/hash-bcrypt "foobar")} )
-  ;; Authorization: Basic dGVzdDpmb29iYXI=
-  
-  (register-user {:id "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
-                  :username "Aladdin" 
-                  :password (creds/hash-bcrypt "OpenSesame")})
-  ;; Authorization: Basic QWxhZGRpbjpPcGVuU2VzYW1l
-  
-  (let [assetid (register-asset (json/write-str {:name "Test Asset"
-                                    :description "A sample asset for testing purposes"}))]
-    (create-listing {:id "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
-                     :userid "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
-                     :assetid assetid
-                     :info {:title "Ocean Test Asset"
-                            :custom "Some custom information"}})
+(defn generate-test-data! 
+  "Generates basic test data setup"
+  ([db]
+    (register-user {:id "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
+                    :username "test" 
+                    :password (creds/hash-bcrypt "foobar")} )
+    ;; Authorization: Basic dGVzdDpmb29iYXI=
     
-    (create-purchase {:userid "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
+    (register-user {:id "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
+                    :username "Aladdin" 
+                    :password (creds/hash-bcrypt "OpenSesame")})
+    ;; Authorization: Basic QWxhZGRpbjpPcGVuU2VzYW1l
+    
+    (let [assetid (register-asset (json/write-str {:name "Test Asset"
+                                                   :description "A sample asset for testing purposes"}))]
+      (create-listing {:id "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
+                       :userid "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
+                       :assetid assetid
+                       :info {:title "Ocean Test Asset"
+                              :custom "Some custom information"}})
+    
+      (create-purchase {:userid "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
                       :listingid "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102" 
                       :info nil
-                      :status "wishlist"})
-    ) 
- 
-  )
+                        :status "wishlist"})
+      )))
 
 ;; =========================================================
 ;; Asset management and metadata

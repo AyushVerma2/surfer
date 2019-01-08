@@ -1,0 +1,17 @@
+{:up ["CREATE TABLE IF NOT EXISTS Listings ( 
+       id CHAR(64) NOT NULL PRIMARY KEY, 
+       userid CHAR(64) NOT NULL,
+       assetid CHAR(64) NOT NULL, 
+       info VARCHAR,
+       status VARCHAR(16),
+       agreement VARCHAR,
+       trust_level INT, 
+       trust_visible CHAR(64), 
+       trust_access CHAR(64), 
+       ctime TIMESTAMP NOT NULL,
+       utime TIMESTAMP
+     );"
+      
+      ]
+ 
+ :down ["DROP TABLE IF EXISTS Listings;"]}

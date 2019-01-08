@@ -1,0 +1,14 @@
+{:up ["CREATE TABLE IF NOT EXISTS Purchases ( 
+       id CHAR(64) NOT NULL PRIMARY KEY, 
+       userid CHAR(64) NOT NULL,
+       listingid CHAR(64), 
+       info VARCHAR,
+       status VARCHAR(16),
+       agreement VARCHAR,
+       ctime TIMESTAMP NOT NULL,
+       utime TIMESTAMP
+     );"
+      
+      ]
+ 
+ :down ["DROP TABLE IF EXISTS Purchases;"]}

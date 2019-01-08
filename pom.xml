@@ -167,6 +167,11 @@
 			<artifactId>h2</artifactId>
 			<version>1.4.197</version>
 		</dependency>
+		<dependency>
+			<groupId>ragtime</groupId>
+			<artifactId>ragtime</artifactId>
+			<version>0.8.0</version>
+		</dependency>
 
 
 		<dependency>

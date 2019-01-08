@@ -1,0 +1,15 @@
+{:up ["CREATE TABLE IF NOT EXISTS Users ( 
+       id CHAR(64) NOT NULL PRIMARY KEY, 
+       username VARCHAR(64) NOT NULL, 
+       password varchar NOT NULL,
+       metadata varchar NOT NULL, 
+       status varchar(10) NOT NULL,
+       ctime TIMESTAMP NOT NULL
+     );"
+      
+      "CREATE UNIQUE INDEX IF NOT EXISTS IX_USERNAME
+       ON USERS(username) ;"
+      ]
+ 
+ :down ["drop INDEX IF EXISTS IX_USERNAME;"
+        "drop TABLE IF EXISTS Users;"]}

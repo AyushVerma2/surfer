@@ -436,24 +436,17 @@
     ;; ===========================================
     ;; Marketplace database management
     
-    (POST "/drop-db" [] 
-             :summary "Drops the current database. DANGER."
-             (friend/authorize #{:admin}
-               (store/drop-db!)
-               (response/response "Successful")))
-
     (POST "/clear-db" [] 
              :summary "Clears the current database. DANGER."
              (friend/authorize #{:admin}
                (store/truncate-db!)
                (response/response "Successful")))
  
-    (POST "/create-db" [] 
-             :summary "(Re)creates the current database. DANGER."
+    (POST "/create-db-test-data" [] 
+             :summary "Creates test data for the current database. DANGER."
              (friend/authorize #{:admin}
-               (store/create-db!)
-               (response/response "Successful")))
-    
+               (store/generate-test-data!)
+               (response/response "Successful"))) 
     ))
 
 (def api-routes
