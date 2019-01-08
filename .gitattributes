@@ -1,0 +1,13 @@
+*	text=auto
+*.JPG   -text
+*.PNG   -text
+*.ico   -text
+*.ipynb -text
+*.jar   -text
+*.jpg   -text
+*.key   -text
+*.pdf   -text
+*.png   -text
+*.scss  -text
+*.woff  -text
+*.woff2 -text

@@ -1,0 +1,4 @@
+[core]
+	eol = lf
+	safecrlf = false
+	autocrlf = false
