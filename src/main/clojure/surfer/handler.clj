@@ -213,7 +213,10 @@
     
     (GET "/users" [] 
              :summary "Gets the list of current users"
-             (store/list-users))
+             (or 
+               (seq (store/list-users))
+               {:status 200
+                :body "No users available in database - please check your setup"}))
     
     (GET "/users/:id" [id] 
              :summary "Gets data for a specified user"

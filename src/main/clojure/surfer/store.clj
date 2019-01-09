@@ -25,6 +25,9 @@
 (def db {:dbtype "h2"
          :dbname "~/surfertest"})
 
+;; ====================================================
+;; Database state update
+
 (def ragtime-config 
   {:datastore (ragtime.jdbc/sql-database db)
    :migrations (ragtime.jdbc/load-resources "migrations")
@@ -32,13 +35,12 @@
 
 (ragtime.repl/migrate ragtime-config)
 
-(defn current-db []
-  db)
+
 
 (Class/forName "org.h2.Driver")
 
 (defn truncate-db! 
-  ([] (truncate-db! (current-db)))
+  ([] (truncate-db! db))
   ([db]
     (jdbc/execute! db "truncate TABLE Metadata;")
     (jdbc/execute! db "truncate TABLE Listings;")

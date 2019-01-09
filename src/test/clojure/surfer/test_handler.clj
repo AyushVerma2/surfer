@@ -13,12 +13,16 @@
                      [credentials :as creds]])
   (:require [clojure.test :refer :all]))
 
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
 ;; ensure server is running
 (let [system #'base-system]
     (set-init! system)
     (try 
       (start)
-      (catch Throwable t))) 
+      (catch Throwable t
+        (.printStackTrace t)))) 
 
 (def BASE_URL "http://localhost:8080/")
 (def AUTH_HEADERS {:headers {"Authorization", "Basic QWxhZGRpbjpPcGVuU2VzYW1l"}})
