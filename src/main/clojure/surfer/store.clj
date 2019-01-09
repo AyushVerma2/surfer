@@ -28,7 +28,7 @@
          :dbname "~/surfertest"})
 
 ;; ====================================================
-;; Database state update
+;; Database migration
 
 (def ragtime-config 
   {:datastore (ragtime.jdbc/sql-database db)
@@ -37,20 +37,10 @@
 
 (ragtime.repl/migrate ragtime-config)
 
-(try
-  (when-let [users USER-CONFIG]
-    (log/info "Starting user auto-registration")
-    (doseq [{:keys [username id password] :as user} users]
-      (cond
-        (not username) (log/info "No :username provided in user-config!")  
-        (get-user-by-name username) (log/info (str "User already registered: " username))
-        (and id (get-user id)) (log/info (str "User ID already exists: " id))
-        :else (do (register-user user)
-                (log/info (str "Auto-registered default user:" username)))))) 
-  (catch Throwable t
-    (log/error (str "Problem auto-registering default users: " t))))
-
 (Class/forName "org.h2.Driver")
+
+;; =========================================================
+;; Bulk update admin functions
 
 (defn truncate-db! 
   ([] (truncate-db! db))
@@ -361,3 +351,19 @@
                        :metadata (json/write-str (or (:metadata user-data) {})) 
                        :ctime (Instant/now)})
          id))))
+
+;; ============================================================
+;; database state update
+
+(try
+  (when-let [users USER-CONFIG]
+    (log/info "Starting user auto-registration")
+    (doseq [{:keys [username id password] :as user} users]
+      (cond
+        (not username) (log/info "No :username provided in user-config!")  
+        (get-user-by-name username) (log/info (str "User already registered: " username))
+        (and id (get-user id)) (log/info (str "User ID already exists: " id))
+        :else (do (register-user user)
+                (log/info (str "Auto-registered default user:" username)))))) 
+  (catch Throwable t
+    (log/error (str "Problem auto-registering default users: " t))))
