@@ -22,11 +22,15 @@
  :security {
    ;; Specify the location of the default users and passwords to be generated at Startup
    ;; and database refresh. Should NOT be committed to SCM, for obvious reasons.
+   ;; 
+   ;; The file should contain a sequence of user maps, with :username and :password
+   ;; an optional :userid may be provided is a specific user ID is requested.
    ;;
    ;; Expected behaviour in 3 possible states:
-   ;; 1. If the config file exists, users will be read and passwords updated to those specified.
+   ;; 1. If the config file exists, users will be created with passwords set to those specified
+   ;;    assuming the users do not yet exist
    ;;    This is the recommended configuration for testing / development purposes where database
-   ;;    refreshes are expected.
+   ;;    clears / refreshes are expected.
    ;; 2. If the configuration file is not found, default users will be created with randomly 
    ;;    generated passwords written to the file specified. A marketplace administrator may need
    ;;    access to this file to discover passwords and log in to the marketplace. This reverts 

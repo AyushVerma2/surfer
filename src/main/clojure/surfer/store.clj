@@ -4,6 +4,7 @@
    Currenty implemented using JDBC with the H2 embedded database. Other database implementations
    may be future options."
   (:require [surfer.utils :as u]
+            [surfer.config :refer [CONFIG USER-CONFIG]]
             [clojure.data.json :as json]
             [clojure.java.jdbc :as jdbc]
             [ragtime.jdbc]
@@ -11,6 +12,7 @@
             [ragtime.strategy]
             [cemerick.friend 
                      [credentials :as creds]])
+  (:require [clojure.tools.logging :as log])
   (:import [java.time Instant]
            [java.util Date]))
 
@@ -35,7 +37,18 @@
 
 (ragtime.repl/migrate ragtime-config)
 
-
+(try
+  (when-let [users USER-CONFIG]
+    (log/info "Starting user auto-registration")
+    (doseq [{:keys [username id password] :as user} users]
+      (cond
+        (not username) (log/info "No :username provided in user-config!")  
+        (get-user-by-name username) (log/info (str "User already registered: " username))
+        (and id (get-user id)) (log/info (str "User ID already exists: " id))
+        :else (do (register-user user)
+                (log/info (str "Auto-registered default user:" username)))))) 
+  (catch Throwable t
+    (log/error (str "Problem auto-registering default users: " t))))
 
 (Class/forName "org.h2.Driver")
 
@@ -299,7 +312,7 @@
 (defn get-user 
   "Gets a user map from the data store.
    Returns nil if not found"
-  ([id]
+  ([^String id]
     (let [rs (jdbc/query db ["select * from Users where id = ?" id])]
       (if (empty? rs)
         nil ;; user not found
@@ -308,7 +321,7 @@
 (defn get-user-by-name
   "Gets a user map from the data store.
    Returns nil if not found"
-  ([username]
+  ([^String username]
     (let [rs (jdbc/query db ["select * from Users where username = ?" username])]
       (if (empty? rs)
         nil ;; user not found
@@ -332,7 +345,8 @@
 (defn register-user 
   "Registers a user in the data store. Returns the New User ID as a string.
 
-   Returns the new user ID, or nil if creation failed."
+   Returns the new user ID, or nil if creation failed - most likely due to 
+   user alreday existing in  database"
   ([user-data]
     (let [id (or (:id user-data) (u/new-random-id))
           username (:username user-data)

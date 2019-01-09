@@ -3,7 +3,8 @@
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.pprint :as pprint])
-  (:require [clojure.tools.logging :as log]))
+  (:require [clojure.tools.logging :as log])
+  (:require [cemerick.friend [credentials :as creds]]))
 
 (def CONFIG-PATH (or (env :config-path) "surfer-config.edn"))
 
@@ -25,6 +26,25 @@
 (def CONFIG (merge 
               DEFAULT-CONFIG
               LOADED-CONFIG))
+
+(def USER-CONFIG-FILE (get-in CONFIG [:security :user-config]))
+
+(def USER-CONFIG 
+  (try
+    (when-let [userfile (io/file USER-CONFIG-FILE)]
+    ;; we have a user config filename, so try to load accordingly
+      (when (.exists userfile)
+        (let [udata (edn/read-string (slurp userfile))]
+            ;; we need to hash the passwords. Do this here to avoid potential leaks
+            ;; by storing plaintext passwords in memory.
+            (seq (map (fn [user]
+                       (assoc user :password (creds/hash-bcrypt (:password user)))
+                       )
+                     udata)))))
+    
+  (catch Throwable t
+    (.printStackTrace t) 
+    (log/error (str "Problem loading users from [" USER-CONFIG-FILE "] : " t)))))
 
 
 
