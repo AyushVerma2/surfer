@@ -4,4 +4,5 @@
   "Ocean marketplace deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."},
  :operator {:name "DEX", :url "https://www.dex.sg"},
  :security {:user-config "surfer-users.edn"},
+ :http-port 8080
  :logging {}}

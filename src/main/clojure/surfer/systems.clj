@@ -5,22 +5,22 @@
       [http-kit :refer [new-web-server]]
    ;; [h2 :refer [new-h2-database DEFAULT-MEM-SPEC DEFAULT-DB-SPEC]]
      ]
-    [environ.core :refer [env]]
     [surfer.handler :refer [app]]
+    [surfer.config :refer [CONFIG]]
     [surfer.store :as store])
   (:require [clojure.tools.logging :as log]))
-
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(if (env :surfer-create-db) (store/create-db!) )
-(log/info "server running port:" (Integer/parseInt (or (env :http-port) 8080)))
+(def PORT (Integer/parseInt (str (or (CONFIG :http-port) 8080))))
+
+(log/debug "Server configured for port:" PORT)
 
 (defsystem base-system
   [;; :db (new-h2-database (select-database env) #(create-table! {} {:connection %}))
    :web (new-web-server 
-          (Integer/parseInt (or (env :http-port) 8080))
+          PORT
           #(surfer.handler/app %) ;; hack because system.components.http-kit need a fn? to use a handler directly
           )])
 

@@ -49,14 +49,14 @@
 ;; =========================================================
 ;; Test data generation
 
-(defn generate-test-data! 
-  "Generates basic test data setup"
+(defn generate-test-data!
+  ([] (generate-test-data! db)) 
   ([db]
     (register-user {:id "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
                     :username "test" 
                     :password (creds/hash-bcrypt "foobar")} )
     ;; Authorization: Basic dGVzdDpmb29iYXI=
-    
+  
     (register-user {:id "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
                     :username "Aladdin" 
                     :password (creds/hash-bcrypt "OpenSesame")})
@@ -70,11 +70,21 @@
                        :info {:title "Ocean Test Asset"
                               :custom "Some custom information"}})
     
-      (create-purchase {:userid "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
+      (let [assetid (register-asset (json/write-str {:name "Test Asset"
+                                                   :description "A sample asset for testing purposes"}))]
+        (create-listing {:id "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
+                         :userid "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
+                         :assetid assetid
+                         :info {:title "Ocean Test Asset"
+                                :custom "Some custom information"}})
+    
+        (create-purchase {:userid "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
                       :listingid "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102" 
-                      :info nil
+
+                        :info nil
                         :status "wishlist"})
-      )))
+      ) 
+)))
 
 ;; =========================================================
 ;; Asset management and metadata
@@ -92,8 +102,6 @@
                        :metadata asset-metadata-str
                        :utime (Instant/now)}))
       hash)))
-
-
 
 (defn lookup 
   "Gets the metadata string for a given Asset ID, or nil if not available."

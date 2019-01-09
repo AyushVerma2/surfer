@@ -17,7 +17,12 @@
            (pprint/pprint config))))
     (log/info "Default configuration created at: " CONFIG_PATH)))
 
-(def CONFIG (edn/read-string (slurp CONFIG_PATH)))
+(def DEFAULT-CONFIG
+  {:http-port 8080})
+
+(def CONFIG (merge 
+              DEFAULT-CONFIG
+              (edn/read-string (slurp CONFIG_PATH))))
 
 
 
