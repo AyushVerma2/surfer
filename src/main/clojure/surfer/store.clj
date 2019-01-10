@@ -15,7 +15,7 @@
   (:require [clojure.tools.logging :as log])
   (:import [java.time Instant]
            [java.util Date]))
-
+(declare get-user-by-name get-user)
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
