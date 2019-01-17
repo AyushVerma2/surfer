@@ -3,6 +3,9 @@
 host=localhost
 port=8080
 url="http://${host}:${port}/"
+user="one"
+password="11111"
+
 pidfile="$RESULTS/surfer.pid"
 outfile="$RESULTS/surfer.out"
 
@@ -25,9 +28,15 @@ echo $pid > $pidfile
 echo "started surfer as [$pid]"
 
 i=1
-n=30
+n=60
+# construct curl args
+args=""
+args="$args -s" # NOTE turning off silent mode is useful for debugging
+args="$args -m 3"
+args="$args -u ${user}:${password}"
+
 while [ $i -le $n ]; do
-    if curl -s -m 2 $url > /dev/null; then
+    if curl $args $url ; then
         echo "surfer is up"
         exit 0
     fi
