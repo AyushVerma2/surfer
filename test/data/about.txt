@@ -1,0 +1,6 @@
+Ocean Protocol is an ecosystem for sharing data and services.
+It provides a tokenized service layer that exposes data, storage, compute
+and algorithms for consumption with a set of deterministic proofs on
+availability and integrity that serve as verifiable service agreements.
+There is staking on services to signal quality, reputation and
+ward against Sybil Attacks.
