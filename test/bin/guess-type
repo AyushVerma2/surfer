@@ -1,0 +1,24 @@
+#!/bin/sh
+# guess-type FILENAME
+# outputs the guessed file content type based on the extension
+# DEPENDS: apt-get install mime-support gawk
+# defaults to application/octet-stream
+
+program=$(basename $0)
+
+filename="$1"
+defaulttype="application/octet-stream"
+
+if [ ! -e "$filename" ]; then
+    echo "${program}: file $filename does not exist"
+fi
+
+contenttype="$(see --debug --norun --nopager $filename 2>&1 | awk -F\" '/^Processing/ { print $4;}')"
+
+if [ -z "$contenttype" ]; then
+   contenttype="$defaulttype"
+fi
+
+echo "$contenttype"
+
+exit 0

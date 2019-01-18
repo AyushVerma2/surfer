@@ -8,7 +8,7 @@ Surfer provides a standalone reference implementation of an Ocean Agent with the
 - CKAN Dataset Import
 
 Surfer is a component of the Ocean Reference Marketplace, fulfilling the role of a Marketplace Agent.
-Marketplace operators are free to use Surfer or another compatible implementation of the relevant APIs 
+Marketplace operators are free to use Surfer or another compatible implementation of the relevant APIs
 for their marketplace.
 
 ## Motivation
@@ -17,7 +17,7 @@ An Ocean marketplace requires the use of one or more Ocean Agents that perform o
 Surfer provides an implementation of this functionality as a reference implementation for the ecosystem,
 and as a open source product that Marketplace operators can use.
 
-Surfer is designed so that it can be relatively easily configured and/or customised to support specific 
+Surfer is designed so that it can be relatively easily configured and/or customised to support specific
 requirements of a marketplace operator.
 
 ## Key functionality and use cases
@@ -26,7 +26,7 @@ requirements of a marketplace operator.
 
 The Meta API is an implementation of OEP 15, enabling access to asset metadata stored in surfer.
 
-Authentication for Meta API access is handled by the marketplace. Access control rules can be 
+Authentication for Meta API access is handled by the marketplace. Access control rules can be
 configured by the marketplace operator, however default recommended behaviour is:
 - metadata write access is restricted to registered marketplace users
 - metadata read access is public
@@ -139,12 +139,12 @@ Surfer may be used interactively at a Clojure REPL. Open a REPL in the 'surfer.c
 (def packs (take 10 (shuffle all))
 
 ;; We get something like:
-;; ("financial-transactions-data-darlington-primary-care-trust" "payment-recalls" 
-;; "local-air-quality-monitoring-stations1" "organogram-nhs-greater-east-midlands-csu" 
-;; "water-body-status-classification-south-west-awb" "bathymetric-survey-2002-07-31-liverpool-stages" 
-;; "bathymetric-survey-2003-12-10-heysham-entrance" 
-;; "distribution-of-ash-trees-in-woody-linear-features-in-great-britain" 
-;; "bathymetric-survey-2001-03-30-eyemouth-to-berwick-upon-tweed" 
+;; ("financial-transactions-data-darlington-primary-care-trust" "payment-recalls"
+;; "local-air-quality-monitoring-stations1" "organogram-nhs-greater-east-midlands-csu"
+;; "water-body-status-classification-south-west-awb" "bathymetric-survey-2002-07-31-liverpool-stages"
+;; "bathymetric-survey-2003-12-10-heysham-entrance"
+;; "distribution-of-ash-trees-in-woody-linear-features-in-great-britain"
+;; "bathymetric-survey-2001-03-30-eyemouth-to-berwick-upon-tweed"
 ;; "2004-2007-university-of-exeter-cornwall-and-the-isles-of-scilly-grey-seal-survey1")
 
 ;; Import the metadata for the CKAN packages and convert to ocean format
@@ -154,3 +154,27 @@ Surfer may be used interactively at a Clojure REPL. Open a REPL in the 'surfer.c
 
 ```
 
+### Running the CLI tests
+
+Here are the steps required to run the command line tests on
+an Ubuntu 18.04 LTS system:
+
+```
+$ mkdir -p ~/.ocean
+$ touch ~/.ocean/.timestamp   # ensure ~/.ocean is writable
+$ sudo apt-get update
+$ sudo apt-get upgrade
+$ sudo apt-get install git git-core openjdk-8-jdk maven
+$ sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
+$ mkdir -p src/github/DEX-Company
+$ cd src/github/DEX-Company
+$ git clone https://github.com/DEX-Company/surfer.git
+$ cd surfer
+$ mvn clean
+$ mvn dependency:list  # download artifacts the first time
+$ ./test/bin/cli-test
+```
+
+CLI test results can be found in target/cli-test/
+
+See also recent log entries in log/surfer.log
