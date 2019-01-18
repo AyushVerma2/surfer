@@ -11,7 +11,7 @@ outfile="$RESULTS/surfer.out"
 
 rm -f "$pidfile"
 
-jdkversion=$(java -version 2>&1 | head -1 | cut -d\" -f2)
+jdkversion=$(java -version 2>&1 | awk -F\" '/version/ { print $2;}')
 case "$jdkversion" in
     1.8*) true
           ;;
