@@ -255,81 +255,89 @@
     ;; Asset listings
 
     (POST "/listings" request
-             ;; :body-params [listing :- schemas/Listing]
-             :body [listing-body  (s/maybe schemas/Listing)]
-             :return schemas/Listing
-             :summary "Create a listing on the marketplace.
+      ;; :body-params [listing :- schemas/Listing]
+      :body [listing-body  (s/maybe schemas/Listing)]
+      :return schemas/Listing
+      :summary "Create a listing on the marketplace.
                        Marketplace will return a new listing record"
-             ;; (println (:body request) )
-             (let [listing (json-from-input-stream (:body request))
-                   userid (get-current-userid request)]
-               ;; (println listing)
-               (if userid
-                 (if-let [asset (store/lookup (:assetid listing))]
-                   (let [listing (assoc listing :userid userid)
-                        ;; _ (println userid)
-                        result (store/create-listing listing)]
-                    ;; (println result)
-                    {:status  200
-                     :headers {"Content-Type" "application/json"}
-                     :body    result
-                   })
-                   {:status 400
-                    :body "Invalid asset id - must register asset first"
-                    })
-                 {:status 401
-                  :body (str "Must be logged in as a user to create a listing")})))
+      ;; (println (:body request) )
+      (let [listing (json-from-input-stream (:body request))
+            userid (get-current-userid request)]
+        ;; (println listing)
+        (if userid
+          (if-let [asset (store/lookup (:assetid listing))]
+            (let [listing (assoc listing :userid userid)
+                  ;; _ (println userid)
+                  result (store/create-listing listing)]
+              ;; (println result)
+              {:status  200
+               :headers {"Content-Type" "application/json"}
+               :body    result
+               })
+            {:status 400
+             :body "Invalid asset id - must register asset first"
+             })
+          {:status 401
+           :body (str "Must be logged in as a user to create a listing")})))
 
 
-        (GET "/listings" request
-             :query-params [{username :- schemas/Username nil}
-                            {userid :- schemas/UserID nil} ]
-             :summary "Gets all current listings from the marketplace"
-             :return [schemas/Listing]
-             (let [userid (if (not (empty? username))
-                            (:id (store/get-user-by-name username))
-                            userid)
-                   opts (if userid {:userid userid} nil)
-                   listings (store/get-listings opts)]
-               {:status 200
-                :headers {"Content-Type" "application/json"}
-                :body listings}))
+    (GET "/listings" request
+      :query-params [{username :- schemas/Username nil}
+                     {userid :- schemas/UserID nil}
+                     {from :- schemas/From 0}
+                     {size :- schemas/Size 100}]
+      :summary "Gets all current listings from the marketplace"
+      :return [schemas/Listing]
+      (let [userid (if (not (empty? username))
+                     (:id (store/get-user-by-name username))
+                     userid)
+            opts (if userid {:userid userid} nil)
+            listings (store/get-listings opts)
+            total (if (empty? listings) 0 (count listings))]
+        (log/debug "GET /listings username" username "userid" userid
+                   "from" from "size" size)
+        {:status 200
+         :headers {"Content-Type" "application/json"
+                   "X-Ocean-From" from
+                   "X-Ocean-Size" size
+                   "X-Ocean-Total" total}
+         :body (take size (nthrest listings (* from size)))}))
 
     (GET "/listings/:id" [id]
-             :summary "Gets data for a specified listing"
-             :path-params [id :- schemas/ListingID]
-             :return schemas/Listing
-             (if-let [listing (store/get-listing id)]
-               {:status  200
-                :headers {"Content-Type" "application/json"}
-                :body    listing
-                }
-               (response/not-found (str "No listing found for id: " id))))
+      :summary "Gets data for a specified listing"
+      :path-params [id :- schemas/ListingID]
+      :return schemas/Listing
+      (if-let [listing (store/get-listing id)]
+        {:status  200
+         :headers {"Content-Type" "application/json"}
+         :body    listing
+         }
+        (response/not-found (str "No listing found for id: " id))))
 
     (PUT "/listings/:id" {{:keys [id]} :params :as request}
-             :summary "Updates data for a specified listing"
-             :path-params [id :- schemas/ListingID]
-             :body [listing-body  (s/maybe schemas/Listing)]
-             :return schemas/Listing
-             (let [listing (json-from-input-stream (:body request))
+      :summary "Updates data for a specified listing"
+      :path-params [id :- schemas/ListingID]
+      :body [listing-body  (s/maybe schemas/Listing)]
+      :return schemas/Listing
+      (let [listing (json-from-input-stream (:body request))
 
-                   ;; check the exitsing listing
-                   old-listing (store/get-listing id)
-                   _ (when (not old-listing) (throw (IllegalArgumentException. "Listing ID does not exist: ")))
+            ;; check the exitsing listing
+            old-listing (store/get-listing id)
+            _ (when (not old-listing) (throw (IllegalArgumentException. "Listing ID does not exist: ")))
 
-                   ownerid (:userid old-listing)
-                   userid (get-current-userid request)
+            ownerid (:userid old-listing)
+            userid (get-current-userid request)
 
-                   listing (merge old-listing listing) ;; merge changes. This allows single field edits etc.
-                   listing (assoc listing :id id) ;; ensure ID is present.
-                   ]
-               (if (= ownerid userid) ;; strong ownership enforcement!
-                 (let [new-listing (store/update-listing listing)]
-                   {:status 200
-                    :headers {"Content-Type" "application/json"}
-                    :body    new-listing})
-                 {:status 403
-                  :body "Can't modify listing: only listing owner can do so"})))
+            listing (merge old-listing listing) ;; merge changes. This allows single field edits etc.
+            listing (assoc listing :id id) ;; ensure ID is present.
+            ]
+        (if (= ownerid userid) ;; strong ownership enforcement!
+          (let [new-listing (store/update-listing listing)]
+            {:status 200
+             :headers {"Content-Type" "application/json"}
+             :body    new-listing})
+          {:status 403
+           :body "Can't modify listing: only listing owner can do so"})))
 
     ;; ==================================================
     ;; Asset purchases
