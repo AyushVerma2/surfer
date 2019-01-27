@@ -72,12 +72,12 @@
 		<dependency>
 			<groupId>org.clojure</groupId>
 			<artifactId>clojure</artifactId>
-			<version>1.9.0</version>
+			<version>1.10.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.clojure</groupId>
 			<artifactId>tools.analyzer</artifactId>
-			<version>0.6.9</version>
+			<version>0.7.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -149,7 +149,7 @@
 		<dependency>
 			<groupId>ring-middleware-format</groupId>
 			<artifactId>ring-middleware-format</artifactId>
-			<version>0.7.2</version>
+			<version>0.7.3</version>
 		</dependency>
 		<dependency>
 			<groupId>clj-http</groupId>
@@ -204,7 +204,7 @@
 		<dependency>
 			<groupId>ring-cors</groupId>
 			<artifactId>ring-cors</artifactId>
-			<version>0.1.12</version>
+			<version>0.1.13</version>
 		</dependency>
 	</dependencies>
 
