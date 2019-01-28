@@ -1,5 +1,7 @@
 # Surfer
 
+[![Build Status](https://dev.azure.com/dex-devops/miketest/_apis/build/status/DEX-Company.surfer?branchName=develop)](https://dev.azure.com/dex-devops/miketest/_build/latest?definitionId=1?branchName=develop)
+
 Surfer provides a standalone reference implementation of an Ocean Agent with the following capabilities:
 
 - Meta API for serving Ocean Asset Metadata
