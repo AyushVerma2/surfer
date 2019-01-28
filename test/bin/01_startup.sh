@@ -15,7 +15,13 @@ jdkversion=$(java -version 2>&1 | awk -F\" '/version/ { print $2;}')
 case "$jdkversion" in
     1.8*) true
           ;;
-    *) echo "error: only JDK 8 is supported, not $jdkversion"
+    1.9*) true
+          ;;
+    10.*) true
+          ;;
+    11.*) true
+          ;;
+    *) echo "error: only JDK 8 or later is supported, not $jdkversion"
        exit 1
        ;;
 esac
