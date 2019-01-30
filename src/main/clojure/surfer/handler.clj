@@ -291,17 +291,17 @@
       (let [userid (if (not (empty? username))
                      (:id (store/get-user-by-name username))
                      userid)
-            opts (if userid {:userid userid} nil)
-            listings (store/get-listings opts)
-            total (if (empty? listings) 0 (count listings))]
+            opts (assoc (if userid {:userid userid} {})
+                        :from from
+                        :size size)
+            listings (store/get-listings opts)]
         (log/debug "GET /listings username" username "userid" userid
                    "from" from "size" size)
         {:status 200
          :headers {"Content-Type" "application/json"
                    "X-Ocean-From" from
-                   "X-Ocean-Size" size
-                   "X-Ocean-Total" total}
-         :body (take size (nthrest listings (* from size)))}))
+                   "X-Ocean-Size" size}
+         :body listings}))
 
     (GET "/listings/:id" [id]
       :summary "Gets data for a specified listing"

@@ -113,6 +113,13 @@ if curl $args --header 'Content-Type: application/json' \
             && [ -e "$listingsfile.header" ] \
             && [ "200" = $(get_http_status "$listingsfile.header") ] ; then
     echo "DOWNLOADED LISTINGS from $from size $size"
+    resultsize=$(tr '"' '\n' < "$listingsfile" | fgrep assetid | wc -l)
+    if [ "$resultsize" = "$size" ]; then
+        echo "  EXPECTED RESULTS = $size"
+    else
+        echo "  UNEXPECTED RESULTS: $resultsize != $size"
+        fail=$(($fail + 1))
+    fi
 else
     echo "FAILED to DOWNLOAD LISTINGS"
     fail=$(($fail + 1))
