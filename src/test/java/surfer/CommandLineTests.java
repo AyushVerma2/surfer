@@ -16,8 +16,7 @@ public class CommandLineTests {
 
 	@Test public void testCommandLine() throws IOException, InterruptedException {
 		List<String> commands = new ArrayList<String>();
-		// commands.add("./test/bin/cli-test");
-		commands.add("/bin/true");
+		commands.add("./test/bin/cli-test");
 		ProcessBuilder pb = new ProcessBuilder(commands);
 		File cwd = new File(System.getProperty("user.dir"));
 		pb.directory(cwd);
@@ -32,7 +31,7 @@ public class CommandLineTests {
 		}
 
 		if (process.waitFor() == 0) {
-			// assertEquals("0 failures",previous);
+			assertEquals("0 failures",previous);
 		} else {
 			fail("command line tests failed:\n" + out.toString());
 		}

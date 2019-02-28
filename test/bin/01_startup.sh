@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# NOTE: assume surfer started by maven-surefire-plugin
+# exit 0
+set -x
+
 host=localhost
 port=8080
 url="http://${host}:${port}/"
@@ -28,13 +32,22 @@ esac
 echo "using java $jdkversion"
 
 cd "$CODE"
-CONFIG_PATH=test/resources/surfer-config.edn mvn install exec:java 2>&1 > $outfile &
+# cpfile="$RESULTS/cp.txt"
+cpfile="cp.txt"
+if [ ! -e "$cpfile" ]; then
+    mvn dependency:build-classpath -Dmdep.outputFile="$cpfile"
+fi
+
+mvn compile
+
+# CONFIG_PATH=test/resources/surfer-config.edn mvn install exec:java 2>&1 > $outfile &
+CONFIG_PATH=test/resources/surfer-config.edn java -cp "$(cat $cpfile):target/classes" clojure.main -m surfer.core  2>&1 > $outfile &
 pid=$!
 echo $pid > $pidfile
 echo "started surfer as [$pid]"
 
 i=1
-n=60
+n=40
 # construct curl args
 args=""
 args="$args -s" # NOTE turning off silent mode is useful for debugging
