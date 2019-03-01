@@ -9,8 +9,6 @@ set -e
 host=localhost
 port=8080
 url="http://${host}:${port}"
-user="one"
-password="11111"
 
 downloads="$RESULTS/downloads"
 mkdir -p "$downloads"
@@ -19,7 +17,7 @@ mkdir -p "$downloads"
 args=""
 args="$args -s" # NOTE turning off silent mode is useful for debugging
 args="$args -m 3"
-args="$args -u ${user}:${password}"
+args="$args -u ${USER}:${PASSWORD}"
 # The following get in trouble with quoting/evaluation...
 # args="$args --header 'Content-Type: application/json'"
 # args="$args --header 'Accept: application/json'"
