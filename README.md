@@ -156,6 +156,22 @@ Surfer may be used interactively at a Clojure REPL. Open a REPL in the 'surfer.c
 
 ```
 
+### Unit Tests
+
+```
+$ mvn test
+```
+
+### Integration Tests
+
+This target will run Unit tests and Integration tests.
+_NOTE:_ the command line tests will be elided on Windows.
+
+
+```
+$ mvn integration-test
+```
+
 ### Running the CLI tests
 
 Here are the steps required to run the command line tests on
@@ -174,6 +190,7 @@ $ git clone https://github.com/DEX-Company/surfer.git
 $ cd surfer
 $ mvn clean
 $ mvn dependency:list  # download artifacts the first time
+$ mvn install # compile
 $ ./test/bin/cli-test
 ```
 
