@@ -1,7 +1,7 @@
 from clojure:latest
 
 RUN apt-get update && \
-   apt-get install -y wget
+   apt-get install -y wget curl tar bash procps
 
 #ENV MAVEN_VERSION="3.6.0" \
 #    MAVEN_HOME=/opt/maven
@@ -15,7 +15,7 @@ RUN apt-get update && \
 
 # FROM openjdk:12-jdk-alpine
 
-RUN apt-get install curl tar bash procps
+# RUN apt-get install curl tar bash procps
 
 ARG MAVEN_VERSION=3.6.0
 ARG USER_HOME_DIR="/root"
