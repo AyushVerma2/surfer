@@ -98,7 +98,7 @@
 		<dependency>
 			<groupId>org.clojure</groupId>
 			<artifactId>tools.logging</artifactId>
-			<version>0.4.2</version>
+			<version>0.4.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.clojure</groupId>
@@ -108,7 +108,7 @@
 		<dependency>
 			<groupId>org.danielsz</groupId>
 			<artifactId>system</artifactId>
-			<version>0.4.1</version>
+			<version>0.4.2</version>
 		</dependency>
 		<dependency>
 			<groupId>http-kit</groupId>
