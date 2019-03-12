@@ -120,6 +120,11 @@
 			<artifactId>data.json</artifactId>
 			<version>0.2.6</version>
 		</dependency>
+		<dependency>
+			<groupId>org.clojure</groupId>
+			<artifactId>data.csv</artifactId>
+			<version>0.1.4</version>
+		</dependency>
 
 		<dependency>
 			<groupId>ring</groupId>
@@ -215,8 +220,8 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.22.0</version>
 				<configuration>
-                  <testFailureIgnore>true</testFailureIgnore>
-                </configuration>
+					<testFailureIgnore>true</testFailureIgnore>
+				</configuration>
 			</plugin>
 
 

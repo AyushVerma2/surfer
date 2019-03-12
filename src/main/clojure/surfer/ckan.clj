@@ -4,6 +4,9 @@
     [surfer.store :as store]
     [surfer.utils :as utils]
     [clojure.data.json :as json]
+    [clojure.data.csv :as csv]
+    [clojure.string :as str]
+    [clojure.java.io :as io]
     )
   (:import [java.time Instant]
            [java.util Date]))
@@ -116,3 +119,63 @@
   "Gets the data for a given resource"
   [resource]
   ((client/get (resource "url")) :body))
+
+(defn ludo-meta [pack]
+  (let [ne #(if (empty? %) nil %)
+        base {"name" (or (ne (:name pack)) 
+                         "No name specified")
+              "author" (or (ne (:author pack)) 
+                           (ne (:name (:organization pack))) 
+                           (ne (:description (:organization pack))) 
+                           "No author specified")
+              "dateCreated" (.toString (Instant/now))
+              "license" (or (ne (:license_id pack)) 
+                            "No License Specified")
+              "price" 0
+              "tags" (str/join "," (mapv :display_name (:tags pack)))
+              "type" "dataset"
+              "description" (or (ne (:description pack)) "No description")
+              }
+        files (map :url (:resources pack))
+        meta (reduce (fn [m [i url]]
+                        (assoc m (str "files[" i "]:url") url)) 
+                     base
+                     (take 5 (zipmap (next (range)) files)))]
+    meta))
+
+(defn ludo-export [repo]
+  (let [package-names (take 100 (package-list repo))
+        packages (map #(package-show repo %) package-names)
+        exports (map ludo-meta packages)
+        headers ["name" 
+                 "<local>" 
+                 "<process>"
+                 "<set public>"
+                 "<register>"
+                 "<reset>"
+                 "<delete>"
+                 "dateCreated"
+                 "author"
+                 "license"
+                 "contentType"
+                 "price"
+                 "categories"
+                 "tags"
+                 "type"
+                 "description"
+                 "copyRightHolder"
+                 "encoding"
+                 "compression"
+                 "workExample"
+                 "inLanguage"
+                 "files[1]:url"
+                 "files[2]:url"
+                 "files[3]:url"
+                 "files[4]:url"
+                 "files[5]:url"]
+        rows (mapv (fn [ex]
+                     (for [h headers] (or (ex h) ""))) exports)
+        output (apply mapv vector (cons headers rows))]
+    (with-open [writer (io/writer "output.csv")]
+      (csv/write-csv writer output)))
+  )
