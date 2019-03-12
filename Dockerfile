@@ -27,7 +27,6 @@ ENV HTTP_PORT 8080
 RUN free
 RUN java -version
 RUN mvn -v
-RUN mvn dependency:list
 RUN mvn clean install
 
 EXPOSE 8080
