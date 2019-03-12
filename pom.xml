@@ -2,9 +2,9 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.oceanprotocol</groupId>
+	<groupId>sg.dex</groupId>
 	<artifactId>surfer</artifactId>
-	<version>0.1.1-SNAPSHOT</version>
+	<version>0.1.0</version>
 
 	<properties>
 		<maven.compiler.target>1.8</maven.compiler.target>
@@ -50,9 +50,9 @@
 	</distributionManagement>
 
 	<scm>
-		<connection>scm:git:git@github.com:oceanprotocol/${project.artifactId}.git</connection>
-		<url>scm:git:git@github.com:oceanprotocol/${project.artifactId}.git</url>
-		<developerConnection>scm:git:git@github.com:oceanprotocol/${project.artifactId}.git</developerConnection>
+		<connection>scm:git:git@github.com:DEX-Company/${project.artifactId}.git</connection>
+		<url>scm:git:git@github.com:DEX-Company/${project.artifactId}.git</url>
+		<developerConnection>scm:git:git@github.com:DEX-Company/${project.artifactId}.git</developerConnection>
 		<tag>HEAD</tag>
 	</scm>
 
@@ -173,7 +173,7 @@
 		</dependency>
 
 		<!-- <dependency> -->
-		<!-- <groupId>com.oceanprotocol</groupId> -->
+		<!-- <groupId>sg.dex</groupId> -->
 		<!-- <artifactId>ocean-java</artifactId> -->
 		<!-- <version>0.0.1-SNAPSHOT</version> -->
 		<!-- </dependency> -->
@@ -220,8 +220,27 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.22.0</version>
 				<configuration>
-					<testFailureIgnore>true</testFailureIgnore>
+					<excludes>
+						<exclude>**/*IntegrationTests.java</exclude>
+					</excludes>
 				</configuration>
+				<executions>
+					<execution>
+						<id>integration-test</id>
+						<goals>
+							<goal>test</goal>
+						</goals>
+						<phase>integration-test</phase>
+						<configuration>
+							<excludes>
+								<exclude>none</exclude>
+							</excludes>
+							<includes>
+								<include>**/*IntegrationTests.java</include>
+							</includes>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 
 
@@ -236,7 +255,6 @@
 						</goals>
 					</execution>
 				</executions>
-
 				<configuration>
 					<mainClass>clojure.main</mainClass>
 					<arguments>
@@ -244,7 +262,6 @@
 						<argument>surfer.core</argument>
 					</arguments>
 				</configuration>
-
 			</plugin>
 		</plugins>
 

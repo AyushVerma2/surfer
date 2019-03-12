@@ -54,7 +54,7 @@
     {:example "2018-11-26T13:27:45.542Z"
      :description "A timestamp defining an instant in UTC time (ISO-8601)"}))
 
-(s/defschema TokenValue 
+(s/defschema TokenValue
   (rjs/field
     (s/constrained s/Str u/valid-token-value? "Valid Token Value (decimal string)")
     {:example "1.0"
@@ -75,7 +75,7 @@
           ))
 
 (s/defschema AssetType
-  (rjs/field 
+  (rjs/field
     (s/enum "dataset", "algorithm", "bundle", "workflow", "other")
     {:example "dataset"
      :description "The fundamental class of asset being considered."}))
@@ -126,6 +126,18 @@
    s/Keyword s/Any
    })
 
+(s/defschema From
+  (rjs/field
+    s/Int
+    {:example 0
+     :description "Display results from this page (zero based, default 0)"}))
+
+(s/defschema Size
+  (rjs/field
+    s/Int
+    {:example 100
+     :description "Display results with this page size (default 100)"}))
+
 ;; ============================================================
 ;; Purchases
 
@@ -141,4 +153,3 @@
    (s/optional-key :agreement) (s/maybe Agreement)
    (s/optional-key :ctime) (s/maybe Instant)
    (s/optional-key :utime) (s/maybe Instant)})
-
