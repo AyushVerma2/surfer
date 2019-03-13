@@ -143,39 +143,42 @@
                      (take 5 (zipmap (next (range)) files)))]
     meta))
 
-(defn ludo-export [repo]
-  (let [package-names (take 100 (package-list repo))
-        packages (map #(package-show repo %) package-names)
-        exports (map ludo-meta packages)
-        headers ["name" 
-                 "<local>" 
-                 "<process>"
-                 "<set public>"
-                 "<register>"
-                 "<reset>"
-                 "<delete>"
-                 "dateCreated"
-                 "author"
-                 "license"
-                 "contentType"
-                 "price"
-                 "categories"
-                 "tags"
-                 "type"
-                 "description"
-                 "copyRightHolder"
-                 "encoding"
-                 "compression"
-                 "workExample"
-                 "inLanguage"
-                 "files[1]:url"
-                 "files[2]:url"
-                 "files[3]:url"
-                 "files[4]:url"
-                 "files[5]:url"]
-        rows (mapv (fn [ex]
-                     (for [h headers] (or (ex h) ""))) exports)
-        output (apply mapv vector (cons headers rows))]
-    (with-open [writer (io/writer "output.csv")]
-      (csv/write-csv writer output)))
+(defn ludo-export 
+  ([repo]
+    (ludo-export repo 10))
+  ([repo num]
+    (let [package-names (take num (package-list repo))
+          packages (map #(package-show repo %) package-names)
+          exports (map ludo-meta packages)
+          headers ["name" 
+                   "<local>" 
+                   "<process>"
+                   "<set public>"
+                   "<register>"
+                   "<reset>"
+                   "<delete>"
+                   "dateCreated"
+                   "author"
+                   "license"
+                   "contentType"
+                   "price"
+                   "categories"
+                   "tags"
+                   "type"
+                   "description"
+                   "copyRightHolder"
+                   "encoding"
+                   "compression"
+                   "workExample"
+                   "inLanguage"
+                   "files[1]:url"
+                   "files[2]:url"
+                   "files[3]:url"
+                   "files[4]:url"
+                   "files[5]:url"]
+          rows (mapv (fn [ex]
+                       (for [h headers] (or (ex h) ""))) exports)
+          output (apply mapv vector (cons headers rows))]
+      (with-open [writer (io/writer "output.csv")]
+      (csv/write-csv writer output))))
   )
