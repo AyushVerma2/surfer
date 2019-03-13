@@ -121,7 +121,7 @@
   ((client/get (resource "url")) :body))
 
 (defn ludo-meta [pack]
-  (let [ne #(if (empty? %) nil %)
+  (let [ne #(if (empty? %) nil %) ;; helper function to detect non-empty elements
         base {"name" (or (ne (:name pack)) 
                          "No name specified")
               "author" (or (ne (:author pack)) 
