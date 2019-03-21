@@ -483,9 +483,12 @@
                 (apply str
                        (mapv
                          (fn [id]
-                           (let [j (json/read-str (store/lookup id))
+                           (try
+                             (let [j (json/read-str (store/lookup id))
                                  title (j "title")]
-                             (str "<a href=\"api/v1/meta/data/" id "\">" id " - " title "<br/>\n")))
+                               (str "<a href=\"api/v1/meta/data/" id "\">" id " - " title "<br/>\n"))
+                             (catch Throwable t
+                               (str t "<br/>\n"))))
                          (store/all-keys)))
                 "</body>"
                 ))
