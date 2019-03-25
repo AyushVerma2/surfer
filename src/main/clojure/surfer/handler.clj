@@ -60,7 +60,7 @@
                     :description "Meta API for Ocean Marketplace"}
              :tags [{:name "Meta API", :description "Meta API for Ocean Marketplace"}]
              ;;:consumes ["application/json"]
-             :produces ["application/json"]
+
              }}}
 
     (GET "/data/" request
@@ -120,8 +120,8 @@
      {:data {:info {:title "Storage API"
                     :description "Storage API for Ocean Marketplace"}
              :tags [{:name "Storage API", :description "Storage API for Ocean Marketplace"}]
-             ;;:consumes ["application/json"]
-           ;;:produces ["application/json"]
+             ;; :consumes ["application/json"]
+             :produces ["application/json"]
            }}}
 
     (GET "/:id" [id]
@@ -465,6 +465,104 @@
                (response/response "Successful")))
     ))
 
+;; ==========================================
+;; Authentication API
+
+(defn response-json [body]
+  {:status  200
+   :headers {"Content-Type" "application/json"}
+   :body    body})
+
+(def auth-api
+  (routes
+    {:swagger
+     {:data {:info {:title "Authentication API"
+                    :description "Authentication API for Ocean Marketplace"}
+             :tags [{:name "Authentication API",
+                     :description "Authentication API for Ocean Marketplace"}]
+             :produces ["application/json"]}}}
+
+    (GET "/token/" request
+        :summary "Gets a list of tokens"
+        :coercion nil
+        :return [schemas/OAuth2Token]
+        (let [userid (get-current-userid request)]
+          (if (nil? userid)
+            (response/status (response/response "User not authenticated") 401)
+            (response-json (store/all-tokens userid)))))
+
+    (POST "/token" request
+        :summary "Creates a new OAuth2Token"
+        :coercion nil
+        :return schemas/OAuth2Token
+        (let [userid (get-current-userid request)]
+          (if (nil? userid)
+            (response/status (response/response "User not authenticated") 401)
+            (response/response (str "\"" (store/create-token userid) "\"")))))
+
+    (DELETE "/token/:token" request
+        :summary "Deletes a token"
+        :coercion nil
+        :path-params [token :- schemas/OAuth2Token]
+        :return s/Bool
+        (let [userid (get-current-userid request)]
+          (if (nil? userid)
+            (response/status (response/response "User not authenticated") 401)
+            (let [result (store/delete-token userid token)]
+              (if-not result
+                (response/not-found "Token not found.")
+                (response-json (str result)))))))
+
+    ;; Synonym for DELETE for use in the web form (only)
+    (POST "/token/:token" request
+        :summary "Deletes a token (via web form)"
+        :path-params [token :- schemas/OAuth2Token]
+        :return s/Bool
+        :coercion nil
+        (let [userid (get-current-userid request)]
+          (if (nil? userid)
+            (response/status (response/response "User not authenticated") 401)
+            (let [result (store/delete-token userid token)]
+              (if-not result
+                (response/not-found "Token not found.")
+                (response-json (str result)))))))))
+
+(defn tokens-page [request]
+  (let [userid (get-current-userid request)
+        tokens (if userid (store/all-tokens userid) [])
+        header (str "<html><head><style type=\"text/css\">"
+                    "html {"
+                    "  font-family: 'courier new', monospace;"
+                    "}"
+                    "table {"
+                    "  border-style: none;"
+  	            "  border-spacing: 0px;"
+                    "}"
+                    "td {"
+	            "  border-style: none;"
+                    "  text-align: center;"
+                    "  padding: 1em 1em 0em 1em;"
+                    "}"
+                    "td.token {"
+                    "  padding: 0em 1em 0em 0em;"
+                    "}"
+                    "</style></head><body>\n")
+        tokens-html (apply
+                     str
+                     (for [token tokens]
+                       (str "<tr><td class=\"token\">" token
+                            "</td><td><form action=\"/api/v1/auth/token/"
+                            token
+                            "\" enctype=\"text/plain\" method=\"POST\"><input type=\"submit\" value=\"delete\"></form></td></tr>\n")))
+        add-button "<hr><form action=\"/api/v1/auth/token\" enctype=\"text/plain\" method=\"POST\"><input type=\"submit\" value=\"add\"></form>"
+        body (str header
+                  "<table>\n"
+                  tokens-html
+                  "</table>\n"
+                  add-button
+                  "\n</body></html")]
+    (response/response body)))
+
 (def api-routes
   (api
     {:api {:invalid-routes-fn nil} ;; supress warning on child routes
@@ -493,10 +591,11 @@
                 "</body>"
                 ))
 
+    (GET "/tokens" [] tokens-page)
+
     (context "/api/v1/meta" []
       :tags ["Meta API"]
       meta-api)
-
 
     (context "/api/v1/assets" []
       :tags ["Storage API"]
@@ -514,6 +613,10 @@
       :tags ["Market Admin API"]
       admin-api)
 
+    (context "/api/v1/auth" []
+      :tags ["Authentication API"]
+      auth-api)
+
    ;; (response/not-found "404")
     ))
 
@@ -524,6 +627,7 @@
                    <p><a href='/assets'>Explore imported asset list</a></p>
                    <p><a href='/api-docs'>API Documentation</a></p>
                    <p><a href='/echo'>Echo request body</a></p>
+                   <p><a href='/tokens'>Tokens</a></p>
                  </body>")
 
     (GET "/echo" request (str request))))
@@ -539,6 +643,30 @@
                           :roles #{:user :admin}}}))
 
 
+(defn pp-debug [tag m]
+  (log/debug tag \newline (with-out-str (clojure.pprint/pprint m)))
+  m)
+
+(defn debug-handler [handler step]
+  (fn [req]
+    (log/debug "DEBUG HANDLER BEFORE" step)
+    (pp-debug :req req)
+    (try
+      (let [rv (handler req)]
+      (log/debug "DEBUG HANDLER AFTER" step)
+      rv)
+      (catch IllegalArgumentException e
+        (log/debug "BROWSER CLOSED")
+        {}))))
+
+(defn wrap-cache-buster
+  "Prevents any and all HTTP caching by adding a Cache-Control header
+  that marks contents as private and non-cacheable."
+  [handler]
+  (fn wrap-cache-buster-handler [response]
+    (response/header (handler response)
+                     "cache-control" "private, max-age=0, no-cache")))
+
 (def AUTH_REALM "OceanRM")
 
 (defn surfer-credential-function
@@ -547,31 +675,46 @@
    Accepts a friend credential map as sole input.
 
    Returns an authentication map, including the :identity and :roles set"
-  ([creds]
-    (or (creds/bcrypt-credential-fn @users creds)
-        (if-let [username (:username creds)]
-          (let [password (:password creds)
-                user (store/get-user-by-name username)]
-            (when (and
-                    user
-                    (= password (:password user))
-                    (= "Active" (:status user))))
-            {:identity username
-             :roles #{:user}
-             :userid (:id user)})))))
+  [creds]
+  (let [{:keys [username password]} creds
+        _ (log/debug (str "SCF BEGIN username: \"" username
+                          "\" password: \"" password "\"" ))
+        rv
+        (or (and (not (empty? username))
+                 (not (empty? password))
+                 (creds/bcrypt-credential-fn @users creds))
+            (let [user (store/get-user-by-name username)]
+              (when (and user
+                         (= password (:password user))
+                         (= "Active" (:status user)))
+                (log/debug "SCF VALID:" user)
+                {:identity username
+                 :roles #{:user}
+                 :userid (:id user)})))]
+    (log/debug (str "SCF for username: \"" username "\" returns: " rv))
+    rv))
+
+(def workflow-http-basic
+  (workflows/http-basic :realm AUTH_REALM))
+
+(def http-basic-deny
+  (partial workflows/http-basic-deny AUTH_REALM))
+
+(def auth-config
+  {:allow-anon?             false
+   :credential-fn           surfer-credential-function
+   :workflows               [workflow-http-basic]
+   :unauthenticated-handler http-basic-deny
+   :unauthorized-handler    http-basic-deny})
 
 (defn api-auth-middleware
   "Middlware for API authentications"
   ([handler]
-  (-> handler
-    (friend/wrap-authorize #{:user :admin})
-    (friend/authenticate {:credential-fn surfer-credential-function
-                          :workflows [(workflows/http-basic
-                                         ;; :credential-fn surfer-credential-function
-                                        :realm AUTH_REALM)
-                                        :unauthorized-handler #(workflows/http-basic-deny "Friend demo" %)
-                                        :unauthenticated-handler #(workflows/http-basic-deny "Friend demo" %)
-                                       ]}))))
+   (-> handler
+       (wrap-cache-buster)
+       (debug-handler :routes)
+       (friend/wrap-authorize #{:user :admin})
+       (friend/authenticate auth-config))))
 
 ;; =====================================================
 ;; Main routes

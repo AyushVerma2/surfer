@@ -138,6 +138,11 @@
   ([id]
     (valid-id? id 64)))
 
+(defn valid-oauth2-token?
+  "Returns true iff given a valid OAuth2 token string."
+  ([id]
+    (valid-id? id 64)))
+
 (defn parse-bigdecimal
   "Attempts to parse a string to a BigDecimal value. Returns nil if not possible."
   ([s]

@@ -66,7 +66,7 @@ echo "using java $jdkversion"
 
 cd "$CODE"
 
-CONFIG_PATH=test/resources/surfer-config.edn mvn exec:java > $outfile 2>&1 &
+CONFIG_PATH=test/resources/surfer-config.edn mvn exec:java -B > $outfile 2>&1 &
 pid=$!
 echo $pid > $pidfile
 echo "started surfer as [$pid]"

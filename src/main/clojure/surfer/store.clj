@@ -270,10 +270,11 @@
   "Gets a user map from the data store.
    Returns nil if not found"
   ([^String username]
-    (let [rs (jdbc/query db ["select * from Users where username = ?" username])]
-      (if (empty? rs)
-        nil ;; user not found
-        (first rs)))))
+   (if-not (empty? username)
+     (let [rs (jdbc/query db ["select * from Users where username = ?" username])]
+       (if (empty? rs)
+         nil ;; user not found
+         (first rs))))))
 
 (defn get-users
   "Lists all users of the marketplace.
@@ -509,4 +510,47 @@
                         :info nil
                         :status "wishlist"})
       )
-)))
+      )))
+
+;; ===================================================
+;; Authentication API
+
+;; returns nilable schemas/UserID
+(defn get-userid-by-token
+  "Return userid for this token (else nil)."
+  [token]
+  (let [sql "SELECT userid FROM tokens WHERE token = ?;"
+        rs (jdbc/query db [sql token])
+        userid (-> rs first :userid)]
+    (log/debug "get-userid-by-token" token "USERID:" userid)
+    userid))
+
+;; returns [schemas/OAuth2Token]
+(defn all-tokens
+  "Returns a list of all tokens for this user."
+  [userid]
+  (let [sql "SELECT tokens.token FROM tokens JOIN users ON tokens.userid = users.id WHERE users.id = ?;"
+        rs (jdbc/query db [sql userid])
+        tokens (mapv :token rs)]
+    (log/debug "all-tokens" userid "TOKENS:" tokens)
+    tokens))
+
+;; returns schemas/OAuth2Token
+(defn create-token
+  "Create an OAuth2Token for this user."
+  [userid]
+  (let [token (u/new-random-id)
+        sql "INSERT INTO tokens (token, userid) VALUES (?, ?);"
+       rs (jdbc/execute! db [sql token userid])] ;; expect '(1)
+    (log/debug "create-token" userid "TOKEN:" token)
+    token))
+
+;; returns s/Bool
+(defn delete-token
+  "Deletes an OAuth2Token for this user."
+  [userid token]
+  (let [sql "token = ?"
+        rs (jdbc/delete! db :tokens [sql token])
+        success (= (first rs) 1)]
+    (log/debug "delete-token" userid "TOKEN:" token "RS:" rs)
+    success))
