@@ -257,6 +257,20 @@
 ;; ===================================================
 ;; User management
 
+(defn unpack-user-metadata
+  "Inflates status and roles slots in a user map from metadata"
+  [user]
+  (let [metadata-str (or (:metadata user) "{}")
+        metadata (json/read-str metadata-str :key-fn keyword)
+        {:keys [status roles]} metadata
+        status (or status "Active")
+        roles (set (map keyword (or roles #{:user})))
+        user' (assoc user
+                     :metadata (dissoc metadata :status :roles)
+                     :status status
+                     :roles roles)]
+    user'))
+
 (defn get-user
   "Gets a user map from the data store.
    Returns nil if not found"
@@ -264,7 +278,7 @@
     (let [rs (jdbc/query db ["select * from Users where id = ?" id])]
       (if (empty? rs)
         nil ;; user not found
-        (first rs)))))
+        (unpack-user-metadata (first rs))))))
 
 (defn get-user-by-name
   "Gets a user map from the data store.
@@ -274,7 +288,7 @@
      (let [rs (jdbc/query db ["select * from Users where username = ?" username])]
        (if (empty? rs)
          nil ;; user not found
-         (first rs))))))
+         (unpack-user-metadata (first rs)))))))
 
 (defn get-users
   "Lists all users of the marketplace.
@@ -297,35 +311,27 @@
    Returns the new user ID, or nil if creation failed - most likely due to
    user alreday existing in  database"
   ([user-data]
-    (let [id (or (:id user-data) (u/new-random-id))
-          username (:username user-data)
-          rs (jdbc/query db ["select * from Users where id = ?" id])
-          rs2 (jdbc/query db ["select * from Users where username = ?" username])]
+   (let [{:keys [id username password metadata status roles]} user-data
+         id (or id (u/new-random-id))
+         rs (jdbc/query db ["select * from Users where id = ?" id])
+         rs2 (jdbc/query db ["select * from Users where username = ?" username])
+         status (or status "Active")
+         roles (or roles #{:user})
+         metadata (merge (or metadata {})
+                         {:status status
+                          :roles roles})]
       (when (and (empty? rs) (empty? rs2))
         (jdbc/insert! db "Users"
                       {:id id
                        :username username
-                       :password (:password user-data)
-                       :status "Active"
-                       :metadata (json/write-str (or (:metadata user-data) {}))
+                       :password password
+                       :status status
+                       :metadata (json/write-str metadata)
                        :ctime (Instant/now)})
          id))))
 
 ;; ============================================================
 ;; database state update
-
-(try
-  (when-let [users USER-CONFIG]
-    (log/info "Starting user auto-registration")
-    (doseq [{:keys [username id password] :as user} users]
-      (cond
-        (not username) (log/info "No :username provided in user-config!")
-        (get-user-by-name username) (log/info (str "User already registered: " username))
-        (and id (get-user id)) (log/info (str "User ID already exists: " id))
-        :else (do (register-user user)
-                (log/info (str "Auto-registered default user:" username))))))
-  (catch Throwable t
-    (log/error (str "Problem auto-registering default users: " t))))
 
 ;; FIXME move loading config to a deliberate "system" initialization
 (try

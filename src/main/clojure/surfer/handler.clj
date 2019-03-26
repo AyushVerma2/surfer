@@ -6,6 +6,7 @@
     [ring.swagger.upload :as upload]
     [ring.middleware.multipart-params :refer [wrap-multipart-params]]
     [ring.middleware.cors :refer [wrap-cors]]
+    [ring.middleware.params :refer [wrap-params]]
     [surfer.store :as store]
     [ocean.schemas :as schemas]
     [surfer.storage :as storage]
@@ -22,7 +23,8 @@
     [cemerick.friend [workflows :as workflows]
                      [credentials :as creds]]
     [clojure.tools.logging :as log])
-  (:import [java.io InputStream]))
+  (:import [java.io InputStream]
+           [org.apache.commons.codec.binary Base64]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -482,6 +484,17 @@
                      :description "Authentication API for Ocean Marketplace"}]
              :produces ["application/json"]}}}
 
+    (GET "/user" request
+        :summary "Gets currently logged in user"
+        :coercion nil
+        :return s/Any ;; FIXME user record
+        (let [userid (get-current-userid request)
+              user (if userid
+                     (dissoc (store/get-user userid) :password :ctime))]
+          (if (nil? userid)
+            (response/status (response/response "User not authenticated") 401)
+            (response-json (json/write-str user)))))
+
     (GET "/token/" request
         :summary "Gets a list of tokens"
         :coercion nil
@@ -560,7 +573,13 @@
                   tokens-html
                   "</table>\n"
                   add-button
-                  "\n</body></html")]
+                  "\n</body></html>")]
+    (response/response body)))
+
+(defn logout-page [request]
+  (let [body (str "<html><body>\n"
+                  "logged out\n"
+                  "</body></html>\n")]
     (response/response body)))
 
 (def api-routes
@@ -592,6 +611,8 @@
                 ))
 
     (GET "/tokens" [] tokens-page)
+
+    (GET "/logout" [] logout-page)
 
     (context "/api/v1/meta" []
       :tags ["Meta API"]
@@ -628,6 +649,7 @@
                    <p><a href='/api-docs'>API Documentation</a></p>
                    <p><a href='/echo'>Echo request body</a></p>
                    <p><a href='/tokens'>Tokens</a></p>
+                   <p><a href='/logout'>Logout</a> (click SignIn with no username/password, then Cancel)</p>
                  </body>")
 
     (GET "/echo" request (str request))))
@@ -641,23 +663,6 @@
                   "Aladdin" {:username "Aladdin"
                           :password (creds/hash-bcrypt "OpenSesame")
                           :roles #{:user :admin}}}))
-
-
-(defn pp-debug [tag m]
-  (log/debug tag \newline (with-out-str (clojure.pprint/pprint m)))
-  m)
-
-(defn debug-handler [handler step]
-  (fn [req]
-    (log/debug "DEBUG HANDLER BEFORE" step)
-    (pp-debug :req req)
-    (try
-      (let [rv (handler req)]
-      (log/debug "DEBUG HANDLER AFTER" step)
-      rv)
-      (catch IllegalArgumentException e
-        (log/debug "BROWSER CLOSED")
-        {}))))
 
 (defn wrap-cache-buster
   "Prevents any and all HTTP caching by adding a Cache-Control header
@@ -676,23 +681,43 @@
 
    Returns an authentication map, including the :identity and :roles set"
   [creds]
-  (let [{:keys [username password]} creds
-        _ (log/debug (str "SCF BEGIN username: \"" username
-                          "\" password: \"" password "\"" ))
-        rv
-        (or (and (not (empty? username))
-                 (not (empty? password))
-                 (creds/bcrypt-credential-fn @users creds))
-            (let [user (store/get-user-by-name username)]
-              (when (and user
-                         (= password (:password user))
-                         (= "Active" (:status user)))
-                (log/debug "SCF VALID:" user)
-                {:identity username
-                 :roles #{:user}
-                 :userid (:id user)})))]
-    (log/debug (str "SCF for username: \"" username "\" returns: " rv))
-    rv))
+  (let [{:keys [username password]} creds]
+    (or (and (not (empty? username))
+             (not (empty? password))
+             (creds/bcrypt-credential-fn @users creds))
+        (let [user (store/get-user-by-name username)]
+          (when (and user
+                     (= password (:password user))
+                     (= "Active" (:status user)))
+            {:identity username
+             :roles (:roles user)
+             :userid (:id user)})))))
+
+(defn workflow-logout
+  "Workflow to log out of basic authentication"
+  [request]
+  (let [{:keys [uri]} request]
+    (if (= uri "/logout")
+      (workflows/http-basic-deny AUTH_REALM request))))
+
+(defn workflow-oauth2
+  "Workflow to check for an OAuth2 token"
+  [request]
+  (let [{:keys [headers params]} request
+        {:strs [authorization]} headers
+        {:strs [access_token]} params
+        match (and authorization (re-matches #"\s*token\s+(.+)" authorization))
+        token (or (if match (second match)) access_token)
+        userid (if token (store/get-userid-by-token token))
+        user (if userid (store/get-user userid))]
+    (when (and user (= "Active" (:status user)))
+      (workflows/make-auth
+       {:identity (:username user)
+        :roles (:roles user)
+        :userid (:id user)}
+       {::friend/workflow :oauth2
+        ::friend/redirect-on-auth? false
+        ::friend/ensure-session false}))))
 
 (def workflow-http-basic
   (workflows/http-basic :realm AUTH_REALM))
@@ -703,7 +728,9 @@
 (def auth-config
   {:allow-anon?             false
    :credential-fn           surfer-credential-function
-   :workflows               [workflow-http-basic]
+   :workflows               [workflow-logout
+                             workflow-oauth2
+                             workflow-http-basic]
    :unauthenticated-handler http-basic-deny
    :unauthorized-handler    http-basic-deny})
 
@@ -712,7 +739,6 @@
   ([handler]
    (-> handler
        (wrap-cache-buster)
-       (debug-handler :routes)
        (friend/wrap-authorize #{:user :admin})
        (friend/authenticate auth-config))))
 
@@ -729,10 +755,8 @@
          #(wrap-cors % :access-control-allow-origin #".*"
                        :access-control-allow-credentials true
                        :access-control-allow-methods [:get :put :post :delete :options])
-         api-auth-middleware
-         )
-     )
-   ))
+         wrap-params
+         api-auth-middleware))))
 
 (def app
   (-> all-routes
