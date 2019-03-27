@@ -495,7 +495,7 @@
             (response/status (response/response "User not authenticated") 401)
             (response-json (json/write-str user)))))
 
-    (GET "/token/" request
+    (GET "/token" request
         :summary "Gets a list of tokens"
         :coercion nil
         :return [schemas/OAuth2Token]
@@ -687,8 +687,8 @@
              (creds/bcrypt-credential-fn @users creds))
         (let [user (store/get-user-by-name username)]
           (when (and user
-                     (= password (:password user))
-                     (= "Active" (:status user)))
+                     (= "Active" (:status user))
+                     (creds/bcrypt-verify password (:password user)))
             {:identity username
              :roles (:roles user)
              :userid (:id user)})))))

@@ -2,7 +2,7 @@
   :password "11111"}
  {:username "two"
   :password "22222"
-  :roles #{:user :admin}
+
   :status "Active"}
  {:username "three"
   :password "3333"

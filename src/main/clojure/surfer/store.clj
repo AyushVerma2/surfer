@@ -321,6 +321,7 @@
                          {:status status
                           :roles roles})]
       (when (and (empty? rs) (empty? rs2))
+        (log/debug "register-user username:" username "id:" id)
         (jdbc/insert! db "Users"
                       {:id id
                        :username username

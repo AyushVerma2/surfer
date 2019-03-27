@@ -25,13 +25,13 @@
 (def DEFAULT-CONFIG
   {:http-port 8080})
 
-(def CONFIG (merge 
+(def CONFIG (merge
               DEFAULT-CONFIG
               LOADED-CONFIG))
 
 (def USER-CONFIG-FILE (get-in CONFIG [:security :user-config]))
 
-(defn load-userfile 
+(defn load-userfile
   [^File userfile]
   (let [udata (edn/read-string (slurp userfile))]
     ;; we need to hash the passwords. Do this here to avoid potential leaks
@@ -42,13 +42,13 @@
 
 (def DEFAULT-USER-DATA
   [{:id "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
-    :username "test" 
+    :username "test"
     :password (utils/new-random-id 16)}
    {:id "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
-    :username "Aladdin" 
+    :username "Aladdin"
     :password (utils/new-random-id 16)}])
 
-(def USER-CONFIG 
+(def USER-CONFIG
   (try
     (when-let [userfile (io/file USER-CONFIG-FILE)]
       (when (not (.exists userfile))
@@ -57,12 +57,9 @@
         (with-open [writer (io/writer USER-CONFIG-FILE)]
           (binding [*out* writer]
             (pprint/pprint DEFAULT-USER-DATA))
-          (log/info (str "Created default user configuration file: " USER-CONFIG-FILE))))  
+          (log/info (str "Created default user configuration file: " USER-CONFIG-FILE))))
       (load-userfile userfile))
-    
+
   (catch Throwable t
-    (.printStackTrace t) 
+    (.printStackTrace t)
     (log/error (str "Problem loading users from [" USER-CONFIG-FILE "] : " t)))))
-
-
-
