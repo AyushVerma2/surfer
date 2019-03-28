@@ -23,7 +23,7 @@
     [cemerick.friend [workflows :as workflows]
                      [credentials :as creds]]
     [clojure.tools.logging :as log])
-  (:import [java.io InputStream]
+  (:import [java.io InputStream StringWriter PrintWriter]
            [org.apache.commons.codec.binary Base64]))
 
 (set! *warn-on-reflection* true)
@@ -586,9 +586,18 @@
   (api
     {:api {:invalid-routes-fn nil} ;; supress warning on child routes
      :exceptions {:handlers {:compojure.api.exception/default
-                            (fn [ex ex-data request]
-                              (.printStackTrace ^Throwable ex)
-                              (slingshot/throw+ ex))
+                            (fn [^Throwable ex ex-data request]
+                              ;; (.printStackTrace ^Throwable ex)
+                              (log/error (str ex))
+                              (response/status
+                                (response/response
+                                  (let [sw (StringWriter.)
+                                        pw (PrintWriter. sw)]
+                                    (.printStackTrace ex pw)
+                                    (str (class ex) "/n"
+                                      (.toString sw))))
+                                500
+                                ))
                             }}
      }
     (swagger-routes
@@ -605,7 +614,7 @@
                                  title (j "title")]
                                (str "<a href=\"api/v1/meta/data/" id "\">" id " - " title "<br/>\n"))
                              (catch Throwable t
-                               (str t "<br/>\n"))))
+                               (str "Fail in asset id:" id " - " t "<br/>\n"))))
                          (store/all-keys)))
                 "</body>"
                 ))
