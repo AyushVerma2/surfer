@@ -118,7 +118,9 @@
   ([]
    (get-listings {}))
   ([{:keys [userid from size] :as opts}]
-   (let [offset (* from size)]
+   (let [from (long (or from 0))
+         size (long (or size 100))
+         offset (* from size)]
      (map clean-listing
           (if userid
             (jdbc/query db ["select * from Listings where userid = ? order by ctime desc LIMIT ? OFFSET ?" userid size offset])
