@@ -52,6 +52,11 @@
           userid (:id (store/get-user-by-name username))]
       userid)))
 
+(defn get-current-token
+  "Gets the current token from a request (if set)"
+  [request]
+  (-> request friend/current-authentication :token))
+
 ;; ==========================================
 ;; Meta API
 
@@ -542,6 +547,8 @@
 
 (defn tokens-page [request]
   (let [userid (get-current-userid request)
+        token (get-current-token request)
+        query-params (if token (str "?access_token=" token) "")
         tokens (if userid (store/all-tokens userid) [])
         header (str "<html><head><style type=\"text/css\">"
                     "html {"
@@ -565,9 +572,13 @@
                      (for [token tokens]
                        (str "<tr><td class=\"token\">" token
                             "</td><td><form action=\"/api/v1/auth/token/"
-                            token
-                            "\" enctype=\"text/plain\" method=\"POST\"><input type=\"submit\" value=\"delete\"></form></td></tr>\n")))
-        add-button "<hr><form action=\"/api/v1/auth/token\" enctype=\"text/plain\" method=\"POST\"><input type=\"submit\" value=\"add\"></form>"
+                            token query-params
+                            "\" enctype=\"text/plain\" method=\"POST\">"
+                            "<input type=\"submit\" value=\"delete\"></form>"
+                            "</td></tr>\n")))
+        add-button (str "<hr><form action=\"/api/v1/auth/token" query-params
+                        "\" enctype=\"text/plain\" method=\"POST\">"
+                        "<input type=\"submit\" value=\"add\"></form>")
         body (str header
                   "<table>\n"
                   tokens-html
@@ -619,7 +630,7 @@
                 "</body>"
                 ))
 
-    (GET "/tokens" [] tokens-page)
+    (GET "/tokens" request tokens-page)
 
     (GET "/logout" [] logout-page)
 
@@ -657,7 +668,7 @@
                    <p><a href='/assets'>Explore imported asset list</a></p>
                    <p><a href='/api-docs'>API Documentation</a></p>
                    <p><a href='/echo'>Echo request body</a></p>
-                   <p><a href='/tokens'>Tokens</a></p>
+                   <p><a href='/tokens'>Manage Tokens</a></p>
                    <p><a href='/logout'>Logout</a> (click SignIn with no username/password, then Cancel)</p>
                  </body>")
 
@@ -723,7 +734,8 @@
       (workflows/make-auth
        {:identity (:username user)
         :roles (:roles user)
-        :userid (:id user)}
+        :userid (:id user)
+        :token token}
        {::friend/workflow :oauth2
         ::friend/redirect-on-auth? false
         ::friend/ensure-session false}))))
@@ -747,25 +759,44 @@
   "Middlware for API authentications"
   ([handler]
    (-> handler
-       (wrap-cache-buster)
        (friend/wrap-authorize #{:user :admin})
        (friend/authenticate auth-config))))
 
 ;; =====================================================
 ;; Main routes
 
-(def all-routes
-   (routes
-     web-routes
+(defn pp-debug [tag m]
+  (log/debug tag \newline (with-out-str (clojure.pprint/pprint m)))
+  m)
 
-     (add-middleware
-       api-routes
-       (comp
-         #(wrap-cors % :access-control-allow-origin #".*"
-                       :access-control-allow-credentials true
-                       :access-control-allow-methods [:get :put :post :delete :options])
-         wrap-params
-         api-auth-middleware))))
+(defn debug-handler [handler step]
+  (fn [req]
+    (log/debug "DEBUG HANDLER BEFORE" step)
+    (pp-debug :req req)
+    (try
+      (let [rv (handler req)]
+        (log/debug "DEBUG HANDLER AFTER" step)
+        (pp-debug :req req)
+        rv)
+      (catch IllegalArgumentException e
+        (log/debug "BROWSER CLOSED")
+        {}))))
+
+(def all-routes
+  (routes
+   web-routes
+   (add-middleware
+    (routes api-routes)
+    (comp
+     #(wrap-cors % :access-control-allow-origin #".*"
+                 :access-control-allow-credentials true
+                 :access-control-allow-methods
+                 [:get :put :post :delete :options])
+     wrap-params
+     wrap-cache-buster
+     api-auth-middleware
+     ;; #(debug-handler % :api-routes)
+     ))))
 
 (def app
   (-> all-routes
