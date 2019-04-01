@@ -6,7 +6,8 @@
     [java.nio.charset StandardCharsets]
     [org.bouncycastle.crypto.digests KeccakDigest] )
   (:import [java.time Instant]
-           [java.io InputStream ByteArrayOutputStream]
+           [java.io InputStream ByteArrayOutputStream IOException]
+           [java.net DatagramSocket ServerSocket SocketException]
            [java.util Date]
            [java.sql Timestamp]
            [org.apache.tika.mime MimeTypes MimeTypeException]))
@@ -191,3 +192,28 @@
         ext))
     (catch MimeTypeException _
       default-extension)))
+
+;; ==================================================
+;; networking
+
+(defn port-available?
+  "Returns true if the port is available to be bound (for both UDP and TCP)"
+  [port]
+  (let [state (atom {:available? false :ss nil :ds nil})]
+    (if (and (number? port) (> port 0) (<= port 65535))
+      (try
+        (swap! state assoc :ss (ServerSocket. port))
+        (.setReuseAddress ^ServerSocket (:ss @state) true)
+        (swap! state assoc :ds (DatagramSocket. ^Long port))
+        (.setReuseAddress ^DatagramSocket (:ds @state) true)
+        (swap! state assoc :available? true)
+        (catch IOException e
+          false)
+        (catch SocketException e
+          false)
+        (finally
+          (if-let [ds ^DatagramSocket (:ds @state)]
+            (.close ^DatagramSocket ds))
+          (if-let [ss ^ServerSocket (:ss @state)]
+            (.close ss)))))
+    (:available? @state)))

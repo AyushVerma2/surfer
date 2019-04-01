@@ -11,6 +11,11 @@ port=8080
 url="http://${host}:${port}"
 
 downloads="$RESULTS/downloads"
+if [ -d "$RESULTS/downloads" ]; then
+    echo "downloads directly already exists: $RESULTS/downloads"
+    exit 1
+fi
+
 mkdir -p "$downloads"
 
 uploads="$CODE/test/data"
@@ -22,7 +27,7 @@ defaulttype="application/octet-stream"
 # construct curl args
 args=""
 args="$args -s" # NOTE turning off silent mode is useful for debugging
-args="$args -m 3"
+args="$args -m 5"
 args="$args -u ${USER}:${PASSWORD}"
 # The following get in trouble with quoting/evaluation...
 # args="$args --header 'Content-Type: application/json'"
