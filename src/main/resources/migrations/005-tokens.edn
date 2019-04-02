@@ -1,0 +1,7 @@
+{:up ["CREATE TABLE IF NOT EXISTS tokens (
+       token CHAR(64) NOT NULL PRIMARY KEY,
+       userid CHAR(64) NOT NULL,
+       FOREIGN KEY (userid) REFERENCES users(id)
+      );"]
+
+ :down ["DROP TABLE IF EXISTS tokens;"]}

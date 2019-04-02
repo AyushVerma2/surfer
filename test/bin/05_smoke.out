@@ -3,4 +3,6 @@
                    <p><a href='/assets'>Explore imported asset list</a></p>
                    <p><a href='/api-docs'>API Documentation</a></p>
                    <p><a href='/echo'>Echo request body</a></p>
+                   <p><a href='/tokens'>Manage Tokens</a></p>
+                   <p><a href='/logout'>Logout</a> (click SignIn with no username/password, then Cancel)</p>
                  </body>

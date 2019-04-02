@@ -1,6 +1,10 @@
 [{:username "one"
   :password "11111"}
  {:username "two"
-  :password "22222"}
+  :password "22222"
+
+  :status "Active"}
  {:username "three"
-  :password "3333"}]
+  :password "3333"
+  :status "Suspended"
+  :roles #{:admin}}]

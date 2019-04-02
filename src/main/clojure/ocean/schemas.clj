@@ -40,6 +40,12 @@
     {:example "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
      :description "A valid Purchase ID (64 characters lowercase hex)"}))
 
+(s/defschema OAuth2Token
+  (rjs/field
+    (s/constrained s/Str u/valid-oauth2-token? "Valid OAuth2 Token")
+    {:example "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
+     :description "A valid OAuth2 token (64 characters lowercase hex)"}))
+
 (s/defschema Username
   (rjs/field
     s/Str
