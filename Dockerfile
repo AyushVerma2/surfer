@@ -27,7 +27,7 @@ ENV HTTP_PORT 8080
 RUN free
 RUN java -version
 RUN mvn -v
-RUN mvn clean install
+RUN mvn clean -Dmaven.test.skip=true  install
 
 EXPOSE 8080
 
