@@ -6,8 +6,8 @@ program=$(basename $0)
 dir=$(dirname $0)
 cd "$dir/../.."
 export CODE="$(pwd -P)"
-export USER="one"
-export PASSWORD="11111"
+export USER="four"
+export PASSWORD="44444"
 
 cd "test/bin"
 
