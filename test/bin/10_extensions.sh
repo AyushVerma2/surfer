@@ -12,8 +12,11 @@ url="http://${host}:${port}"
 
 downloads="$RESULTS/downloads"
 if [ -d "$RESULTS/downloads" ]; then
-    echo "downloads directly already exists: $RESULTS/downloads"
-    exit 1
+    # delete stale downloads directory
+    rm -r "$RESULTS/downloads"
+    # instead of failing here....
+    # echo "downloads directly already exists: $RESULTS/downloads"
+    # exit 1
 fi
 
 mkdir -p "$downloads"

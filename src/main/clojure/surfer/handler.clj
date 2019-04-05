@@ -480,6 +480,32 @@
    :headers {"Content-Type" "application/json"}
    :body    body})
 
+(defn get-auth-api-user
+  "Based on the request return the a map with :user (if authorized), else
+  :response 401 (if unauthenticated) or 403 (if unauthorized)"
+  [request]
+  (let [userid (get-current-userid request)
+        user (if userid
+               (dissoc (store/get-user userid) :password :ctime))
+        roles (or (:roles user) #{})
+        rv (cond
+             (nil? userid)
+             {:response (response/status
+                         (response/response "User not authenticated") 401)}
+
+             (not (contains? roles :admin))
+             {:response (response/status
+                         (response/response
+                          "User not authorized for Ocean.Authentication.v1")
+                         403)}
+
+             :else
+             {:user user})]
+    (log/debug (str "GET-AUTH-API-USER user: \"" (:username user)
+                    "\" for api: " (:uri request))
+               "authorized:" (boolean (:user rv)))
+    rv))
+
 (def auth-api
   (routes
     {:swagger
@@ -493,43 +519,37 @@
         :summary "Gets currently logged in user"
         :coercion nil
         :return s/Any ;; FIXME user record
-        (let [userid (get-current-userid request)
-              user (if userid
-                     (dissoc (store/get-user userid) :password :ctime))]
-          (if (nil? userid)
-            (response/status (response/response "User not authenticated") 401)
-            (response-json (json/write-str user)))))
+        (let [{:keys [response user]} (get-auth-api-user request)]
+          (or response
+              (response-json (json/write-str user)))))
 
     (GET "/token" request
         :summary "Gets a list of tokens"
         :coercion nil
         :return [schemas/OAuth2Token]
-        (let [userid (get-current-userid request)]
-          (if (nil? userid)
-            (response/status (response/response "User not authenticated") 401)
-            (response-json (store/all-tokens userid)))))
+        (let [{:keys [response user]} (get-auth-api-user request)]
+          (or response
+              (response-json (store/all-tokens (:id user))))))
 
     (POST "/token" request
         :summary "Creates a new OAuth2Token"
         :coercion nil
         :return schemas/OAuth2Token
-        (let [userid (get-current-userid request)]
-          (if (nil? userid)
-            (response/status (response/response "User not authenticated") 401)
-            (response/response (str "\"" (store/create-token userid) "\"")))))
+        (let [{:keys [response user]} (get-auth-api-user request)]
+          (or response
+              (response-json (str "\"" (store/create-token (:id user)) "\"")))))
 
     (DELETE "/token/:token" request
         :summary "Deletes a token"
         :coercion nil
         :path-params [token :- schemas/OAuth2Token]
         :return s/Bool
-        (let [userid (get-current-userid request)]
-          (if (nil? userid)
-            (response/status (response/response "User not authenticated") 401)
-            (let [result (store/delete-token userid token)]
-              (if-not result
-                (response/not-found "Token not found.")
-                (response-json (str result)))))))
+        (let [{:keys [response user]} (get-auth-api-user request)]
+          (or response
+              (let [result (store/delete-token (:id user) token)]
+                (if-not result
+                  (response/not-found "Token not found.")
+                  (response-json (str result)))))))
 
     ;; Synonym for DELETE for use in the web form (only)
     (POST "/token/:token" request
@@ -537,13 +557,12 @@
         :path-params [token :- schemas/OAuth2Token]
         :return s/Bool
         :coercion nil
-        (let [userid (get-current-userid request)]
-          (if (nil? userid)
-            (response/status (response/response "User not authenticated") 401)
-            (let [result (store/delete-token userid token)]
-              (if-not result
-                (response/not-found "Token not found.")
-                (response-json (str result)))))))))
+        (let [{:keys [response user]} (get-auth-api-user request)]
+          (or response
+              (let [result (store/delete-token (:id user) token)]
+                (if-not result
+                  (response/not-found "Token not found.")
+                  (response-json (str result)))))))))
 
 (defn tokens-page [request]
   (let [userid (get-current-userid request)
