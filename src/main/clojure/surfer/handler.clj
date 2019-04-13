@@ -493,7 +493,7 @@
              {:response (response/status
                          (response/response "User not authenticated") 401)}
 
-             (not (contains? roles :admin))
+             (not (contains? roles :user))
              {:response (response/status
                          (response/response
                           "User not authorized for Ocean.Authentication.v1")
