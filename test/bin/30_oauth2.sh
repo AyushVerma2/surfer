@@ -23,7 +23,6 @@ ok="HTTP/1.1 200 OK"
 token1file="$downloads/token1.json"
 token2file="$downloads/token2.json"
 tokensfile="$downloads/tokens.json"
-userfile="$downloads/user.json"
 deletefile="$downloads/delete.json"
 assetsfile="$downloads/assets.json"
 token1=""
@@ -88,19 +87,6 @@ fi
 
 if [ -z "$f2" ]; then
     echo "did NOT find token2"
-    fail=$(($fail + 1))
-fi
-
-echo " "
-if curl $args \
-        -H 'Accept: application/json' -o "$userfile" \
-        -X GET $url/api/v1/auth/user?access_token=$token1 \
-        && [ -e "$userfile" ]; then
-    echo "Got user via access_token:"
-    cat "$userfile"
-    echo " "
-else
-    echo "unable to get user via access_token"
     fail=$(($fail + 1))
 fi
 

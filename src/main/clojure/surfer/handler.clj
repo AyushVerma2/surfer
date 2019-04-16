@@ -515,16 +515,8 @@
                      :description "Authentication API for Ocean Marketplace"}]
              :produces ["application/json"]}}}
 
-    (GET "/user" request
-        :summary "Gets currently logged in user"
-        :coercion nil
-        :return s/Any ;; FIXME user record
-        (let [{:keys [response user]} (get-auth-api-user request)]
-          (or response
-              (response-json (json/write-str user)))))
-
     (GET "/token" request
-        :summary "Gets a list of tokens"
+        :summary "Gets a list of OAuth2 tokens for the currently authenticated user"
         :coercion nil
         :return [schemas/OAuth2Token]
         (let [{:keys [response user]} (get-auth-api-user request)]
@@ -540,7 +532,7 @@
               (response-json (str "\"" (store/create-token (:id user)) "\"")))))
 
     (DELETE "/token/:token" request
-        :summary "Deletes a token"
+        :summary "Revokes one of the existing OAuth2 tokens for the authenticated user"
         :coercion nil
         :path-params [token :- schemas/OAuth2Token]
         :return s/Bool
@@ -553,7 +545,7 @@
 
     ;; Synonym for DELETE for use in the web form (only)
     (POST "/token/:token" request
-        :summary "Deletes a token (via web form)"
+        :summary "Revokes one of the existing OAuth2 tokens for the authenticated user (via web form) [DEVELOPMENT]"
         :path-params [token :- schemas/OAuth2Token]
         :return s/Bool
         :coercion nil
@@ -564,7 +556,11 @@
                   (response/not-found "Token not found.")
                   (response-json (str result)))))))))
 
-(defn tokens-page [request]
+(defn tokens-page
+  "Display a simple web form for the authenticated user showing any
+  OAuth2 tokens (with the option to revoke each one) as well as
+  the abililty to create a new token"
+  [request]
   (let [userid (get-current-userid request)
         token (get-current-token request)
         query-params (if token (str "?access_token=" token) "")
