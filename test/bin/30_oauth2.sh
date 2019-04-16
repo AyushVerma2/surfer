@@ -94,7 +94,7 @@ echo " "
 if curl $args \
         -H "Authorization: token $token1" \
         -H 'Accept: application/json' -o "$deletefile" \
-        -X DELETE $url/api/v1/auth/token/$token2 \
+        -X DELETE $url/api/v1/auth/revoke/$token2 \
         && [ -e "$deletefile" ]; then
     echo "Deleted token via OAuth2 header: " $(cat "$deletefile")
 else
