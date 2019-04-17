@@ -531,7 +531,7 @@
           (or response
               (response-json (str "\"" (store/create-token (:id user)) "\"")))))
 
-    (DELETE "/token/:token" request
+    (DELETE "/revoke/:token" request
         :summary "Revokes one of the existing OAuth2 tokens for the authenticated user"
         :coercion nil
         :path-params [token :- schemas/OAuth2Token]
@@ -543,8 +543,9 @@
                   (response/not-found "Token not found.")
                   (response-json (str result)))))))
 
-    ;; Synonym for DELETE for use in the web form (only)
-    (POST "/token/:token" request
+    ;; Synonym for DELETE for use in the web form (only) as forms only support
+    ;; GET,POST methods: https://www.w3.org/TR/1999/REC-html401-19991224/interact/forms.html#adef-method
+    (POST "/revoke/:token" request
         :summary "Revokes one of the existing OAuth2 tokens for the authenticated user (via web form) [DEVELOPMENT]"
         :path-params [token :- schemas/OAuth2Token]
         :return s/Bool
@@ -586,7 +587,7 @@
                      str
                      (for [token tokens]
                        (str "<tr><td class=\"token\">" token
-                            "</td><td><form action=\"/api/v1/auth/token/"
+                            "</td><td><form action=\"/api/v1/auth/revoke/"
                             token query-params
                             "\" enctype=\"text/plain\" method=\"POST\">"
                             "<input type=\"submit\" value=\"delete\"></form>"
