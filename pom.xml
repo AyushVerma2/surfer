@@ -211,6 +211,12 @@
 			<artifactId>ring-cors</artifactId>
 			<version>0.1.13</version>
 		</dependency>
+		<dependency>
+			<groupId>sg.dex</groupId>
+			<artifactId>starfish-clj</artifactId>
+			<version>0.0.6-SNAPSHOT</version>
+		</dependency>
+		
 	</dependencies>
 
 	<build>

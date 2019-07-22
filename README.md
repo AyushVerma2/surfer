@@ -2,31 +2,30 @@
 
 [![Build Status](https://dev.azure.com/dex-devops/miketest/_apis/build/status/DEX-Company.surfer?branchName=develop)](https://dev.azure.com/dex-devops/miketest/_build/latest?definitionId=1?branchName=develop)
 
-Surfer provides a standalone reference implementation of an Ocean Agent with the following capabilities:
+Surfer provides a standalone reference implementation of an Data Ecosystem Agent with the following capabilities:
 
-- Meta API for serving Ocean Asset Metadata
-- Market API for serving as an Ocean Marketplace backend
-- Common Storage API for asset data
+- Storage API for asset data according to DEP7
+- Meta API for serving Asset Metadata according to DEP15
+- Market API for serving as an Data Marketplace backend
+
+Surfer also provides some example implementations of capabilities / services for an open data ecosystem, including
 - CKAN Dataset Import
 
-Surfer is a component of the Ocean Reference Marketplace, fulfilling the role of a Marketplace Agent.
-Marketplace operators are free to use Surfer or another compatible implementation of the relevant APIs
-for their marketplace.
 
 ## Motivation
 
 An Ocean marketplace requires the use of one or more Ocean Agents that perform off-chain functionality.
-Surfer provides an implementation of this functionality as a reference implementation for the ecosystem,
-and as a open source product that Marketplace operators can use.
 
-Surfer is designed so that it can be relatively easily configured and/or customised to support specific
-requirements of a marketplace operator.
+Surfer provides an implementation of this functionality as a reference implementation for the ecosystem,
+and as a open source product that Marketplace operators can use and customise. Surfer is designed so that 
+it can be relatively easily configured and/or customised to support specific requirements of a data 
+marketplace operator.
 
 ## Key functionality and use cases
 
 ### Meta API
 
-The Meta API is an implementation of OEP 15, enabling access to asset metadata stored in surfer.
+The Meta API is an implementation of DEP 15, enabling access to asset metadata stored in surfer.
 
 Authentication for Meta API access is handled by the marketplace. Access control rules can be
 configured by the marketplace operator, however default recommended behaviour is:
