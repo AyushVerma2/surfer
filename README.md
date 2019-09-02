@@ -14,12 +14,21 @@ Surfer also provides some example implementations of capabilities / services for
 
 ## Motivation
 
-An Ocean marketplace requires the use of one or more Ocean Agents that perform off-chain functionality.
+The decentralised data ecosystems of the future will incorporate a multitude of Agents which provide capabilities
+to others in the data ecosystem. These capabilities may include:
+ 
+ - Serving metadata about Assets in the ecosystem
+ - Offering certain Data Assets for download
+ - Allowing the remote invocation of compute services
+ - Making payments for access rights to assets and servcies
 
-Surfer provides an implementation of this functionality as a reference implementation for the ecosystem,
-and as a open source product that Marketplace operators can use and customise. Surfer is designed so that 
-it can be relatively easily configured and/or customised to support specific requirements of a data 
-marketplace operator.
+To maintain ecosystem interoperability, Agents may implement the DEP Standards (https://github.com/DEX-Company/DEPs) 
+that enable data ecosystem capabilities to be orchestrated into decentralised Data Supply Lines and operated with 
+minimal custom coding, since they will all conform to a common abstract interface accessible via the public internet.
+
+Surfer provides a reference implementation of Agent functionality for the ecosystem, as a open source product 
+that Service Providers can use and customise. Surfer is designed so that it can be relatively easily configured 
+and/or customised to support specific requirements of a service provider.
 
 ## Key functionality and use cases
 
@@ -27,9 +36,9 @@ marketplace operator.
 
 The Meta API is an implementation of DEP 15, enabling access to asset metadata stored in surfer.
 
-Authentication for Meta API access is handled by the marketplace. Access control rules can be
-configured by the marketplace operator, however default recommended behaviour is:
-- metadata write access is restricted to registered marketplace users
+Authentication for Meta API access may be controlled by the service provider. Authorisation rules can also be
+configured by the service provider, the default behaviour is:
+- metadata write access is restricted to registered users
 - metadata read access is public
 
 ### CKAN Import
@@ -39,9 +48,6 @@ The Comprehensive Knowledge Archive Network (CKAN) is a web-based open source ma
 Surfer provides a simple service that:
 - Crawls CKAN repositories
 - Converts CKAN metadata into Ocean metadata
-- Hashes the metadata to obtain Asset IDs
-- Offers a web-based interface for exploring the resulting Ocean assets
-- Hosts a Swagger interface for exploring the Surfer APIs
 
 ## Example Usage
 
