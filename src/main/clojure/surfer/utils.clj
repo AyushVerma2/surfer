@@ -1,15 +1,15 @@
 (ns surfer.utils
   "Utility functions for Ocean Ecosystem and Marketplaces"
+  (:require [ starfish.core :refer [digest]] )
+  (:require [clojure.walk :refer [keywordize-keys stringify-keys]]
+            [clojure.data.json :as json])
   (:import
-    [java.security MessageDigest]
     [java.util UUID]
     [java.nio.charset StandardCharsets]
-    [org.bouncycastle.crypto.digests KeccakDigest] )
-  (:import [java.time Instant]
-           [java.io InputStream ByteArrayOutputStream IOException]
+    )
+  (:import [java.io InputStream ByteArrayOutputStream IOException]
            [java.net DatagramSocket ServerSocket SocketException]
-           [java.util Date]
-           [java.sql Timestamp]
+           [sg.dex.crypto Hash]
            [org.apache.tika.mime MimeTypes MimeTypeException]))
 
 (set! *warn-on-reflection* true)
@@ -63,29 +63,14 @@
 (defn byte-to-hex [^long b]
   (str (hex (unsigned-bit-shift-right b 4)) (hex b) ))
 
-(defn hex-string [^bytes data]
-  (apply str (map byte-to-hex data)))
 
 (defn sha256
   "Compute sha256 hash of a message.
 
    Returns an array of 32 bytes."
   [msg]
-  (let [data (to-bytes msg)
-        md (MessageDigest/getInstance "SHA-256")]
-    (.digest md data)))
+  (digest msg))
 
-(defn keccak256
-  "Compute keccak256 hash of a message.
-
-   Returns an array of 32 bytes."
-  [msg]
-  (let [data (to-bytes msg)
-        md (KeccakDigest. 256)
-        result (byte-array 32)]
-    (.update md data (int 0) (int (count data)))
-    (.doFinal md result 0)
-    result))
 
 (defn remove-nil-values
   "Removes nil values from a map. Useful for eliminating blank optional values."
@@ -165,10 +150,9 @@
   ([] (new-random-id 64))
   ([^long length]
     (let [uuid (UUID/randomUUID)
-         hash (keccak256 (str uuid))
-         hex (hex-string hash)
+         hash (sha256 (str uuid))
          bs (* 64 (quot (dec length) 64))
-         tail (subs hex 0 (- length bs))]
+         tail (subs hash 0 (- length bs))]
       (if (> bs 0)
         (str (new-random-id bs) tail)
         tail))))

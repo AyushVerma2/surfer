@@ -95,7 +95,7 @@
         (let [^InputStream body-stream (:body request)
               _ (.reset body-stream)
               ^String body (slurp body-stream)
-              hash (utils/hex-string (utils/keccak256 body))]
+              hash (utils/sha256 body)]
 
           ;; (println (str (class body) ":" body ))
           ;; (println (str (class metadata) ":" metadata ))
@@ -115,7 +115,7 @@
           (let [^InputStream body-stream (:body request)
               _ (.reset body-stream)
               ^String body (slurp body-stream)
-              hash (utils/hex-string (utils/keccak256 body))]
+              hash (utils/sha256 body)]
           (if (= id hash)
             (store/register-asset id body) ;; OK, write to store
             (response/bad-request (str "Invalid ID for metadata, expected: " hash " got " id)))))
