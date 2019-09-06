@@ -50,7 +50,7 @@
         id (json/read-str (:body r1))]
     (is (= 200 (:status r1)))
     (is (utils/valid-asset-id? id))
-    (is (= (utils/hex-string (utils/keccak256 adata)) id))
+    (is (= (utils/sha256 adata) id))
 
     ;; test we can get the asset metadata
     (let [r2 (client/get (str BASE_URL "api/v1/meta/data/" id) AUTH_HEADERS)]

@@ -52,41 +52,6 @@
 ;; =========================================================
 ;; Asset management and metadata
 
-(defn register-asset
-  "Registers asset metadata in the data store. Returns the Asset ID as a string."
-  ([^String asset-metadata-str]
-    (let [hash (u/hex-string (u/keccak256 asset-metadata-str))]
-      (register-asset hash asset-metadata-str)))
-  ([^String hash ^String asset-metadata-str]
-    (let [rs (jdbc/query db ["select * from Metadata where id = ?" hash])]
-      (if (empty? rs)
-        (jdbc/insert! db "Metadata"
-                      {:id hash
-                       :metadata asset-metadata-str
-                       :utime (Instant/now)}))
-      hash)))
-
-(defn lookup
-  "Gets the metadata string for a given Asset ID, or nil if not available."
-  ([^String id-str]
-    (let [rs (jdbc/query db ["select * from Metadata where id = ?" id-str])]
-    (if (empty? rs)
-      nil
-        (str (:metadata (first rs)))))))
-
-(defn lookup-json
-  "Gets the JSON data structure for the metadata of a given asset ID.
-   Returns nil if the metadata is not available."
-  ([^String id-str]
-    (if-let [meta (lookup id-str)]
-      (json/read-str meta)
-      nil)))
-
-(defn all-keys
-  "Returns a list of all metadata asset IDs stored."
-  ([]
-    (let [rs (jdbc/query db ["select id from Metadata;"])]
-      (map :id rs))))
 
 ;; ===================================================
 ;; Listing management
@@ -367,7 +332,7 @@
 (defn register-asset
   "Registers asset metadata in the data store. Returns the Asset ID as a string."
   ([^String asset-metadata-str]
-    (let [hash (u/hex-string (u/keccak256 asset-metadata-str))]
+    (let [hash (u/sha256 asset-metadata-str)]
       (register-asset hash asset-metadata-str)))
   ([^String hash ^String asset-metadata-str]
     (let [rs (jdbc/query db ["select * from Metadata where id = ?" hash])]
