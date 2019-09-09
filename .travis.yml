@@ -5,10 +5,6 @@ jdk:
   - oraclejdk11
   - openjdk11
 
-before_install:
-  - export BARGE_URL=http://localhost
-  - scripts/setup_for_local_barge.sh
-
 install:
   - mvn clean install
 branches:
