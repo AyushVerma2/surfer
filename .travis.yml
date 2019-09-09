@@ -5,12 +5,21 @@ jdk:
   - oraclejdk11
   - openjdk11
 
-addons:
-  ssh_known_hosts: shrimp.octet.services
-
+before_install:
+  - export BARGE_URL=http://localhost
+  - scripts/setup_for_local_barge.sh
 
 install:
   - mvn clean install
 branches:
   only:
     - develop
+deploy:
+  provider: azure_web_apps
+  username: $USER_NAME       # If AZURE_WA_USERNAME isn't set
+  password: $PASSWORD   # If AZURE_WA_PASSWORD isn't set
+  site: surfer01
+  verbose: true
+  on:
+    branch: develop
+
