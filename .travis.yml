@@ -1,5 +1,5 @@
 language: clojure
-lein: lein
+#lein: lein
 dist: xenial
 jdk:
   - oraclejdk11
