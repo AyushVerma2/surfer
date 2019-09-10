@@ -1,0 +1,21 @@
+language: clojure
+#lein: lein
+dist: xenial
+jdk:
+  - oraclejdk11
+  - openjdk11
+
+install:
+  - mvn clean install
+branches:
+  only:
+    - develop
+deploy:
+  provider: azure_web_apps
+  username: $USER_NAME       # If AZURE_WA_USERNAME isn't set
+  password: $PASSWORD   # If AZURE_WA_PASSWORD isn't set
+  site: surfer01
+  verbose: true
+  on:
+    branch: develop
+
