@@ -8,8 +8,8 @@
 
 FROM alpine:3.9.2
 
-RUN apk update && apk add --no-cache \
-  procps openjdk8 maven
+RUN apk update && apk add openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+RUN apk add maven
 
 ARG USER_HOME_DIR="/root"
 
