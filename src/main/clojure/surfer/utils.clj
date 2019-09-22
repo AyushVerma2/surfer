@@ -184,7 +184,7 @@
   "Returns true if the port is available to be bound (for both UDP and TCP)"
   [port]
   (let [state (atom {:available? false :ss nil :ds nil})]
-    (if (and (number? port) (> port 0) (<= port 65535))
+    (if (and (number? port) (> (long port) 0) (<= (long port) 65535))
       (try
         (swap! state assoc :ss (ServerSocket. port))
         (.setReuseAddress ^ServerSocket (:ss @state) true)
