@@ -1,8 +1,15 @@
 {:agent
+ 
  {:name "Ocean Marketplace Test Server v0.1",
   :description
   "Ocean marketplace deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."},
+ 
  :operator {:name "DEX", :url "https://www.dex.sg"},
+ 
  :security {:user-config "surfer-users.edn"},
+ 
  :http-port 8080
+ 
+ :did "did:op:7d8d356b3e9bcb7222accf81bc718c521b3b7db958c7d1aa72b93424127db99b"
+ 
  :logging {}}

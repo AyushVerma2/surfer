@@ -1,7 +1,8 @@
 (ns surfer.config
   (:require [surfer.utils :as utils])
   (:require [environ.core :refer [env]])
-  (:require [clojure.edn :as edn]
+  (:require [starfish.core :as sf]
+            [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.pprint :as pprint])
   (:require [clojure.tools.logging :as log])
@@ -28,6 +29,8 @@
 (def CONFIG (merge
               DEFAULT-CONFIG
               LOADED-CONFIG))
+
+(def DID (sf/did (or (:did CONFIG) (sf/random-did)))) 
 
 (def USER-CONFIG-FILE (get-in CONFIG [:security :user-config]))
 
