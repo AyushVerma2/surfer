@@ -25,6 +25,12 @@
 			<id>clojars.org</id>
 			<name>Clojars repository</name>
 			<url>https://clojars.org/repo</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
 		</repository>
 		<repository>
 			<id>maven-snapshots</id>
@@ -47,6 +53,11 @@
 			<!--</snapshots> -->
 			<url>http://oss.sonatype.org/content/repositories/snapshots</url>
 		</snapshotRepository>
+		<repository>
+			<id>clojars.org</id>
+			<name>Clojars repository</name>
+			<url>https://clojars.org/repo</url>
+		</repository>
 	</distributionManagement>
 
 	<scm>
