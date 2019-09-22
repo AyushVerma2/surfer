@@ -2,6 +2,7 @@
   (:require
     [surfer systems]
     [surfer.store :as store]
+    [surfer.config :as config]
     [surfer.ckan :refer :all :as ckan]
     [surfer.utils :as utils :refer [port-available?]]
     [clj-http.client :as client]
@@ -19,9 +20,10 @@
 (defn -main
   "Start a production system, unless a system is passed as argument (as in the dev-run task)."
   [& args]
-  (if (port-available? 8080)
-    (start)
-    (log/error "Unable to start surfer, port unavailable:" 8080)))
+  (let [port (config/CONFIG :http-port)]
+    (if (port-available? port)
+      (start)
+      (log/error "Unable to start surfer, port unavailable:" port))))
 
 (comment
   (-main) ;; launch the app

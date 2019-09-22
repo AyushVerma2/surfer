@@ -145,6 +145,12 @@
      :description "Display results with this page size (default 100)"}))
 
 ;; ============================================================
+;; Invoke
+
+(s/defschema InvokeRequest
+  {s/Str s/Any})
+
+;; ============================================================
 ;; Purchases
 
 (s/defschema PurchaseStatus

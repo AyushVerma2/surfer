@@ -10,6 +10,7 @@
     [surfer.store :as store]
     [ocean.schemas :as schemas]
     [surfer.storage :as storage]
+    [starfish.core :as sf]
     [surfer.utils :as utils]
     [schema.core :as s]
     [clojure.data.json :as json]
@@ -121,6 +122,43 @@
             (response/bad-request (str "Invalid ID for metadata, expected: " hash " got " id)))))
     ))
 
+(def invoke-api
+  (routes
+    {:swagger
+     {:data {:info {:title "Invoke API"
+                    :description "Invoke API for Remote Operations"}
+             :tags [{:name "Invoke API", :description "Invoke API for Remote Operations"}]
+             ;; :consumes ["application/json"]
+             :produces ["application/json"]
+           }}}
+    
+    (POST "/invoke/:op-id"
+          {{:keys [op-id]} :params :as request}
+          :coercion nil ;; prevents coercion so we get the original input stream
+          :body [body schemas/InvokeRequest]
+      ;; (println (:body request))
+      (if-let [op-meta (store/lookup op-id)]
+        (let [md (sf/read-json-string op-meta)
+              ^InputStream body-stream (:body request)
+              _ (.reset body-stream)
+              ^String body-string (slurp body-stream)
+              invoke-req (sf/read-json-string body-string)
+              op-function (:function (:additionalInfo md))]
+          (println invoke-req)
+          (cond 
+            (not (= "operation") (:type md)) (response/bad-request "Not a valid operation.")
+            (nil? op-function) (response/bad-request "Unable to execute operation: not surfer compatible.")
+            :else {:status 200
+                   :body "Invoke success"}))
+        (response/not-found "Operation metadata not available.")))
+    
+    (GET "/jobs/:job-id"
+         [job-id]
+         {:status 200
+          :body "Jobs list placeholder"}
+         )))
+
+
 (def storage-api
   (routes
     {:swagger
@@ -128,13 +166,13 @@
                     :description "Storage API for Ocean Marketplace"}
              :tags [{:name "Storage API", :description "Storage API for Ocean Marketplace"}]
              ;; :consumes ["application/json"]
-             :produces ["application/json"]
+       :produces ["application/json"]
            }}}
 
     (GET "/:id" [id]
         :summary "Gets data for a specified asset ID"
         (if-let [meta (store/lookup-json id)] ;; NOTE meta is JSON (not EDN)!
-          (if-let [body (storage/load-stream id)]
+    (if-let [body (storage/load-stream id)]
 
             (let [ctype (get meta "contentType" "application/octet-stream")
                   ext (utils/ext-for-content-type ctype)
@@ -155,7 +193,7 @@
         :body [uploaded nil]
         :summary "Stores asset data for a given asset ID"
         ;; (println (:body request))
-        (let [userid (get-current-userid request)
+  (let [userid (get-current-userid request)
               meta (store/lookup-json id)]
           (cond
             (nil? userid) (response/status
@@ -165,8 +203,8 @@
                                 (str "Expected file upload, got body: " uploaded))
             (nil? meta) (response/not-found (str "Attempting to store unregistered asset [" id "]")))
             :else (let [file (:tempfile uploaded)] ;; we have a body
-                    ;; (println request)
-                    (storage/save id file)
+              ;; (println request)
+              (storage/save id file)
                     (response/created (str "/api/v1/assets/" id)))
           ))
 
@@ -186,9 +224,9 @@
         (not (map? file)) (response/bad-request
                                 (str "Expected file upload, got param: " file))
         :else (if-let [tempfile (:tempfile file)] ;; we have a body
-                (do
+          (do
                   ;; (binding [*out* *err*] (pprint/pprint request))
-                  (storage/save id tempfile)
+            (storage/save id tempfile)
                   (response/created (str "/api/v1/assets/" id)))
                 (response/bad-request
                   (str "Expected map with :tempfile, got param: " file)))
@@ -661,6 +699,10 @@
     (context "/api/v1/market" []
       :tags ["Market API"]
       market-api)
+    
+    (context "/api/v1/invoke" []
+      :tags ["Invoke API"]
+      invoke-api)
 
      (context "/api/v1/trust" []
       :tags ["Trust API"]

@@ -345,7 +345,7 @@
 
 (defn lookup
   "Gets the metadata string for a given Asset ID, or nil if not available."
-  ([^String id-str]
+  (^String [^String id-str]
     (let [rs (jdbc/query db ["select * from Metadata where id = ?" id-str])]
     (if (empty? rs)
       nil
