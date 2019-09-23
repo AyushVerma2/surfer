@@ -9,19 +9,8 @@
 (def local-did
   config/DID)
 
-(def base-url
-  (str "http://localhost:" PORT))
-
 (def local-ddo
-  {:service 
-    [{:type "Ocean.Invoke.v1"
-      :serviceEndpoint (str base-url "/api/v1")}
-     {:type "Ocean.Meta.v1"
-      :serviceEndpoint (str base-url "/api/v1/meta")}
-     {:type "Ocean.Auth.v1"
-      :serviceEndpoint (str base-url "/api/v1/auth")}
-     {:type "Ocean.Storage.v1"
-      :serviceEndpoint (str base-url "/api/v1/assets")}]})
+  config/LOCAL-DDO)
 
 (def op-meta-map
   {:name "Test operation"
@@ -39,3 +28,4 @@
 
 (def op1 (sf/register ag op1))
 
+(sf/invoke-result op1 {:input (sf/memory-asset "Foo")} )

@@ -12,6 +12,7 @@
     [surfer.storage :as storage]
     [starfish.core :as sf]
     [surfer.utils :as utils]
+    [surfer.invoke :as invoke]
     [schema.core :as s]
     [clojure.data.json :as json]
     [clojure.pprint :as pprint :refer [pprint]]
@@ -142,20 +143,23 @@
               ^InputStream body-stream (:body request)
               _ (.reset body-stream)
               ^String body-string (slurp body-stream)
-              invoke-req (sf/read-json-string body-string)
-              op-function (:function (:additionalInfo md))]
+              invoke-req (sf/read-json-string body-string)]
           (println invoke-req)
           (cond 
-            (not (= "operation") (:type md)) (response/bad-request "Not a valid operation.")
-            (nil? op-function) (response/bad-request "Unable to execute operation: not surfer compatible.")
-            :else {:status 200
-                   :body "Invoke success"}))
+            (not (= "operation") (:type md)) (response/bad-request (str "Not a valid operation: " op-id))
+            :else (if-let [jobid (invoke/launch-job op-id invoke-req)]
+                     {:status 201
+                      :body (str "{\"jobid\" : " jobid ", "
+                                   "\"status\" : \"scheduled\""
+                                  "}")}
+                     (response/not-found "Operation not invokable."))))
         (response/not-found "Operation metadata not available.")))
     
-    (GET "/jobs/:job-id"
-         [job-id]
-         {:status 200
-          :body "Jobs list placeholder"}
+    (GET "/jobs/:jobid"
+         [jobid]
+         (if-let [job (invoke/get-job jobid)]
+           (response/response (invoke/job-response jobid))
+           (response/not-found (str "Job not found: " jobid)))
          )))
 
 
@@ -700,9 +704,6 @@
       :tags ["Market API"]
       market-api)
     
-    (context "/api/v1/invoke" []
-      :tags ["Invoke API"]
-      invoke-api)
 
      (context "/api/v1/trust" []
       :tags ["Trust API"]
@@ -715,6 +716,10 @@
     (context "/api/v1/auth" []
       :tags ["Authentication API"]
       auth-api)
+    
+    (context "/api/v1" []
+      :tags ["Invoke API"]
+      invoke-api)
 
    ;; (response/not-found "404")
     ))
