@@ -6,7 +6,8 @@
     [starfish.core :as sf]
     [surfer.utils :as utils]
     [schema.core :as s]
-    [clojure.data.json :as json])
+    [clojure.data.json :as json]
+    [clojure.tools.logging :as log])
   (:import [sg.dex.starfish.util DID]))
 
 (defonce JOBS (atom {}))
@@ -22,6 +23,11 @@
         f (resolve op-sym)]
     (when f (sf/create-operation params f))))
 
+(defn get-asset 
+  "Gets an asset in the content of this surfer instance."
+  ([did]
+    (sf/asset did)))
+
 (defn coerce-input-params 
   "Coerces the input request to a map of keywords to assets / objects"
   ([md req]
@@ -31,7 +37,7 @@
           (if-let [pspec (get pspecs (keyword k))]
             (let [type (:type pspec)]
               (if (= "asset" type)
-                (assoc m (keyword k) (sf/asset (:did v)))
+                (assoc m (keyword k) (get-asset (:did v)))
                 (assoc m (keyword k) v)))
             m))
         req
@@ -48,6 +54,7 @@
             md (sf/metadata op) 
             job (sf/invoke op (coerce-input-params md invoke-req))] 
         (swap! JOBS assoc jobid job)
+        (log/debug (str "Job started with ID [" jobid "]"))
         jobid))))
 
 (defn get-job 
