@@ -230,7 +230,7 @@
 		<dependency>
 			<groupId>sg.dex</groupId>
 			<artifactId>starfish-clj</artifactId>
-			<version>0.7.1-SNAPSHOT</version>
+			<version>0.7.1</version>
 		</dependency>
 
 	</dependencies>
