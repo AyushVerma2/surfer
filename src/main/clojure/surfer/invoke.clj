@@ -9,7 +9,7 @@
     [clojure.data.json :as json])
   (:import [sg.dex.starfish.util DID]))
 
-(def JOBS (atom {}))
+(defonce JOBS (atom {}))
 
 (defn get-operation 
   "Gets an in-memory operation for the given operation id"
@@ -22,6 +22,21 @@
         f (resolve op-sym)]
     (when f (sf/create-operation params f))))
 
+(defn coerce-input-params 
+  "Coerces the input request to a map of keywords to assets / objects"
+  ([md req]
+    (let [pspecs (:params (:operation md))]
+      (reduce 
+        (fn [m [k v]]
+          (if-let [pspec (get pspecs (keyword k))]
+            (let [type (:type pspec)]
+              (if (= "asset" type)
+                (assoc m (keyword k) (sf/asset (:did v)))
+                (assoc m (keyword k) v)))
+            m))
+        req
+        req))))
+
 (defn launch-job 
   "Launch a job using the given function. 
 
@@ -29,8 +44,9 @@
   [op-id invoke-req]
   (let [op (get-operation op-id)]
     (when op
-      (let [jobid (sf/random-hex-string 64)
-            job (sf/invoke op )] 
+      (let [jobid (sf/random-hex-string 32)
+            md (sf/metadata op) 
+            job (sf/invoke op (coerce-input-params md invoke-req))] 
         (swap! JOBS assoc jobid job)
         jobid))))
 
@@ -60,9 +76,14 @@
   "Gets the appropriate response map for a job result, or null if the job does not exist."
   [jobid]
   (when-let [job (get-job jobid)]
-    (let [status (sf/job-status job)
+    (let [_ (try (sf/poll-result job) (catch Throwable t))
+          status (sf/job-status job)
           resp {:status status}
-          resp (if (= status "succeeded")
+          resp (if (= status :succeeded)
                  (assoc resp :result (format-results (sf/get-result job)))
+                 resp)
+          resp (if (= status :failed)
+                 (assoc resp :message (try (sf/get-result job) 
+                                        (catch Throwable t (.getMessage t))))
                  resp)]
       resp)))

@@ -144,12 +144,12 @@
               _ (.reset body-stream)
               ^String body-string (slurp body-stream)
               invoke-req (sf/read-json-string body-string)]
-          (println invoke-req)
+          (log/debug (str "POST INVOKE on operation [" op-id "] body=" invoke-req))
           (cond 
-            (not (= "operation") (:type md)) (response/bad-request (str "Not a valid operation: " op-id))
+            (not (= "operation" (:type md))) (response/bad-request (str "Not a valid operation: " op-id))
             :else (if-let [jobid (invoke/launch-job op-id invoke-req)]
                      {:status 201
-                      :body (str "{\"jobid\" : " jobid ", "
+                      :body (str "{\"jobid\" : \"" jobid "\" , "
                                    "\"status\" : \"scheduled\""
                                   "}")}
                      (response/not-found "Operation not invokable."))))
@@ -157,6 +157,7 @@
     
     (GET "/jobs/:jobid"
          [jobid]
+         (log/debug (str "GET JOB on job [" jobid "]"))
          (if-let [job (invoke/get-job jobid)]
            (response/response (invoke/job-response jobid))
            (response/not-found (str "Job not found: " jobid)))
