@@ -4,12 +4,24 @@
   :description
   "Ocean marketplace deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."},
  
- :operator {:name "DEX", :url "https://www.dex.sg"},
+ ; Provide details for the Agent operator, for informational purposes
+ :operator {:name "DEX", 
+            :url "https://www.dex.sg"},
  
- :security {:user-config "surfer-users.edn"},
+ ;; This section contains security configuration.
+ :security {;; provide a file to specify automatically registered users and credentials
+            ;; SECURITY: this file contains passwords so access must be granted with care
+            :user-config "surfer-users.edn"},
  
+ ;; specify the http port for the Surfer instance to use
+ ;; SECURITY: It is recommended to configure a proxy (e.g. Nginx) to provide TLS via https
+ ;; Access to this port should only be allowed for testing, local or secure VPM based usage
  :http-port 8080
  
+ ;; Provide a DID for this Agent.
+ ;; A DID SHOULD be registered with the Ocean resolver to enable other parties to reolve the
+ ;; endpoints of this Agent
  :did "did:op:7d8d356b3e9bcb7222accf81bc718c521b3b7db958c7d1aa72b93424127db99b"
  
+ ;; Logging configuration
  :logging {}}
