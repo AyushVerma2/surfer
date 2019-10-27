@@ -130,7 +130,7 @@
 (s/defschema DDO
   {:id String
    ;; TODO: more values
-   })
+   s/Str s/Any})
 
 (s/defschema Agreement
   {(s/optional-key :price) (s/maybe TokenValue)

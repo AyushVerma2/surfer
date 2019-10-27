@@ -83,9 +83,13 @@
     (GET "/status" request
         :summary "Gets the status for this Agent"
         :return s/Any
-        {:status  200
+        (let [agent (:agent config/CONFIG)]
+          {:status  200
          :headers {"Content-Type" "application/json"}
-         :body    {:name "Test"}})
+         :body    {:name (or (:name agent) "Unnamed Agent")
+                   :description (or (:description agent) "No description")
+                   :api-versions ["v1"]
+                   :custom {:server-type "Surfer"}}}))
 
     ))
 
@@ -164,7 +168,7 @@
              :produces ["application/json"]
            }}}
     
-    (POST "/invoke/:op-id"
+    (POST "/async/:op-id"
           {{:keys [op-id]} :params :as request}
           :coercion nil ;; prevents coercion so we get the original input stream
           :body [body schemas/InvokeRequest]
@@ -538,6 +542,13 @@
              (friend/authorize #{:admin}
                (store/truncate-db!)
                (response/response "Successful")))
+    
+    (POST "/migrate-db" []
+             :summary "Performs database migration. DANGER."
+             (friend/authorize #{:admin}
+               (let [r (store/migrate-db!)] 
+                 (response/response (str "Successful: " r)))
+               ))
 
     (POST "/create-db-test-data" []
              :summary "Creates test data for the current database. DANGER."
@@ -748,7 +759,7 @@
       :tags ["Authentication API"]
       auth-api)
     
-    (context "/api/v1" []
+    (context "/api/v1/invoke" []
       :tags ["Invoke API"]
       invoke-api)
     

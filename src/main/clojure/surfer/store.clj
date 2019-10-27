@@ -33,7 +33,8 @@
    :migrations (ragtime.jdbc/load-resources "migrations")
    :strategy ragtime.strategy/rebase})
 
-(ragtime.repl/migrate ragtime-config)
+(defn migrate-db! []
+  (ragtime.repl/migrate ragtime-config))
 
 (Class/forName "org.h2.Driver")
 

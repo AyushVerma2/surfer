@@ -39,6 +39,10 @@
 (def LOCAL-URL
   (str "http://localhost:" PORT))
 
+(def REMOTE-URL
+  (or (:remote-url (:agent CONFIG)) LOCAL-URL))
+
+
 (def LOCAL-DDO
   {:id (str DID)
    :service 
@@ -52,7 +56,17 @@
       :serviceEndpoint (str LOCAL-URL "/api/v1/assets")}]})
 
 (def DDO
-  {:id (str DID)}) 
+  {"@context" "https://www.w3.org/2019/did/v1"
+   :id (str DID)
+   :service 
+    [{:type "Ocean.Invoke.v1"
+      :serviceEndpoint (str REMOTE-URL "/api/v1/invoke")}
+     {:type "Ocean.Meta.v1"
+      :serviceEndpoint (str REMOTE-URL "/api/v1/meta")}
+     {:type "Ocean.Auth.v1"
+      :serviceEndpoint (str REMOTE-URL "/api/v1/auth")}
+     {:type "Ocean.Storage.v1"
+      :serviceEndpoint (str REMOTE-URL "/api/v1/assets")}]}) 
 
 (def USER-CONFIG-FILE (get-in CONFIG [:security :user-config]))
 
