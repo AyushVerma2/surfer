@@ -127,6 +127,11 @@
    (s/optional-key :trust_access) (s/maybe s/Str)
    (s/optional-key :trust_visible) (s/maybe s/Str)})
 
+(s/defschema DDO
+  {:id String
+   ;; TODO: more values
+   })
+
 (s/defschema Agreement
   {(s/optional-key :price) (s/maybe TokenValue)
    s/Keyword s/Any

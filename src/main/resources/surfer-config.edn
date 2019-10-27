@@ -7,10 +7,17 @@
  ;; Define key metadata about the Agent deployment 
  :agent {
    ;; specify the name of the Agent
-   :name "Ocean Marketplace Test Server v0.1"
+   :name "Data Ecosystem Test Server"
  
    ;; Provide a descriptive paragraph explaing the role/purpose of the Agent
-         :description "Ocean marketplace deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."
+   :description "Data Ecosystem Agent deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."
+
+   ;; URL to provide as part of the DDO for remote access to this agent
+   :remote-url "http://localhost:8080"
+   
+   ;; DID to use for this agent.
+   ;; if specified as :generate then a random DID will be generated
+   :did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"  
  }
  
  ;; Define the identity of the marketplace operator

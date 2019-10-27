@@ -33,13 +33,15 @@
 (def PORT
   (:http-port CONFIG))
 
-(def DID (sf/did (or (:did CONFIG) (sf/random-did)))) 
+(def DID 
+  (sf/did (or (:did (:agent CONFIG)) (sf/random-did)))) 
 
 (def LOCAL-URL
   (str "http://localhost:" PORT))
 
 (def LOCAL-DDO
-  {:service 
+  {:id (str DID)
+   :service 
     [{:type "Ocean.Invoke.v1"
       :serviceEndpoint (str LOCAL-URL "/api/v1")}
      {:type "Ocean.Meta.v1"
@@ -48,6 +50,9 @@
       :serviceEndpoint (str LOCAL-URL "/api/v1/auth")}
      {:type "Ocean.Storage.v1"
       :serviceEndpoint (str LOCAL-URL "/api/v1/assets")}]})
+
+(def DDO
+  {:id (str DID)}) 
 
 (def USER-CONFIG-FILE (get-in CONFIG [:security :user-config]))
 

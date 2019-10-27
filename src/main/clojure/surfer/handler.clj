@@ -12,6 +12,7 @@
     [surfer.storage :as storage]
     [starfish.core :as sf]
     [surfer.utils :as utils]
+    [surfer.config :as config]
     [surfer.invoke :as invoke]
     [schema.core :as s]
     [clojure.data.json :as json]
@@ -60,13 +61,43 @@
   (-> request friend/current-authentication :token))
 
 ;; ==========================================
+;; Status API
+
+(def status-api
+  (routes
+    {:swagger
+     {:data {:info {:title "Status API"
+                    :description "Status API for DEP Agents"}
+             :tags [{:name "Status API", :description "Status API for DEP Agents"}]
+             ;;:consumes ["application/json"]
+
+             }}}
+
+    (GET "/ddo" request
+        :summary "Gets the ddo for this Agent"
+        :return schemas/DDO
+        {:status  200
+         :headers {"Content-Type" "application/json"}
+         :body    config/DDO})
+    
+    (GET "/status" request
+        :summary "Gets the status for this Agent"
+        :return s/Any
+        {:status  200
+         :headers {"Content-Type" "application/json"}
+         :body    {:name "Test"}})
+
+    ))
+
+
+;; ==========================================
 ;; Meta API
 
 (def meta-api
   (routes
     {:swagger
      {:data {:info {:title "Meta API"
-                    :description "Meta API for Ocean Marketplace"}
+                    :description "Meta API for Data Ecosystem Agents"}
              :tags [{:name "Meta API", :description "Meta API for Ocean Marketplace"}]
              ;;:consumes ["application/json"]
 
@@ -705,7 +736,6 @@
       :tags ["Market API"]
       market-api)
     
-
      (context "/api/v1/trust" []
       :tags ["Trust API"]
       trust-api)
@@ -721,6 +751,11 @@
     (context "/api/v1" []
       :tags ["Invoke API"]
       invoke-api)
+    
+    (context "/api" []
+      :tags ["Status API"]
+      status-api)
+
 
    ;; (response/not-found "404")
     ))
