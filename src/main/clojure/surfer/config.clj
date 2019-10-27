@@ -47,7 +47,7 @@
   {:id (str DID)
    :service 
     [{:type "Ocean.Invoke.v1"
-      :serviceEndpoint (str LOCAL-URL "/api/v1")}
+      :serviceEndpoint (str LOCAL-URL "/api/v1/invoke")}
      {:type "Ocean.Meta.v1"
       :serviceEndpoint (str LOCAL-URL "/api/v1/meta")}
      {:type "Ocean.Auth.v1"
@@ -56,7 +56,7 @@
       :serviceEndpoint (str LOCAL-URL "/api/v1/assets")}]})
 
 (def DDO
-  {"@context" "https://www.w3.org/2019/did/v1"
+  {(keyword "@context") "https://www.w3.org/2019/did/v1"
    :id (str DID)
    :service 
     [{:type "Ocean.Invoke.v1"

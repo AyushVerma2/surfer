@@ -129,8 +129,9 @@
 
 (s/defschema DDO
   {:id String
+   (keyword "@context") s/Str
    ;; TODO: more values
-   s/Str s/Any})
+   s/Keyword s/Any})
 
 (s/defschema Agreement
   {(s/optional-key :price) (s/maybe TokenValue)
