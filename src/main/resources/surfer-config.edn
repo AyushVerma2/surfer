@@ -16,7 +16,7 @@
    :remote-url "http://localhost:8080"
    
    ;; DID to use for this agent.
-   ;; if specified as :generate then a random DID will be generated
+   ;; if specified as ':auto-generate' then a random DID will be generated on startup
    :did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"  
  }
  

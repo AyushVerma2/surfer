@@ -34,7 +34,12 @@
   (:http-port CONFIG))
 
 (def DID 
-  (sf/did (or (:did (:agent CONFIG)) (sf/random-did)))) 
+  (sf/did 
+    (let [d (:did (:agent CONFIG))]
+      (cond
+        (= :auto-generate d) (sf/random-did)
+        (string? d) d
+        :else (sf/random-did))))) 
 
 (def LOCAL-URL
   (str "http://localhost:" PORT))
