@@ -7,6 +7,18 @@
             [surfer.systems :refer [base-system PORT]])
   )
 
+
+(def local-did
+  config/DID)
+
+(def local-ddo
+  config/LOCAL-DDO)
+
+(def local-ddo-string (sf/json-string-pprint local-ddo))
+
+(def ag (sf/remote-agent local-did local-ddo-string "Aladdin" "OpenSesame"))
+
+
 (defn test-function-1
   "Sample function to invoke"
   [inputs]
@@ -25,11 +37,6 @@
         C (.toUpperCase c)]
     {:output C}))
 
-(def local-did
-  config/DID)
-
-(def local-ddo
-  config/LOCAL-DDO)
 
 (def op-meta-map-1
   {:name "Test operation"
@@ -52,15 +59,11 @@
 
 (def op-meta (.getMetadataString op1))
 
-(def local-ddo-string (sf/json-string-pprint local-ddo))
-
-(def ag (sf/remote-agent local-did local-ddo-string "Aladdin" "OpenSesame"))
-
 (def a1 (sf/memory-asset "Foo"))
 (def a1 (sf/upload ag a1))
 
 
 (defn demo []
   (def j1 (sf/invoke op1 {:input a1} ))
-  
+  (sf/job-status j1)
   )
