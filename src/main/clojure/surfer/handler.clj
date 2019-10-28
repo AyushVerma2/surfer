@@ -15,6 +15,7 @@
     [surfer.config :as config]
     [surfer.invoke :as invoke]
     [schema.core :as s]
+    [rr.invoke :as rr] ;; TODO: remove after demos
     [clojure.data.json :as json]
     [clojure.pprint :as pprint :refer [pprint]]
     [surfer.ckan :as ckan]
@@ -521,18 +522,18 @@
     ;; ===========================================
     ;; CKAN Functionality
 
-         (POST "/ckan-import" request
-             :query-params [{userid :- schemas/UserID nil},
-                            repo :- String,
-                            {count :- s/Int 10}]
-             :summary "Imports assets from a CKAN repository"
-             (friend/authorize #{:admin}
-               (let [userid (or userid (get-current-userid request) (throw (IllegalArgumentException. "No valid userid")))]
-               (let [all-names (ckan/package-list repo)
-                     names (if count (take count (shuffle all-names)) all-names)]
-                 (binding [ckan/*import-userid* userid]
-                   (ckan/import-packages repo names))))
-               ))
+    (POST "/ckan-import" request
+          :query-params [{userid :- schemas/UserID nil},
+                         repo :- String,
+                         {count :- s/Int 10}]
+          :summary "Imports assets from a CKAN repository"
+          (friend/authorize #{:admin}
+                            (let [userid (or userid (get-current-userid request) (throw (IllegalArgumentException. "No valid userid")))]
+                              (let [all-names (ckan/package-list repo)
+                                    names (if count (take count (shuffle all-names)) all-names)]
+                                (binding [ckan/*import-userid* userid]
+                                  (ckan/import-packages repo names))))
+                            ))
 
     ;; ===========================================
     ;; Marketplace database management
@@ -547,8 +548,13 @@
              :summary "Performs database migration. DANGER."
              (friend/authorize #{:admin}
                (let [r (store/migrate-db!)] 
-                 (response/response (str "Successful: " r)))
-               ))
+                 (response/response (str "Successful: " r)))))
+               
+    (POST "/setup-rr" []
+          :summary "Sets up RR invokable operations."
+          (friend/authorize #{:admin}
+                            (response/response (rr/setup-invoke))))
+               
 
     (POST "/create-db-test-data" []
              :summary "Creates test data for the current database. DANGER."
