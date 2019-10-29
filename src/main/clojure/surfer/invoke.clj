@@ -87,7 +87,7 @@
           status (sf/job-status job)
           resp {:status status}
           resp (if (= status :succeeded)
-                 (assoc resp :result (format-results (sf/get-result job)))
+                 (assoc resp :results (format-results (sf/get-result job)))
                  resp)
           resp (if (= status :failed)
                  (assoc resp :message (try (sf/get-result job) 
