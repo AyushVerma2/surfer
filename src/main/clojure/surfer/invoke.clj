@@ -24,7 +24,7 @@
     (when f (sf/create-operation params f))))
 
 (defn get-asset 
-  "Gets an asset in the content of this surfer instance."
+  "Gets an asset in the context of this surfer instance."
   ([did]
     (sf/asset did)))
 

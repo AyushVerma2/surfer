@@ -26,7 +26,8 @@
 (def op-meta-map
   {:name "Test RR operation"
    :type "operation"
-   :operation {:params {:input {:type "json"}}
+   :operation {:modes ["sync", "async"]
+               :params {:input {:type "json"}}
                :results {:output {:type "json"}}}
    :additionalInfo {:function "rr.invoke/test-function"}})
 
