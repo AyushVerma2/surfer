@@ -1,0 +1,44 @@
+{:paths ["src/main/clojure"
+         "src/main/resources"]
+
+ :deps
+ {org.clojure/clojure {:mvn/version "1.10.1"}
+  org.clojure/tools.logging {:mvn/version "0.5.0"}
+  org.clojure/test.check {:mvn/version "0.10.0"}
+  org.clojure/data.json {:mvn/version "0.2.6"}
+  org.clojure/data.csv {:mvn/version "0.1.4"}
+  org.clojure/java.jdbc {:mvn/version "0.7.10"}
+
+  sg.dex/starfish-clj {:mvn/version "0.7.3"
+                       :exclusions [org.apache.logging.log4j/log4j-slf4j18-impl]}
+
+  org.apache.logging.log4j/log4j-api {:mvn/version "2.12.1"}
+  org.apache.logging.log4j/log4j-core {:mvn/version "2.12.1"}
+  org.apache.logging.log4j/log4j-slf4j-impl {:mvn/version "2.12.1"}
+
+  http-kit {:mvn/version "2.3.0"}
+  ring {:mvn/version "1.7.1"}
+  ring/ring-defaults {:mvn/version "0.3.2"}
+  ring-middleware-format {:mvn/version "0.7.4"}
+  ring-cors {:mvn/version "0.1.13"}
+  compojure {:mvn/version "1.6.1"}
+  metosin/compojure-api {:mvn/version "1.1.11"}
+  environ {:mvn/version "1.1.0"}
+  org.danielsz/system {:mvn/version "0.4.3"}
+  clj-http {:mvn/version "3.10.0"}
+  com.cemerick/friend {:mvn/version "0.2.3"}
+  org.apache.tika/tika-core {:mvn/version "1.22"}
+  com.h2database/h2 {:mvn/version "1.4.200"}
+  org.bouncycastle/bcprov-jdk15on {:mvn/version "1.64"}
+  ragtime {:mvn/version "0.8.0"}
+  prismatic/schema-generators {:mvn/version "0.1.3"}}
+
+ :aliases
+ {:dev
+  {:extra-paths ["src/dev"]}
+
+  :test
+  {:extra-paths ["src/test/clojure"
+                 "src/test/resources"]
+
+   :extra-deps {org.clojure/tools.analyzer {:mvn/version "0.7.0"}}}}}
