@@ -33,19 +33,35 @@
                (sf/to-string (sf/content foo-remote-data-asset))))
 
         (is (= (sf/metadata-string foo-memory-asset)
-               (sf/metadata-string foo-remote-data-asset)))
-
-        ;; * FAILS *
-        ;;(let [operation (->> (sf/memory-asset {:name "Test operation"
-        ;;                                       :type "operation"
-        ;;                                       :operation {:params {:input {:type "asset"}}
-        ;;                                                   :results {:output {:type "asset"}}}
-        ;;                                       :additionalInfo {:function "surfer.startfish-test/test-function-1"}} "")
-        ;;                     (sf/register agent))
-        ;;
-        ;;      result (sf/invoke-sync operation {:input foo-remote-data-asset})]
-        ;;  (prn result))
-
-        )
+               (sf/metadata-string foo-remote-data-asset))))
       (finally
         (component/stop-system system)))))
+
+(comment
+
+  (def system (component/start-system (systems/base-system)))
+
+  (component/stop-system system)
+
+  (def agent
+    (let [local-did config/DID
+          local-ddo config/LOCAL-DDO
+          local-ddo-string (sf/json-string-pprint local-ddo)
+
+          username "Aladdin"
+          password "OpenSesame"]
+      (sf/remote-agent local-did local-ddo-string username password)))
+
+  (def asset
+    (->> (sf/memory-asset "Foo")
+         (sf/upload agent)))
+
+  (def operation
+    (->> (sf/memory-asset {:name "Test operation"
+                           :type "operation"
+                           :operation {:params {:input {:type "asset"}}
+                                       :results {:output {:type "asset"}}}
+                           :additionalInfo {:function "surfer.startfish-test/test-function-1"}} "")
+         (sf/register agent)))
+
+  (sf/invoke-sync operation {:input asset}))
