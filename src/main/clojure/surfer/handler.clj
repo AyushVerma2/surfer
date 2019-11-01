@@ -231,22 +231,27 @@
 
     (PUT "/:id" {{:keys [id]} :params :as request}
         :coercion nil
-        :body [uploaded nil]
+        ;:body [uploaded nil]
         :summary "Stores asset data for a given asset ID"
         ;; (println (:body request))
-  (let [userid (get-current-userid request)
+        (let [^InputStream body (:body request)
+              _ (.reset body)
+              userid (get-current-userid request)
               meta (store/lookup-json id)]
           (cond
             (nil? userid) (response/status
                             (response/response "User not authenticated")
                             401)
-            (not (map? uploaded)) (response/bad-request
-                                (str "Expected file upload, got body: " uploaded))
+            ;;(not (map? uploaded)) (response/bad-request
+            ;;                        (str "Expected file upload, got body: " uploaded))
             (nil? meta) (response/not-found (str "Attempting to store unregistered asset [" id "]")))
-            :else (let [file (:tempfile uploaded)] ;; we have a body
-              ;; (println request)
-              (storage/save id file)
-                    (response/created (str "/api/v1/assets/" id)))
+            :else (if-let [file body] ;; we have a body
+                    ;; (println request)
+                    (do 
+                      (storage/save id file)
+                      (response/created (str "/api/v1/assets/" id)))
+                    (response/bad-request
+                       (str "No uploaded data?: " body)))
           ))
 
    (POST "/:id" request

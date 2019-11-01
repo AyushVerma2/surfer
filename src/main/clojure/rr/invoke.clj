@@ -21,7 +21,8 @@
         a (:input inputs)
         ^String c (sf/to-string a)
         C (.toUpperCase c)]
-    {:output C}))
+    {:output (str C C)
+     :other c}))
 
 (def op-meta-map
   {:name "Test RR operation"
