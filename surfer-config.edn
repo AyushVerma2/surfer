@@ -13,7 +13,7 @@
    :description "Data Ecosystem Agent deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."
 
    ;; URL to provide as part of the DDO for remote access to this agent
-   :remote-url "http://localhost:8080"
+   :remote-url "http://13.70.20.203:8092"
    
    ;; DID to use for this agent.
    ;; if specified as ':auto-generate' then a random DID will be generated on startup
