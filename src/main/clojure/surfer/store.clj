@@ -12,8 +12,7 @@
             [ragtime.repl]
             [ragtime.strategy]
             [cemerick.friend.credentials :as creds])
-  (:import [java.time Instant]
-           [java.util Date]))
+  (:import [java.time Instant]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
