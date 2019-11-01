@@ -7,3 +7,6 @@
 /surfer-users.edn
 /output.csv
 .idea/
+.cpcache/
+.nrepl-port
+surfer.iml
