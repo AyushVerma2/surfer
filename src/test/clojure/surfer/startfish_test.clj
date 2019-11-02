@@ -43,7 +43,7 @@
 
   (component/stop-system system)
 
-  (def agent
+  (def local-agent-aladdin
     (let [local-did config/DID
           local-ddo config/LOCAL-DDO
           local-ddo-string (sf/json-string-pprint local-ddo)
@@ -54,7 +54,7 @@
 
   (def asset
     (->> (sf/memory-asset "Foo")
-         (sf/upload agent)))
+         (sf/upload local-agent-aladdin)))
 
   (def operation
     (->> (sf/memory-asset {:name "Test operation"
@@ -62,6 +62,6 @@
                            :operation {:params {:input {:type "asset"}}
                                        :results {:output {:type "asset"}}}
                            :additionalInfo {:function "surfer.startfish-test/test-function-1"}} "")
-         (sf/register agent)))
+         (sf/register local-agent-aladdin)))
 
   (sf/invoke-sync operation {:input asset}))
