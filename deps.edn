@@ -41,8 +41,10 @@
   {:extra-paths ["src/test/clojure"
                  "src/test/resources"]
 
-   :extra-deps {org.clojure/tools.analyzer {:mvn/version "0.7.0"}
-                com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
+   :extra-deps {org.clojure/tools.analyzer {:mvn/version "0.7.0"}}}
+
+  :test-runner
+  {:extra-deps {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
                                            :sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}
 
    :main-opts ["-m" "cognitect.test-runner"
