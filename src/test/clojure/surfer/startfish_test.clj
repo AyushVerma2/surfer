@@ -15,7 +15,7 @@
     {:output (sf/memory-asset {:name "Result of computation"} C)}))
 
 (deftest ^:integration test-startfish
-  (let [system (component/start-system (systems/base-system))]
+  (let [system (component/start (systems/base-system))]
     (try
       (let [local-did config/DID
             local-ddo config/LOCAL-DDO
@@ -35,13 +35,13 @@
         (is (= (sf/metadata-string foo-memory-asset)
                (sf/metadata-string foo-remote-data-asset))))
       (finally
-        (component/stop-system system)))))
+        (component/stop system)))))
 
 (comment
 
-  (def system (component/start-system (systems/base-system)))
+  (def system (component/start (systems/base-system)))
 
-  (component/stop-system system)
+  (component/stop system)
 
   (def local-agent-aladdin
     (let [local-did config/DID
