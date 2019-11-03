@@ -15,7 +15,7 @@
     {:output (sf/memory-asset {:name "Result of computation"} C)}))
 
 (deftest ^:integration test-startfish
-  (let [system (component/start (systems/base-system))]
+  (let [system (component/start (systems/system))]
     (try
       (let [local-did config/DID
             local-ddo config/LOCAL-DDO
@@ -39,7 +39,7 @@
 
 (comment
 
-  (def system (component/start (systems/base-system)))
+  (def system (component/start (systems/system)))
 
   (component/stop system)
 

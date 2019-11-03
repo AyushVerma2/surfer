@@ -19,7 +19,7 @@
 ;; but Surfer system is small and is unlikely to overwhelm the printer.
 (remove-method clojure.core/print-method com.stuartsierra.component.SystemMap)
 
-(defn base-system []
+(defn system []
   (component/system-map
     :web (new-http-kit :port PORT
                        :handler (fn [request]

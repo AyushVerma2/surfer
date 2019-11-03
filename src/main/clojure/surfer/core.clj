@@ -6,7 +6,7 @@
     [surfer.ckan :refer :all :as ckan]
     [surfer.utils :as utils :refer [port-available?]]
     [clj-http.client :as client]
-    [surfer.systems :refer [base-system]]
+    [surfer.systems :refer [system]]
     [system.repl :refer [set-init! go start reset stop]]
     [clojure.tools.logging :as log]
     [clojure.data.json :as json]))
@@ -14,8 +14,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(let [system #'base-system]
-  (set-init! system))
+(set-init! system)
 
 (defn -main
   "Start a production system, unless a system is passed as argument (as in the dev-run task)."
