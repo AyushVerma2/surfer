@@ -14,7 +14,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(set-init! system)
+(set-init! #'system)
 
 (defn -main
   "Start a production system, unless a system is passed as argument (as in the dev-run task)."

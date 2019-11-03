@@ -18,7 +18,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(set-init! system)
+(set-init! #'system)
 
 ;; ensure server is running
 (if-not
