@@ -174,7 +174,7 @@
       :coercion nil
       :body [body schemas/InvokeRequest]
       (let [op-id (get-in request [:params :op-id])
-            op-meta (some-> op-id store/lookup-json)]
+            op-meta (some-> op-id (store/lookup-json :key-fn keyword))]
         (cond
           (nil? op-meta)
           (response/not-found "Operation metadata not available.")
