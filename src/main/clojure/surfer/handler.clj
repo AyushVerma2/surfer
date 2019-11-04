@@ -357,7 +357,7 @@
                    :body    {:id (:id user)
                              :username (:username user)}
                    })
-               (response/not-found "Cannot find user with id: " id)))
+               (response/not-found (str "Cannot find user with id: " id))))
 
     (POST "/users" request
          :query-params [username :- schemas/Username,
