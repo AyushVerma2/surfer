@@ -1,5 +1,6 @@
 (ns surfer.startfish-test
   (:require [clojure.test :refer :all]
+            [clojure.walk :refer [stringify-keys]]
             [com.stuartsierra.component :as component]
             [surfer.systems :as systems]
             [surfer.config :as config]
@@ -59,9 +60,10 @@
   (def operation
     (->> (sf/memory-asset {:name "Test operation"
                            :type "operation"
-                           :operation {:params {:input {:type "asset"}}
+                           :operation {:modes ["sync" "async"]
+                                       :params {:input {:type "asset"}}
                                        :results {:output {:type "asset"}}}
                            :additionalInfo {:function "surfer.startfish-test/test-function-1"}} "")
          (sf/register local-agent-aladdin)))
 
-  (sf/invoke-sync operation {:input asset}))
+  (sf/invoke-sync operation (stringify-keys {:input asset})))
