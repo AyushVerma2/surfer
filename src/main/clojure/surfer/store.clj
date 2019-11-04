@@ -343,12 +343,11 @@
       hash)))
 
 (defn lookup
-  "Gets the metadata string for a given Asset ID, or nil if not available."
-  (^String [^String id-str]
-    (let [rs (jdbc/query db ["select * from Metadata where id = ?" id-str])]
-    (if (empty? rs)
-      nil
-        (str (:metadata (first rs)))))))
+  "Returns metadata as a JSON-encoded-string for the given Asset ID, or nil if not available."
+  (^String [^String id]
+   (let [rs (jdbc/query db ["select * from Metadata where id = ?" id])]
+     (when (seq rs)
+       (str (:metadata (first rs)))))))
 
 (defn lookup-json
   "Gets the JSON data structure for the metadata of a given asset ID.
