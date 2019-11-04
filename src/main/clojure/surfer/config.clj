@@ -1,12 +1,12 @@
 (ns surfer.config
-  (:require [surfer.utils :as utils])
-  (:require [environ.core :refer [env]])
   (:require [starfish.core :as sf]
+            [surfer.utils :as utils]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.pprint :as pprint])
-  (:require [clojure.tools.logging :as log])
-  (:require [cemerick.friend [credentials :as creds]])
+            [clojure.pprint :as pprint]
+            [clojure.tools.logging :as log]
+            [environ.core :refer [env]]
+            [cemerick.friend.credentials :as creds])
   (:import [java.io File]))
 
 (def CONFIG-PATH (or (env :config-path) "surfer-config.edn"))

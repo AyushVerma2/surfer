@@ -7,14 +7,12 @@
             [surfer.config :refer [CONFIG USER-CONFIG]]
             [clojure.data.json :as json]
             [clojure.java.jdbc :as jdbc]
+            [clojure.tools.logging :as log]
             [ragtime.jdbc]
             [ragtime.repl]
             [ragtime.strategy]
-            [cemerick.friend
-                     [credentials :as creds]])
-  (:require [clojure.tools.logging :as log])
-  (:import [java.time Instant]
-           [java.util Date]))
+            [cemerick.friend.credentials :as creds])
+  (:import [java.time Instant]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)

@@ -4,7 +4,7 @@
   (:require [clojure.test :refer :all])
   (:require [starfish.core :as sf]
             [surfer.config :as config]
-            [surfer.systems :refer [base-system PORT]])
+            [surfer.systems :refer [system PORT]])
   )
 
 

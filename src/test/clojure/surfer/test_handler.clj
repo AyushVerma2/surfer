@@ -8,7 +8,7 @@
     [surfer.utils :as utils :refer [port-available?]]
     [surfer.ckan :as ckan]
     [slingshot.slingshot :refer [try+ throw+]]
-    [surfer.systems :refer [base-system PORT]]
+    [surfer.systems :refer [system PORT]]
     [system.repl :refer [set-init! go start reset stop]]
     [cemerick.friend [workflows :as workflows]
                      [credentials :as creds]]
@@ -18,23 +18,23 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
+(set-init! #'system)
+
 ;; ensure server is running
-(let [system #'base-system]
-  (set-init! system)
-  (if-not
-      (try
-        (if (port-available? PORT)
-          (do
-            (start)
-            true)
-          (do
-            (log/error "Unable to start surfer, port unavailable:" PORT)
-            false)) ;; unable to start surfer
-        (catch Throwable t
-          (.printStackTrace t)
-          false)) ;; unable to start surfer
-    (throw (RuntimeException.
-            (str "Unable to start surfer, port unavailable: " PORT)))))
+(if-not
+  (try
+    (if (port-available? PORT)
+      (do
+        (start)
+        true)
+      (do
+        (log/error "Unable to start surfer, port unavailable:" PORT)
+        false))                                             ;; unable to start surfer
+    (catch Throwable t
+      (.printStackTrace t)
+      false))                                               ;; unable to start surfer
+  (throw (RuntimeException.
+           (str "Unable to start surfer, port unavailable: " PORT))))
 
 (def BASE_URL "http://localhost:8080/")
 (def AUTH_HEADERS {:headers {"Authorization", "Basic QWxhZGRpbjpPcGVuU2VzYW1l"}})

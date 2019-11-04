@@ -145,7 +145,7 @@ Surfer may be used interactively at a Clojure REPL. Open a REPL in the 'surfer.c
 
 ;; Randomly select 10 sample packages to import
 ;; We could use them all, but it would be a lot of requests, so keeping small for test purposes
-(def packs (take 10 (shuffle all))
+(def packs (take 10 (shuffle all)))
 
 ;; We get something like:
 ;; ("financial-transactions-data-darlington-primary-care-trust" "payment-recalls"
