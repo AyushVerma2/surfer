@@ -353,9 +353,9 @@
 (defn lookup-json
   "Gets the JSON data structure for the metadata of a given asset ID.
    Returns nil if the metadata is not available."
-  ([^String id-str]
+  ([^String id-str & options]
     (if-let [meta (lookup id-str)]
-      (json/read-str meta)
+      (json/read-str meta options)
       nil)))
 
 (defn all-keys
