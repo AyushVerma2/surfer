@@ -190,8 +190,7 @@
                   operation (invoke/in-memory-operation op-meta)
 
                   params (-> (slurp body-stream)
-                             (sf/read-json-string)
-                             (stringify-keys))]
+                             (json/read-str :key-fn str))]
               {:status 200
                :body (sf/invoke-result operation params)})
             (catch Exception e
