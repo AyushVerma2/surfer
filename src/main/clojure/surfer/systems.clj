@@ -10,7 +10,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def PORT (Integer/parseInt (str (or (CONFIG :http-port) 8080))))
+(def PORT (Integer/parseInt (str (or (CONFIG :http-port) 3030))))
 
 (log/debug "Server configured for port:" PORT)
 

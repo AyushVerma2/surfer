@@ -36,7 +36,7 @@
   (throw (RuntimeException.
            (str "Unable to start surfer, port unavailable: " PORT))))
 
-(def BASE_URL "http://localhost:8080/")
+(def BASE_URL "http://localhost:3030/")
 (def AUTH_HEADERS {:headers {"Authorization", "Basic QWxhZGRpbjpPcGVuU2VzYW1l"}})
 
 (deftest test-welcome
