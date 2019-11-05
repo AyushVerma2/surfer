@@ -23,7 +23,7 @@
   [metadata]
   (keys (get-in metadata [:operation :params])))
 
-(defn new-operation
+(defn create-operation
   [metadata]
   (let [f (operation-function metadata)
         p (operation-params-keys metadata)]
@@ -31,11 +31,8 @@
       (nil? f)
       (throw (ex-info "Missing function. Please check `[:additionalInfo :function]`." metadata))
 
-      (nil? p)
-      (throw (ex-info "Missing params. Please check `[:operation :params]`." metadata))
-
       :else
-      (sf/create-operation p f))))
+      (sf/create-operation (or p []) f))))
 
 (defn get-operation 
   "Gets an in-memory operation for the given operation id"

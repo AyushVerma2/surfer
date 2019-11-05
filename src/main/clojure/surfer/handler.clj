@@ -174,7 +174,7 @@
       :coercion nil
       :body [body schemas/InvokeRequest]
       (let [op-id (get-in request [:params :op-id])
-            op-meta (some-> op-id (store/lookup-json :key-fn keyword))]
+            op-meta (some-> op-id (store/lookup-json {:key-fn keyword}))]
         (cond
           (nil? op-meta)
           (response/not-found "Operation metadata not available.")
@@ -187,13 +187,13 @@
             (let [^InputStream body-stream (:body request)
                   _ (.reset body-stream)
 
-                  operation (invoke/new-operation op-meta)
+                  operation (invoke/create-operation op-meta)
 
                   params (-> (slurp body-stream)
                              (sf/read-json-string)
                              (stringify-keys))]
-              {:status 201
-               :body (sf/invoke-sync operation params)})
+              {:status 200
+               :body (sf/invoke-result operation params)})
             (catch Exception e
               (log/error e "Failed to invoke operation." op-meta)
 
