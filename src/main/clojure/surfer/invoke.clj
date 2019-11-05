@@ -23,7 +23,7 @@
   [metadata]
   (keys (get-in metadata [:operation :params])))
 
-(defn create-operation
+(defn in-memory-operation
   [metadata]
   (let [f (operation-function metadata)
         p (operation-params-keys metadata)]
