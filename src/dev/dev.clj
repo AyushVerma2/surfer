@@ -8,7 +8,9 @@
 
 (comment
 
-  (defn get-time [_]
+  (defn get-time
+    "Get current time"
+    [param]
     {:time (data.json/json-str (str (Date.)))})
 
   (def aladdin
@@ -17,29 +19,25 @@
           local-ddo-string (sf/json-string-pprint local-ddo)]
       (sf/remote-agent local-did local-ddo-string "Aladdin" "OpenSesame")))
 
+  (sf/default-operation-metadata  #'get-time)
+
   (def get-time-operation
-    (->> (sf/create-operation [] `get-time {:name "Get Time"
-                                            :type "operation"
-                                            :operation
-                                            {:modes ["sync" "async"]
-                                             :params {}
-                                             :results {:time {:type "json"}}}
-                                            :additionalInfo {:function "dev/get-time"}})
+    (->> (sf/in-memory-operation #'get-time)
          (sf/register aladdin)))
 
   ;; Param keys *must be* a string
   ;; when calling the Java API directly.
-  (def job (.invoke get-time-operation {"key" "value"}))
+  (def job (.invoke get-time-operation {"param" "value"}))
 
   ;; Param keys can be a keyword because
   ;; `starfish.core/invoke` uses `stringify-keys`.
-  (def job (sf/invoke get-time-operation {:key "value"}))
+  (def job (sf/invoke get-time-operation {:param "value"}))
 
   (sf/poll-result job)
 
   (sf/job-status job)
 
-  (sf/invoke-result get-time-operation {})
+  (sf/invoke-result get-time-operation {:param ""})
 
   )
 
