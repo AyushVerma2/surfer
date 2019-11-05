@@ -14,11 +14,6 @@
 
 (log/debug "Server configured for port:" PORT)
 
-;; Print is disabled by default, but it's a nice convenience to have.
-;; It's disabled by defaul to avoid "overwhelming" the printer,
-;; but Surfer system is small and is unlikely to overwhelm the printer.
-(remove-method clojure.core/print-method com.stuartsierra.component.SystemMap)
-
 (defn system []
   (component/system-map
     :web (new-http-kit :port PORT
