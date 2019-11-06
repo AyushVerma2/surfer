@@ -1,6 +1,6 @@
 # Surfer
 
-[![Build Status](https://dev.azure.com/dex-devops/miketest/_apis/build/status/DEX-Company.surfer?branchName=develop)](https://dev.azure.com/dex-devops/miketest/_build/latest?definitionId=1?branchName=develop)
+[![Actions Status](https://github.com/DEX-Company/surfer/workflows/CI/badge.svg)](https://github.com/DEX-Company/surfer/actions)
 
 Surfer provides a standalone reference implementation of an Data Ecosystem Agent with the following capabilities:
 
