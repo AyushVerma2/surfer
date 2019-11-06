@@ -24,7 +24,7 @@
 (def LOADED-CONFIG (edn/read-string (slurp CONFIG-PATH)))
 
 (def DEFAULT-CONFIG
-  {:http-port 8080})
+  {:http-port 3030})
 
 (def CONFIG (merge
               DEFAULT-CONFIG
