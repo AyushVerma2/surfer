@@ -16,4 +16,4 @@ jobs:
         with:
           tools-deps: '1.10.1.483'
       - name: Run tests
-        run: clojure -A:test:test-runner
+        run: clojure -A:test:test-runner -e :integration
