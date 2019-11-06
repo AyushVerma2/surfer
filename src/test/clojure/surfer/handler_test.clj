@@ -1,18 +1,12 @@
-(ns surfer.test-handler
+(ns surfer.handler-test
   (:require
-    [surfer system]
     [clj-http.client :as client]
-    [clojure.tools.logging :as log]
     [clojure.data.json :as json]
     [clojure.java.io :as io]
-    [surfer.utils :as utils :refer [port-available?]]
-    [surfer.ckan :as ckan]
+    [surfer.utils :as utils]
     [surfer.system :as system]
     [slingshot.slingshot :refer [try+ throw+]]
-    [surfer.system :refer [new-system PORT]]
     [com.stuartsierra.component :as component]
-    [cemerick.friend [workflows :as workflows]
-                     [credentials :as creds]]
     [clojure.test :refer :all]))
 
 (set! *warn-on-reflection* true)
@@ -21,7 +15,7 @@
 (def BASE_URL "http://localhost:3030/")
 (def AUTH_HEADERS {:headers {"Authorization", "Basic QWxhZGRpbjpPcGVuU2VzYW1l"}})
 
-(deftest test-api
+(deftest ^:integration test-api
   (let [system (component/start (system/new-system))]
     (try
       ;; -- test-welcome
@@ -98,11 +92,11 @@
               true)))
 
       (is (try+
-         (client/get (str BASE_URL "api/v1/meta/data/"
-                          "0000") AUTH_HEADERS)
-         (catch [:status 404] {:keys [request-time headers body]}
-           ;; OK, not found expected
-           true)))
+            (client/get (str BASE_URL "api/v1/meta/data/"
+                             "0000") AUTH_HEADERS)
+            (catch [:status 404] {:keys [request-time headers body]}
+              ;; OK, not found expected
+              true)))
 
       (finally
         (component/stop system)))))
