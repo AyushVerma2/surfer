@@ -6,6 +6,15 @@
             [surfer.config :as config]
             [starfish.core :as sf]))
 
+(defn system-fixture [f]
+  (let [system (component/start (system/new-system))]
+    (try
+      (f)
+      (finally
+        (component/stop system)))))
+
+(use-fixtures :once system-fixture)
+
 (defn test-function-1
   "Sample function to invoke"
   [inputs]
@@ -16,27 +25,23 @@
     {:output (sf/memory-asset {:name "Result of computation"} C)}))
 
 (deftest ^:integration test-startfish
-  (let [system (component/start (system/new-system))]
-    (try
-      (let [local-did config/DID
-            local-ddo config/LOCAL-DDO
-            local-ddo-string (sf/json-string-pprint local-ddo)
+  (let [local-did config/DID
+        local-ddo config/LOCAL-DDO
+        local-ddo-string (sf/json-string-pprint local-ddo)
 
-            username "Aladdin"
-            password "OpenSesame"
+        username "Aladdin"
+        password "OpenSesame"
 
-            agent (sf/remote-agent local-did local-ddo-string username password)
+        agent (sf/remote-agent local-did local-ddo-string username password)
 
-            foo-memory-asset (sf/memory-asset "Foo")
-            foo-remote-data-asset (sf/upload agent foo-memory-asset)]
+        foo-memory-asset (sf/memory-asset "Foo")
+        foo-remote-data-asset (sf/upload agent foo-memory-asset)]
 
-        (is (= (sf/to-string (sf/content foo-memory-asset))
-               (sf/to-string (sf/content foo-remote-data-asset))))
+    (is (= (sf/to-string (sf/content foo-memory-asset))
+           (sf/to-string (sf/content foo-remote-data-asset))))
 
-        (is (= (sf/metadata-string foo-memory-asset)
-               (sf/metadata-string foo-remote-data-asset))))
-      (finally
-        (component/stop system)))))
+    (is (= (sf/metadata-string foo-memory-asset)
+           (sf/metadata-string foo-remote-data-asset)))))
 
 (comment
 
