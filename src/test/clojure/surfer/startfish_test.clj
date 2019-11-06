@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [clojure.walk :refer [stringify-keys]]
             [com.stuartsierra.component :as component]
-            [surfer.systems :as systems]
+            [surfer.system :as system]
             [surfer.config :as config]
             [starfish.core :as sf]))
 
@@ -16,7 +16,7 @@
     {:output (sf/memory-asset {:name "Result of computation"} C)}))
 
 (deftest ^:integration test-startfish
-  (let [system (component/start (systems/system))]
+  (let [system (component/start (system/new-system))]
     (try
       (let [local-did config/DID
             local-ddo config/LOCAL-DDO
@@ -40,7 +40,7 @@
 
 (comment
 
-  (def system (component/start (systems/system)))
+  (def system (component/start (system/new-system)))
 
   (component/stop system)
 

@@ -1,8 +1,8 @@
 (ns dev
   (:require [surfer.store :as store]
             [surfer.config :as config]
-            [surfer.systems :as systems]
-            [system.repl :refer [set-init! go reset start stop]]))
+            [surfer.system :as system]
+            [com.stuartsierra.component.repl :refer [set-init reset start stop system]]))
 
-(set-init! #'systems/system)
+(set-init system/new-system)
 

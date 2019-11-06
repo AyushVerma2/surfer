@@ -1,5 +1,3 @@
-(ns user)
+(ns user
+  (:require [com.stuartsierra.component.user-helpers :refer [dev go]]))
 
-(defn dev []
-  (require 'dev)
-  (in-ns 'dev))

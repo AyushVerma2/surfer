@@ -1,27 +1,25 @@
 (ns surfer.core
   (:require
-    [surfer systems]
+    [surfer system]
     [surfer.store :as store]
     [surfer.config :as config]
     [surfer.ckan :refer :all :as ckan]
     [surfer.utils :as utils :refer [port-available?]]
     [clj-http.client :as client]
-    [surfer.systems :refer [system]]
-    [system.repl :refer [set-init! go start reset stop]]
+    [surfer.system :refer [new-system]]
+    [com.stuartsierra.component :as component]
     [clojure.tools.logging :as log]
     [clojure.data.json :as json]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(set-init! #'system)
-
 (defn -main
   "Start a production system, unless a system is passed as argument (as in the dev-run task)."
   [& args]
   (let [port (config/CONFIG :http-port)]
     (if (port-available? port)
-      (start)
+      (component/start (new-system))
       (log/error "Unable to start surfer, port unavailable:" port))))
 
 (comment

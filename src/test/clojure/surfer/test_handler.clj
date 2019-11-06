@@ -1,6 +1,6 @@
 (ns surfer.test-handler
   (:require
-    [surfer systems]
+    [surfer system]
     [clj-http.client :as client]
     [clojure.tools.logging :as log]
     [clojure.data.json :as json]
@@ -8,8 +8,8 @@
     [surfer.utils :as utils :refer [port-available?]]
     [surfer.ckan :as ckan]
     [slingshot.slingshot :refer [try+ throw+]]
-    [surfer.systems :refer [system PORT]]
-    [system.repl :refer [set-init! go start reset stop]]
+    [surfer.system :refer [new-system PORT]]
+    [com.stuartsierra.component.repl :refer [set-init start reset stop]]
     [cemerick.friend [workflows :as workflows]
                      [credentials :as creds]]
     [clojure.test :refer :all])
@@ -18,23 +18,24 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(set-init! #'system)
+(set-init new-system)
 
+;; TODO: Use system
 ;; ensure server is running
-(if-not
-  (try
-    (if (port-available? PORT)
-      (do
-        (start)
-        true)
-      (do
-        (log/error "Unable to start surfer, port unavailable:" PORT)
-        false))                                             ;; unable to start surfer
-    (catch Throwable t
-      (.printStackTrace t)
-      false))                                               ;; unable to start surfer
-  (throw (RuntimeException.
-           (str "Unable to start surfer, port unavailable: " PORT))))
+;;(if-not
+;;  (try
+;;    (if (port-available? PORT)
+;;      (do
+;;        (start)
+;;        true)
+;;      (do
+;;        (log/error "Unable to start surfer, port unavailable:" PORT)
+;;        false))                                             ;; unable to start surfer
+;;    (catch Throwable t
+;;      (.printStackTrace t)
+;;      false))                                               ;; unable to start surfer
+;;  (throw (RuntimeException.
+;;           (str "Unable to start surfer, port unavailable: " PORT))))
 
 (def BASE_URL "http://localhost:3030/")
 (def AUTH_HEADERS {:headers {"Authorization", "Basic QWxhZGRpbjpPcGVuU2VzYW1l"}})

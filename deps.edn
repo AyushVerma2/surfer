@@ -19,7 +19,7 @@
   compojure {:mvn/version "1.6.1"}
   metosin/compojure-api {:mvn/version "1.1.11"}
   environ {:mvn/version "1.1.0"}
-  org.danielsz/system {:mvn/version "0.4.3"}
+  com.stuartsierra/component {:mvn/version "0.4.0"}
   clj-http {:mvn/version "3.10.0"}
   com.cemerick/friend {:mvn/version "0.2.3"}
   org.apache.tika/tika-core {:mvn/version "1.22"}
@@ -30,7 +30,11 @@
 
  :aliases
  {:dev
-  {:extra-paths ["src/dev"]}
+  {:extra-paths ["src/dev"]
+   :extra-deps {com.stuartsierra/component.repl {:mvn/version "0.2.0"
+                                                 :exclusions [org.clojure/tools.namespace]}
+
+                org.clojure/tools.namespace {:mvn/version "0.3.1"}}}
 
   :test
   {:extra-paths ["src/test/clojure"
