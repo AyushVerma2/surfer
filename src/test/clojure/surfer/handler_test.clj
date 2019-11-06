@@ -24,12 +24,10 @@
 (def BASE_URL "http://localhost:3030/")
 (def AUTH_HEADERS {:headers {"Authorization", "Basic QWxhZGRpbjpPcGVuU2VzYW1l"}})
 
-(deftest ^:integration test-api
+(deftest ^:integration test-welcome
+  (is (= 200 (:status (client/get (str BASE_URL) AUTH_HEADERS)))))
 
-  ;; -- test-welcome
-  (is (= 200 (:status (client/get (str BASE_URL) AUTH_HEADERS))))
-
-  ;; -- test-register-upload
+(deftest ^:integration test-register-upload
   (let [adata (json/write-str {"name" "test asset 1"})
         r1 (client/post (str BASE_URL "api/v1/meta/data")
                         (merge AUTH_HEADERS
@@ -52,13 +50,14 @@
       (is (= 200 (:status r2a))))
 
     ;; check validation failure with erroneous metadata
-    (try+
-      (client/put (str BASE_URL "api/v1/meta/data/" id)
-                  (merge AUTH_HEADERS
-                         {:body (str adata " some extra stuff")}))
-      (catch [:status 400] {:keys [request-time headers body]}
-        ;; OK, should expect validation failue here
-        ))
+    (is (try+
+          (client/put (str BASE_URL "api/v1/meta/data/" id)
+                      (merge AUTH_HEADERS
+                             {:body (str adata " some extra stuff")}))
+          (catch [:status 400] {:keys [request-time headers body]}
+            ;; OK, should expect validation failue here
+            true
+            )))
 
     ;; test upload
     (try+
@@ -82,16 +81,16 @@
           r5 (client/post (str BASE_URL "api/v1/market/listings")
                           (merge AUTH_HEADERS
                                  {:body ldata
-                                  :info {:title "Blah blah"}}))]))
+                                  :info {:title "Blah blah"}}))])))
 
-  ;; -- test-get-purchases
+(deftest ^:integration test-get-purchases
   (let [r1 (client/get (str BASE_URL "api/v1/market/purchases")
                        (merge AUTH_HEADERS
                               {:body nil}))
         result (json/read-str (:body r1))]
-    (is (= 200 (:status r1))))
+    (is (= 200 (:status r1)))))
 
-  ;; -- test-no-asset
+(deftest ^:integration test-no-asset
   (is (try+
         (client/get (str BASE_URL "api/v1/meta/data/"
                          "000011112222333344445556666777788889999aaaabbbbccccddddeeeeffff") AUTH_HEADERS)
