@@ -29,7 +29,10 @@
   prismatic/schema-generators {:mvn/version "0.1.3"}}
 
  :aliases
- {:dev
+ {:main
+  {:main-opts ["-m" "surfer.core"]}
+
+  :dev
   {:extra-paths ["src/dev"]
    :extra-deps {com.stuartsierra/component.repl {:mvn/version "0.2.0"
                                                  :exclusions [org.clojure/tools.namespace]}
