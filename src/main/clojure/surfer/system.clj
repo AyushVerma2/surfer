@@ -1,12 +1,9 @@
 (ns surfer.system
   (:require [com.stuartsierra.component :as component]
-            [surfer.handler :as handler]
-            [surfer.config :refer [CONFIG]]
             [surfer.component.config :as component.config]
             [surfer.component.h2 :as component.h2]
             [surfer.component.migration :as component.migration]
-            [surfer.component.http-kit :as component.http-kit]
-            [surfer.store :as store]))
+            [surfer.component.http-kit :as component.http-kit]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -22,7 +19,7 @@
                  (component.migration/map->Migration {}) [:config :h2])
 
     :web (component/using
-           (component.http-kit/map->WebServer {:handler handler/app}) [:config])))
+           (component.http-kit/map->WebServer {}) [:config :h2])))
 
 (defn init-fn [& [config]]
   (fn [system]

@@ -59,7 +59,21 @@
      {:type "Ocean.Auth.v1"
       :serviceEndpoint (str REMOTE-URL "/api/v1/auth")}
      {:type "Ocean.Storage.v1"
-      :serviceEndpoint (str REMOTE-URL "/api/v1/assets")}]}) 
+      :serviceEndpoint (str REMOTE-URL "/api/v1/assets")}]})
+
+(defn DDO2 [config]
+  (let [remote-url (get-in config [:config :agent :remote-url])]
+    {(keyword "@context") "https://www.w3.org/2019/did/v1"
+     :id (str DID)
+     :service
+     [{:type "Ocean.Invoke.v1"
+       :serviceEndpoint (str remote-url "/api/v1/invoke")}
+      {:type "Ocean.Meta.v1"
+       :serviceEndpoint (str remote-url "/api/v1/meta")}
+      {:type "Ocean.Auth.v1"
+       :serviceEndpoint (str remote-url "/api/v1/auth")}
+      {:type "Ocean.Storage.v1"
+       :serviceEndpoint (str remote-url "/api/v1/assets")}]}))
 
 (def USER-CONFIG-FILE (get-in CONFIG [:security :user-config]))
 
