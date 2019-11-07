@@ -3,6 +3,7 @@
             [surfer.handler :as handler]
             [surfer.config :refer [CONFIG]]
             [surfer.component.http-kit :as component.http-kit]
+            [surfer.component.config :as component.config]
             [surfer.store :as store]))
 
 (set! *warn-on-reflection* true)
@@ -13,6 +14,7 @@
 
 (defn new-system [& _]
   (component/system-map
+    :config (component.config/map->Config {})
     :web (component.http-kit/map->WebServer {:handler handler/app
                                              :options {:port PORT}})))
 

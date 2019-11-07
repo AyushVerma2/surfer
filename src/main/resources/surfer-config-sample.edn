@@ -1,0 +1,50 @@
+{;; This file is a configuration file for the Ocean reference marketplace agent
+ ;; Surfer looks for this file at startup for static instance configuration options,
+ ;; in the following locations, in order:
+ ;; 1. The file specified in the CONFIG_PATH environment variable
+ ;; 2. The "surfer-config.edn" file in the current directory
+
+ :http-port 3030
+
+ ;; Define key metadata about the Agent deployment 
+ :agent
+ {;; specify the name of the Agent
+  :name "Data Ecosystem Test Server"
+
+  ;; Provide a descriptive paragraph explaing the role/purpose of the Agent
+  :description "Data Ecosystem Agent deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."
+
+  ;; URL to provide as part of the DDO for remote access to this agent
+  :remote-url "http://localhost:3030"
+
+  ;; DID to use for this agent.
+  ;; if specified as ':auto-generate' then a random DID will be generated on startup
+  :did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"}
+
+ ;; Define the identity of the marketplace operator
+ :operator {:name "DEX"
+            :url "https://www.dex.sg"}
+
+ ;; Define security configuration for startup and execution
+ :security
+ {;; Specify the location of the default users and passwords to be generated at Startup
+  ;; and database refresh. Should NOT be committed to SCM, for obvious reasons.
+  ;;
+  ;; The file should contain a sequence of user maps, with :username and :password
+  ;; an optional :userid may be provided is a specific user ID is requested.
+  ;;
+  ;; Expected behaviour in 3 possible states:
+  ;; 1. If the config file exists, users will be created with passwords set to those specified
+  ;;    assuming the users do not yet exist
+  ;;    This is the recommended configuration for testing / development purposes where database
+  ;;    clears / refreshes are expected.
+  ;; 2. If the configuration file is not found, default users will be created with randomly
+  ;;    generated passwords written to the file specified. A marketplace administrator may need
+  ;;    access to this file to discover passwords and log in to the marketplace. This reverts
+  ;;    future behaviour to state 1., and is recommended for initial marketplace setup.
+  ;; 3. If the :user-config is nil, the marketplace will run without creating or modifying users.
+  ;;    This configuration is recommended for a public, operational marketplace.
+  :user-config "surfer-users.edn"}
+
+ ;; Define logging configuration
+ :logging {}}

@@ -9,19 +9,7 @@
             [cemerick.friend.credentials :as creds])
   (:import [java.io File]))
 
-(def CONFIG-PATH (or (env :config-path) "surfer-config.edn"))
-
-(if (.exists (io/file CONFIG-PATH))
-  (log/info "Loading surfer configuration from: " CONFIG-PATH)
-  (let [config (edn/read-string (slurp (io/resource "surfer-config.edn")))]
-    (log/info "Creating Surfer default configuration: " CONFIG-PATH)
-    (let []
-      (with-open [writer (io/writer CONFIG-PATH)]
-         (binding [*out* writer]
-           (pprint/pprint config))))
-    (log/info "Default configuration created at: " CONFIG-PATH)))
-
-(def LOADED-CONFIG (edn/read-string (slurp CONFIG-PATH)))
+(def LOADED-CONFIG {})
 
 (def DEFAULT-CONFIG
   {:http-port 3030})
