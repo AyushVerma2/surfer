@@ -12,29 +12,7 @@
 
 (defonce JOBS (atom {}))
 
-(defn operation-function
-  "Returns the resolved function, or nil."
-  [metadata]
-  (let [f (get-in metadata [:additionalInfo :function])]
-    (some-> f symbol resolve)))
-
-(defn operation-params-keys
-  "Returns a sequence of the operation's params keys, or nil."
-  [metadata]
-  (keys (get-in metadata [:operation :params])))
-
-(defn in-memory-operation
-  [metadata]
-  (let [f (operation-function metadata)
-        p (operation-params-keys metadata)]
-    (cond
-      (nil? f)
-      (throw (ex-info "Missing function. Please check `[:additionalInfo :function]`." metadata))
-
-      :else
-      (sf/create-operation (or p []) f))))
-
-(defn get-operation 
+(defn get-operation
   "Gets an in-memory operation for the given operation id"
   [op-id]
   (let [op-meta (store/lookup op-id)

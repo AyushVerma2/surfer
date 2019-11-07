@@ -177,17 +177,17 @@
             op-meta (some-> op-id (store/lookup-json {:key-fn keyword}))]
         (cond
           (nil? op-meta)
-          (response/not-found "Operation metadata not available.")
+          (response/not-found (str "Operation (" op-id ") metadata not found."))
 
           (not= "operation" (:type op-meta))
-          (response/bad-request (str "Not a valid operation: " op-id))
+          (response/bad-request (str "Operation ( " op-id ") metadata type value is not 'operation': " op-meta))
 
           :else
           (try
             (let [^InputStream body-stream (:body request)
                   _ (.reset body-stream)
 
-                  operation (invoke/in-memory-operation op-meta)
+                  operation (sf/in-memory-operation op-meta)
 
                   params (-> (slurp body-stream)
                              (json/read-str :key-fn str))]
