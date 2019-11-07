@@ -6,7 +6,8 @@
             [clojure.data.json :as data.json]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]))
 
-(set-init (system/init-fn {:http-port 3030}))
+(set-init (system/init-fn {:http-port 3030
+                           :migration {:truncate-on-stop? true}}))
 
 (comment
 
@@ -22,7 +23,7 @@
       (sf/remote-agent local-did local-ddo-string "Aladdin" "OpenSesame")))
 
   (def get-time-operation
-    (->> (sf/in-memory-operation (sf/invokable-metadata  #'get-time))
+    (->> (sf/in-memory-operation (sf/invokable-metadata #'get-time))
          (sf/register aladdin)))
 
   ;; Param keys *must be* a string
