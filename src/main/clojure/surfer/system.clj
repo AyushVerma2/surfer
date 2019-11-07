@@ -3,7 +3,7 @@
             [surfer.component.config :as component.config]
             [surfer.component.h2 :as component.h2]
             [surfer.component.migration :as component.migration]
-            [surfer.component.http-kit :as component.http-kit]))
+            [surfer.component.web-server :as component.web-server]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -18,8 +18,8 @@
     :migration (component/using
                  (component.migration/map->Migration {}) [:config :h2])
 
-    :web (component/using
-           (component.http-kit/map->WebServer {}) [:config :h2])))
+    :web-server (component/using
+                  (component.web-server/map->WebServer {}) [:config :h2])))
 
 (defn init-fn [& [config]]
   (fn [system]

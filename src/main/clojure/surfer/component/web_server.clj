@@ -1,4 +1,4 @@
-(ns surfer.component.http-kit
+(ns surfer.component.web-server
   (:require [com.stuartsierra.component :as component]
             [org.httpkit.server :refer [run-server]]
             [surfer.handler :as handler]))
