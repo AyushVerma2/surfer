@@ -1,5 +1,6 @@
 (ns surfer.handler
   (:require
+    [clojure.walk :refer [stringify-keys]]
     [compojure.api.sweet :refer :all]
     [ring.middleware.format :refer [wrap-restful-format]]
     [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
@@ -168,7 +169,36 @@
              ;; :consumes ["application/json"]
              :produces ["application/json"]
            }}}
-    
+
+    (POST "/sync/:op-id" request
+      :coercion nil
+      :body [body schemas/InvokeRequest]
+      (let [op-id (get-in request [:params :op-id])
+            op-meta (some-> op-id (store/lookup-json {:key-fn keyword}))]
+        (cond
+          (nil? op-meta)
+          (response/not-found (str "Operation (" op-id ") metadata not found."))
+
+          (not= "operation" (:type op-meta))
+          (response/bad-request (str "Operation ( " op-id ") metadata type value is not 'operation': " op-meta))
+
+          :else
+          (try
+            (let [^InputStream body-stream (:body request)
+                  _ (.reset body-stream)
+
+                  operation (sf/in-memory-operation op-meta)
+
+                  params (-> (slurp body-stream)
+                             (json/read-str :key-fn str))]
+              {:status 200
+               :body (sf/invoke-result operation params)})
+            (catch Exception e
+              (log/error e "Failed to invoke operation." op-meta)
+
+              {:status 500
+               :body "Failed to invoke operation. Please try again."})))))
+
     (POST "/async/:op-id"
           {{:keys [op-id]} :params :as request}
           :coercion nil ;; prevents coercion so we get the original input stream
@@ -326,7 +356,7 @@
                    :body    {:id (:id user)
                              :username (:username user)}
                    })
-               (response/not-found "Cannot find user with id: " id)))
+               (response/not-found (str "Cannot find user with id: " id))))
 
     (POST "/users" request
          :query-params [username :- schemas/Username,

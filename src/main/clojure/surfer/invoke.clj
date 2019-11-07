@@ -12,7 +12,7 @@
 
 (defonce JOBS (atom {}))
 
-(defn get-operation 
+(defn get-operation
   "Gets an in-memory operation for the given operation id"
   [op-id]
   (let [op-meta (store/lookup op-id)
