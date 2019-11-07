@@ -17,7 +17,8 @@
               (let [config (edn/read-string (slurp (io/resource "surfer-config-sample.edn")))]
                 (spit config-path (with-out-str (pprint/pprint config)))))
 
-          config (edn/read-string (slurp config-path))
+          ;; Merge configs - one is read from disk, and the other is passed as an argument
+          config (merge (edn/read-string (slurp config-path)) config)
 
           user-config-path (get-in config [:security :user-config])
 

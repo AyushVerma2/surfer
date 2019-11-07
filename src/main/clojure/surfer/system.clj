@@ -9,12 +9,13 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-;; TODO: Extract into a config component
-(def PORT (Integer/parseInt (str (or (CONFIG :http-port) 3030))))
-
-(defn new-system [& _]
+(defn new-system [& [config]]
   (component/system-map
-    :config (component.config/map->Config {})
-    :web (component.http-kit/map->WebServer {:handler handler/app
-                                             :options {:port PORT}})))
+    :config (component.config/map->Config {:config config})
+    :web (component/using
+           (component.http-kit/map->WebServer {:handler handler/app}) [:config])))
+
+(defn init-fn [& [config]]
+  (fn [system]
+    (new-system config)))
 
