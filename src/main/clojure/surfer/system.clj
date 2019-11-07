@@ -3,7 +3,7 @@
             [surfer.handler :as handler]
             [surfer.config :refer [CONFIG]]
             [surfer.component.config :as component.config]
-            [surfer.component.db :as component.db]
+            [surfer.component.h2 :as component.h2]
             [surfer.component.migration :as component.migration]
             [surfer.component.http-kit :as component.http-kit]
             [surfer.store :as store]))
@@ -15,11 +15,11 @@
   (component/system-map
     :config (component.config/map->Config {:config config})
 
-    :db (component/using
-          (component.db/map->DB {}) [:config])
+    :h2 (component/using
+          (component.h2/map->H2 {}) [:config])
 
     :migration (component/using
-                 (component.migration/map->Migration {}) [:config :db])
+                 (component.migration/map->Migration {}) [:config :h2])
 
     :web (component/using
            (component.http-kit/map->WebServer {:handler handler/app}) [:config])))

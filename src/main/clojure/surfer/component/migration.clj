@@ -7,25 +7,23 @@
             [ragtime.repl]
             [ragtime.strategy]))
 
-(defn migrate [db-spec]
-  (ragtime.repl/migrate {:datastore (ragtime.jdbc/sql-database db-spec)
+(defn migrate [db]
+  (ragtime.repl/migrate {:datastore (ragtime.jdbc/sql-database db)
                          :migrations (ragtime.jdbc/load-resources "migrations")
                          :strategy ragtime.strategy/rebase}))
 
-(defn truncate-tables
-  [db-spec & tables]
-  (doseq [table (or tables
-                    ["Metadata"
-                     "Listings"
-                     "Purchases"
-                     "Users"])]
-    (jdbc/execute! db-spec (str "TRUNCATE TABLE " table ";"))))
+(defn truncate [db & tables]
+  (doseq [table (or tables ["Metadata"
+                            "Listings"
+                            "Purchases"
+                            "Users"])]
+    (jdbc/execute! db (str "TRUNCATE TABLE " table ";"))))
 
-(defrecord Migration [config db]
+(defrecord Migration [config h2]
   component/Lifecycle
 
   (start [component]
-    (migrate (:db-spec db))
+    (migrate (:db h2))
 
     (log/info "Successfully migrated database!")
 
@@ -53,7 +51,7 @@
   (stop [component]
     (when (get-in config [:config :migration :truncate-on-stop?])
       (try
-        (truncate-tables (:db-spec db))
+        (truncate (:db h2))
 
         (log/info "Successfully truncated tables!")
 
