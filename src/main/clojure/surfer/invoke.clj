@@ -62,35 +62,37 @@
   [jobid]
   (@JOBS jobid))
 
-(defn format-asset-result 
-  [a]
-  (let [id (sf/asset-id a)
-        ^DID d config/DID
-        d (.withPath d id)]
-    {:did (str d)}))
+(defn format-asset-result
+  [^DID agent-did asset]
+  {:did (str (.withPath agent-did (sf/asset-id asset)))})
 
 (defn format-results
   "Formats results ready for output in a job status :result value."
-  [rs]
+  [^DID agent-did rs]
   (into {}
         (map (fn [[k v]]
                (if (sf/asset? v)
-                 [(keyword k) (format-asset-result v)]
+                 [(keyword k) (format-asset-result agent-did v)]
                  [(keyword k) v]))
              rs)))
 
-(defn job-response 
+(defn job-response
   "Gets the appropriate response map for a job result, or null if the job does not exist."
-  [jobid]
+  [app-context jobid]
   (when-let [job (get-job jobid)]
-    (let [_ (try (sf/poll-result job) (catch Throwable t))
+    (let [agent-did (config/agent-did (:config app-context))
+
+          _ (try
+              (sf/poll-result job)
+              (catch Throwable _))
+
           status (sf/job-status job)
           resp {:status status}
           resp (if (= status :succeeded)
-                 (assoc resp :results (format-results (sf/get-result job)))
+                 (assoc resp :results (format-results agent-did (sf/get-result job)))
                  resp)
           resp (if (= status :failed)
-                 (assoc resp :message (try (sf/get-result job) 
-                                        (catch Throwable t (.getMessage t))))
+                 (assoc resp :message (try (sf/get-result job)
+                                           (catch Throwable t (.getMessage t))))
                  resp)]
       resp)))

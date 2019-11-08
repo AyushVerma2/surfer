@@ -6,12 +6,20 @@
             [surfer.config :as config]
             [starfish.core :as sf]))
 
+(def test-system
+  nil)
+
 (defn system-fixture [f]
   (let [system (component/start (system/new-system))]
+
+    (alter-var-root #'test-system (constantly system))
+
     (try
       (f)
       (finally
-        (component/stop system)))))
+        (component/stop system)
+
+        (alter-var-root #'test-system (constantly nil))))))
 
 (use-fixtures :once system-fixture)
 
@@ -25,8 +33,8 @@
     {:output (sf/memory-asset {:name "Result of computation"} C)}))
 
 (deftest ^:integration test-startfish
-  (let [local-did config/DID
-        local-ddo config/LOCAL-DDO
+  (let [local-did (config/agent-did (:config test-system))
+        local-ddo (config/local-ddo (:config test-system))
         local-ddo-string (sf/json-string-pprint local-ddo)
 
         username "Aladdin"
@@ -50,8 +58,8 @@
   (component/stop system)
 
   (def local-agent-aladdin
-    (let [local-did config/DID
-          local-ddo config/LOCAL-DDO
+    (let [local-did (config/agent-did (:config system))
+          local-ddo (config/local-ddo (:config system))
           local-ddo-string (sf/json-string-pprint local-ddo)
 
           username "Aladdin"

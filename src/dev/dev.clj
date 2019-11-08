@@ -1,13 +1,13 @@
 (ns dev
   (:require [surfer.store :as store]
             [surfer.config :as config]
-            [surfer.system :as system]
+            [surfer.system :refer [init-fn]]
             [starfish.core :as sf]
             [clojure.data.json :as data.json]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]))
 
-(set-init (system/init-fn {:http-port 3030
-                           :migration {:truncate-on-stop? true}}))
+(set-init (init-fn {:http-port 3030
+                    :migration {:truncate-on-stop? true}}))
 
 (comment
 
@@ -17,8 +17,8 @@
     {:time (data.json/json-str (str (java.util.Date.)))})
 
   (def aladdin
-    (let [local-did config/DID
-          local-ddo config/LOCAL-DDO
+    (let [local-did (config/agent-did (:config system))
+          local-ddo (config/local-ddo (:config system))
           local-ddo-string (sf/json-string-pprint local-ddo)]
       (sf/remote-agent local-did local-ddo-string "Aladdin" "OpenSesame")))
 

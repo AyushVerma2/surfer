@@ -4,7 +4,6 @@
    Currenty implemented using JDBC with the H2 embedded database. Other database implementations
    may be future options."
   (:require [surfer.utils :as u]
-            [surfer.config :refer [CONFIG USER-CONFIG]]
             [clojure.data.json :as json]
             [clojure.java.jdbc :as jdbc]
             [clojure.tools.logging :as log]

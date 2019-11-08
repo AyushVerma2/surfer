@@ -16,7 +16,6 @@
     [surfer.config :as config]
     [surfer.invoke :as invoke]
     [schema.core :as s]
-    [rr.invoke :as rr]                                      ;; TODO: remove after demos
     [clojure.data.json :as json]
     [clojure.pprint :as pprint :refer [pprint]]
     [surfer.ckan :as ckan]
@@ -80,7 +79,7 @@
       :return schemas/DDO
       {:status 200
        :headers {"Content-Type" "application/json"}
-       :body (config/DDO2 config)})
+       :body (config/remote-ddo config)})
 
     (GET "/status" request
       :summary "Gets the status for this Agent"
@@ -158,15 +157,15 @@
           (response/bad-request (str "Invalid ID for metadata, expected: " hash " got " id)))))
     ))
 
-(def invoke-api
+(defn invoke-api [app-context]
   (routes
     {:swagger
-     {:data {:info {:title "Invoke API"
-                    :description "Invoke API for Remote Operations"}
-             :tags [{:name "Invoke API", :description "Invoke API for Remote Operations"}]
-             ;; :consumes ["application/json"]
-             :produces ["application/json"]
-             }}}
+     {:data
+      {:info
+       {:title "Invoke API"
+        :description "Invoke API for Remote Operations"}
+       :tags [{:name "Invoke API" :description "Invoke API for Remote Operations"}]
+       :produces ["application/json"]}}}
 
     (POST "/sync/:op-id" request
       :coercion nil
@@ -223,9 +222,8 @@
          [jobid]
       (log/debug (str "GET JOB on job [" jobid "]"))
       (if-let [job (invoke/get-job jobid)]
-        (response/response (invoke/job-response jobid))
-        (response/not-found (str "Job not found: " jobid)))
-      )))
+        (response/response (invoke/job-response app-context jobid))
+        (response/not-found (str "Job not found: " jobid))))))
 
 
 (def storage-api
@@ -583,12 +581,6 @@
                         (let [r (store/migrate-db!)]
                           (response/response (str "Successful: " r)))))
 
-    (POST "/setup-rr" []
-      :summary "Sets up RR invokable operations."
-      (friend/authorize #{:admin}
-                        (response/response (rr/setup-invoke))))
-
-
     (POST "/create-db-test-data" []
       :summary "Creates test data for the current database. DANGER."
       (friend/authorize #{:admin}
@@ -798,7 +790,7 @@
 
     (context "/api/v1/invoke" []
       :tags ["Invoke API"]
-      invoke-api)
+      (invoke-api app-context))
 
     (context "/api" []
       :tags ["Status API"]
