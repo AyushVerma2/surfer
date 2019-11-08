@@ -52,17 +52,17 @@
 (defn get-listing
   "Gets a listing map from the data store.
    Returns nil if not found"
-  ([id]
-    (let [rs (jdbc/query db ["select * from Listings where id = ?" id])]
-      (if (empty? rs)
-        nil ;; user not found
-        (clean-listing (first rs))))))
+  [db id]
+  (let [rs (jdbc/query db ["select * from Listings where id = ?" id])]
+    (if (empty? rs)
+      nil                                                   ;; user not found
+      (clean-listing (first rs)))))
 
 (defn get-listings
   "Gets a full list of listings from the marketplace"
-  ([]
-   (get-listings {}))
-  ([{:keys [userid from size] :as opts}]
+  ([db]
+   (get-listings db {}))
+  ([db {:keys [userid from size] :as opts}]
    (let [from (long (or from 0))
          size (long (or size 100))
          offset (* from size)]
@@ -73,11 +73,11 @@
 
 (defn create-listing
   "Creates a listing in the data store. Returns the new Listing."
-  ([listing]
+  [db listing]
     ;; (println listing)
     (let [id (or
                (if-let [givenid (:id listing)]
-                 (and (u/valid-listing-id? givenid) (not (get-listing givenid)) givenid))
+                 (and (u/valid-listing-id? givenid) (not (get-listing db givenid)) givenid))
                (u/new-random-id))
           userid (:userid listing)
           info (:info listing)
@@ -95,12 +95,12 @@
                        }]
       (jdbc/insert! db "Listings" insert-data)
       (clean-listing insert-data) ;; return the cleaned listing
-      )))
+      ))
 
 (defn update-listing
   "Updates a listing in the data store. Returns the new Listing.
    Uses the Listing ID provided in the listing record."
-  ([listing]
+  [db listing]
     ;; (println listing)
       (let [id (:id listing)
             userid (:userid listing)
@@ -117,8 +117,8 @@
                            :utime (Instant/now) ;; utime = current time
                          }]
       (jdbc/update! db "Listings" update-data ["id = ?" id])
-      (get-listing id) ;; return the updated listing
-        )))
+      (get-listing db id) ;; return the updated listing
+        ))
 
 ;; ===================================================
 ;; Purchase management
@@ -221,62 +221,59 @@
 (defn get-user
   "Gets a user map from the data store.
    Returns nil if not found"
-  ([^String id]
-    (let [rs (jdbc/query db ["select * from Users where id = ?" id])]
-      (if (empty? rs)
-        nil ;; user not found
-        (unpack-user-metadata (first rs))))))
+  [db ^String id]
+  (let [rs (jdbc/query db ["select * from Users where id = ?" id])]
+    (if (empty? rs)
+      nil                                                   ;; user not found
+      (unpack-user-metadata (first rs)))))
 
 (defn get-user-by-name
   "Gets a user map from the data store.
    Returns nil if not found"
-  ([^String username]
-   (if-not (empty? username)
-     (let [rs (jdbc/query db ["select * from Users where username = ?" username])]
-       (if (empty? rs)
-         nil ;; user not found
-         (unpack-user-metadata (first rs)))))))
+  [db ^String username]
+  (if-not (empty? username)
+    (let [rs (jdbc/query db ["select * from Users where username = ?" username])]
+      (if (empty? rs)
+        nil                                                 ;; user not found
+        (unpack-user-metadata (first rs))))))
 
 (defn get-users
   "Lists all users of the marketplace.
    Returns a sequence of maps containing the db records for each user"
-  ([]
-    (let [rs (jdbc/query db ["select * from Users;"])]
-      rs)))
+  [db]
+  (jdbc/query db ["select * from Users;"]))
 
 (defn list-users
   "Lists all users of the marketplace.
    Returns a sequence of maps containing :id and :username"
-  ([]
-    (let [rs (get-users)]
-      (map (fn [user] {:id (:id user)
-                       :username (:username user)}) rs))))
+  [db]
+  (map #(select-keys % [:id :username]) (get-users db)))
 
 (defn register-user
   "Registers a user in the data store. Returns the New User ID as a string.
 
    Returns the new user ID, or nil if creation failed - most likely due to
    user alreday existing in  database"
-  ([user-data]
-   (let [{:keys [id username password metadata status roles]} user-data
-         id (or id (u/new-random-id))
-         rs (jdbc/query db ["select * from Users where id = ?" id])
-         rs2 (jdbc/query db ["select * from Users where username = ?" username])
-         status (or status "Active")
-         roles (or roles #{:user})
-         metadata (merge (or metadata {})
-                         {:status status
-                          :roles roles})]
-      (when (and (empty? rs) (empty? rs2))
-        (log/debug "register-user username:" username "id:" id)
-        (jdbc/insert! db "Users"
-                      {:id id
-                       :username username
-                       :password password
-                       :status status
-                       :metadata (json/write-str metadata)
-                       :ctime (Instant/now)})
-         id))))
+  [db user-data]
+  (let [{:keys [id username password metadata status roles]} user-data
+        id (or id (u/new-random-id))
+        rs (jdbc/query db ["select * from Users where id = ?" id])
+        rs2 (jdbc/query db ["select * from Users where username = ?" username])
+        status (or status "Active")
+        roles (or roles #{:user})
+        metadata (merge (or metadata {})
+                        {:status status
+                         :roles roles})]
+    (when (and (empty? rs) (empty? rs2))
+      (log/debug "register-user username:" username "id:" id)
+      (jdbc/insert! db "Users"
+                    {:id id
+                     :username username
+                     :password password
+                     :status status
+                     :metadata (json/write-str metadata)
+                     :ctime (Instant/now)})
+      id)))
 
 (defn truncate-db!
   ([] (truncate-db! db))
@@ -408,42 +405,38 @@
 ;; =========================================================
 ;; Test data generation
 
-(defn generate-test-data!
-  ([] (generate-test-data! db))
-  ([db]
-    (register-user {:id "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
-                    :username "test"
-                    :password (creds/hash-bcrypt "foobar")} )
-    ;; Authorization: Basic dGVzdDpmb29iYXI=
+(defn generate-test-data! [db]
+  (register-user db {:id "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
+                     :username "test"
+                     :password (creds/hash-bcrypt "foobar")})
+  ;; Authorization: Basic dGVzdDpmb29iYXI=
 
-    (register-user {:id "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
-                    :username "Aladdin"
-                    :password (creds/hash-bcrypt "OpenSesame")})
-    ;; Authorization: Basic QWxhZGRpbjpPcGVuU2VzYW1l
+  (register-user db {:id "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
+                     :username "Aladdin"
+                     :password (creds/hash-bcrypt "OpenSesame")})
+  ;; Authorization: Basic QWxhZGRpbjpPcGVuU2VzYW1l
+
+  (let [assetid (register-asset (json/write-str {:name "Test Asset"
+                                                 :description "A sample asset for testing purposes"}))]
+    (create-listing db {:id "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
+                        :userid "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
+                        :assetid assetid
+                        :info {:title "Ocean Test Asset"
+                               :custom "Some custom information"}})
 
     (let [assetid (register-asset (json/write-str {:name "Test Asset"
                                                    :description "A sample asset for testing purposes"}))]
-      (create-listing {:id "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
-                       :userid "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
-                       :assetid assetid
-                       :info {:title "Ocean Test Asset"
-                              :custom "Some custom information"}})
+      (create-listing db {:id "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
+                          :userid "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
+                          :assetid assetid
+                          :info {:title "Ocean Test Asset"
+                                 :custom "Some custom information"}})
 
-      (let [assetid (register-asset (json/write-str {:name "Test Asset"
-                                                   :description "A sample asset for testing purposes"}))]
-        (create-listing {:id "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
-                         :userid "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
-                         :assetid assetid
-                         :info {:title "Ocean Test Asset"
-                                :custom "Some custom information"}})
-
-        (create-purchase {:userid "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
-                      :listingid "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
+      (create-purchase {:userid "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
+                        :listingid "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
 
                         :info nil
-                        :status "wishlist"})
-      )
-      )))
+                        :status "wishlist"}))))
 
 ;; ===================================================
 ;; Authentication API

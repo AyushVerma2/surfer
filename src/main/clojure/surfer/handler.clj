@@ -52,11 +52,12 @@
 
 (defn get-current-userid
   "Gets the current user ID from a request, or nil if not registered / logged in"
-  ([request]
-   (let [auth (friend/current-authentication request)
-         username (:identity auth)
-         userid (:id (store/get-user-by-name username))]
-     userid)))
+  [app-context request]
+  (let [db (get-in app-context [:h2 :db])
+        auth (friend/current-authentication request)
+        username (:identity auth)
+        userid (:id (store/get-user-by-name db username))]
+    userid))
 
 (defn get-current-token
   "Gets the current token from a request (if set)"
@@ -264,7 +265,7 @@
       ;; (println (:body request))
       (let [^InputStream body (:body request)
             _ (.reset body)
-            userid (get-current-userid request)
+            userid (get-current-userid app-context request)
             meta (store/lookup-json id)]
         (cond
           (nil? userid) (response/status
@@ -288,7 +289,7 @@
       :path-params [id :- schemas/AssetID]
       :return s/Str
       :summary "upload an asset"
-      (let [userid (get-current-userid request)
+      (let [userid (get-current-userid app-context request)
             meta (store/lookup-json id)]
         (cond
           (nil? userid) (response/status
@@ -321,272 +322,272 @@
       (throw (UnsupportedOperationException. "Not yet implemented!")))))
 
 (defn market-api [app-context]
-  (routes
-    {:swagger
-     {:data {:info {:title "Market API"
-                    :description "Market API for Ocean Marketplace"}
-             :tags [{:name "Market API", :description "Market API for Ocean Marketplace"}]
-             ;;:consumes ["application/json"]
-             :produces ["application/json"]
-             }}}
+  (let [db (get-in app-context [:h2 :db])]
+    (routes
+      {:swagger
+       {:data {:info {:title "Market API"
+                      :description "Market API for Ocean Marketplace"}
+               :tags [{:name "Market API", :description "Market API for Ocean Marketplace"}]
+               ;;:consumes ["application/json"]
+               :produces ["application/json"]
+               }}}
 
-    ;; ===========================================
-    ;; User management
+      ;; ===========================================
+      ;; User management
 
-    (GET "/users" []
-      :summary "Gets the list of current users"
-      (or
-        (seq (store/list-users))
-        {:status 200
-         :body "No users available in database - please check your setup"}))
-
-    (GET "/users/:id" [id]
-      :summary "Gets data for a specified user"
-      :path-params [id :- schemas/UserID]
-      :return s/Any
-      (or
-        (when-let [user (store/get-user id)]
-          ;; (println user)
+      (GET "/users" []
+        :summary "Gets the list of current users"
+        (or
+          (seq (store/list-users db))
           {:status 200
-           :headers {"Content-Type" "application/json"}
-           :body {:id (:id user)
-                  :username (:username user)}
-           })
-        (response/not-found (str "Cannot find user with id: " id))))
+           :body "No users available in database - please check your setup"}))
 
-    (POST "/users" request
-      :query-params [username :- schemas/Username,
-                     password :- String]
-      :return schemas/UserID
-      :summary "Attempts to register a new user"
-      (let [crypt-pw (creds/hash-bcrypt password)
-            user {:username username
-                  :password crypt-pw}]
-        (if-let [id (store/register-user user)]
-          {:status 200
-           :headers {"Content-Type" "application/json"}
-           :body id}
-          (response/bad-request (str "User name already exists: " (:username user))))))
+      (GET "/users/:id" [id]
+        :summary "Gets data for a specified user"
+        :path-params [id :- schemas/UserID]
+        :return s/Any
+        (or
+          (when-let [user (store/get-user db id)]
+            ;; (println user)
+            {:status 200
+             :headers {"Content-Type" "application/json"}
+             :body {:id (:id user)
+                    :username (:username user)}
+             })
+          (response/not-found (str "Cannot find user with id: " id))))
 
-    ;; ===========================================
-    ;; Asset listings
+      (POST "/users" request
+        :query-params [username :- schemas/Username,
+                       password :- String]
+        :return schemas/UserID
+        :summary "Attempts to register a new user"
+        (let [crypt-pw (creds/hash-bcrypt password)
+              user {:username username
+                    :password crypt-pw}]
+          (if-let [id (store/register-user db user)]
+            {:status 200
+             :headers {"Content-Type" "application/json"}
+             :body id}
+            (response/bad-request (str "User name already exists: " (:username user))))))
 
-    (POST "/listings" request
-      ;; :body-params [listing :- schemas/Listing]
-      :body [listing-body (s/maybe schemas/Listing)]
-      :return schemas/Listing
-      :summary "Create a listing on the marketplace.
+      ;; ===========================================
+      ;; Asset listings
+
+      (POST "/listings" request
+        ;; :body-params [listing :- schemas/Listing]
+        :body [listing-body (s/maybe schemas/Listing)]
+        :return schemas/Listing
+        :summary "Create a listing on the marketplace.
                        Marketplace will return a new listing record"
-      ;; (println (:body request) )
-      (let [listing (json-from-input-stream (:body request))
-            userid (get-current-userid request)]
-        ;; (println listing)
-        (if userid
-          (if-let [asset (store/lookup (:assetid listing))]
-            (let [listing (assoc listing :userid userid)
-                  ;; _ (println userid)
-                  result (store/create-listing listing)]
-              ;; (println result)
+        ;; (println (:body request) )
+        (let [listing (json-from-input-stream (:body request))
+              userid (get-current-userid app-context request)]
+          ;; (println listing)
+          (if userid
+            (if-let [asset (store/lookup (:assetid listing))]
+              (let [listing (assoc listing :userid userid)
+                    ;; _ (println userid)
+                    result (store/create-listing db listing)]
+                ;; (println result)
+                {:status 200
+                 :headers {"Content-Type" "application/json"}
+                 :body result
+                 })
+              {:status 400
+               :body "Invalid asset id - must register asset first"
+               })
+            {:status 401
+             :body (str "Must be logged in as a user to create a listing")})))
+
+
+      (GET "/listings" request
+        :query-params [{username :- schemas/Username nil}
+                       {userid :- schemas/UserID nil}
+                       {from :- schemas/From 0}
+                       {size :- schemas/Size 100}]
+        :summary "Gets all current listings from the marketplace"
+        :return [schemas/Listing]
+        (let [userid (if (not (empty? username))
+                       (:id (store/get-user-by-name db username))
+                       userid)
+              opts (assoc (if userid {:userid userid} {})
+                     :from from
+                     :size size)
+              listings (store/get-listings db opts)]
+          (log/debug "GET /listings username" username "userid" userid
+                     "from" from "size" size)
+          {:status 200
+           :headers {"Content-Type" "application/json"
+                     "X-Ocean-From" from
+                     "X-Ocean-Size" size}
+           :body listings}))
+
+      (GET "/listings/:id" [id]
+        :summary "Gets data for a specified listing"
+        :path-params [id :- schemas/ListingID]
+        :return schemas/Listing
+        (if-let [listing (store/get-listing db id)]
+          {:status 200
+           :headers {"Content-Type" "application/json"}
+           :body listing
+           }
+          (response/not-found (str "No listing found for id: " id))))
+
+      (PUT "/listings/:id" {{:keys [id]} :params :as request}
+        :summary "Updates data for a specified listing"
+        :path-params [id :- schemas/ListingID]
+        :body [listing-body (s/maybe schemas/Listing)]
+        :return schemas/Listing
+        (let [listing (json-from-input-stream (:body request))
+
+              ;; check the exitsing listing
+              old-listing (store/get-listing db id)
+              _ (when (not old-listing) (throw (IllegalArgumentException. "Listing ID does not exist: ")))
+
+              ownerid (:userid old-listing)
+              userid (get-current-userid app-context request)
+
+              listing (merge old-listing listing)           ;; merge changes. This allows single field edits etc.
+              listing (assoc listing :id id)                ;; ensure ID is present.
+              ]
+          (if (= ownerid userid)                            ;; strong ownership enforcement!
+            (let [new-listing (store/update-listing db listing)]
               {:status 200
                :headers {"Content-Type" "application/json"}
-               :body result
-               })
-            {:status 400
-             :body "Invalid asset id - must register asset first"
-             })
-          {:status 401
-           :body (str "Must be logged in as a user to create a listing")})))
+               :body new-listing})
+            {:status 403
+             :body "Can't modify listing: only listing owner can do so"})))
 
+      ;; ==================================================
+      ;; Asset purchases
 
-    (GET "/listings" request
-      :query-params [{username :- schemas/Username nil}
-                     {userid :- schemas/UserID nil}
-                     {from :- schemas/From 0}
-                     {size :- schemas/Size 100}]
-      :summary "Gets all current listings from the marketplace"
-      :return [schemas/Listing]
-      (let [userid (if (not (empty? username))
-                     (:id (store/get-user-by-name username))
-                     userid)
-            opts (assoc (if userid {:userid userid} {})
-                   :from from
-                   :size size)
-            listings (store/get-listings opts)]
-        (log/debug "GET /listings username" username "userid" userid
-                   "from" from "size" size)
-        {:status 200
-         :headers {"Content-Type" "application/json"
-                   "X-Ocean-From" from
-                   "X-Ocean-Size" size}
-         :body listings}))
-
-    (GET "/listings/:id" [id]
-      :summary "Gets data for a specified listing"
-      :path-params [id :- schemas/ListingID]
-      :return schemas/Listing
-      (if-let [listing (store/get-listing id)]
-        {:status 200
-         :headers {"Content-Type" "application/json"}
-         :body listing
-         }
-        (response/not-found (str "No listing found for id: " id))))
-
-    (PUT "/listings/:id" {{:keys [id]} :params :as request}
-      :summary "Updates data for a specified listing"
-      :path-params [id :- schemas/ListingID]
-      :body [listing-body (s/maybe schemas/Listing)]
-      :return schemas/Listing
-      (let [listing (json-from-input-stream (:body request))
-
-            ;; check the exitsing listing
-            old-listing (store/get-listing id)
-            _ (when (not old-listing) (throw (IllegalArgumentException. "Listing ID does not exist: ")))
-
-            ownerid (:userid old-listing)
-            userid (get-current-userid request)
-
-            listing (merge old-listing listing)             ;; merge changes. This allows single field edits etc.
-            listing (assoc listing :id id)                  ;; ensure ID is present.
-            ]
-        (if (= ownerid userid)                              ;; strong ownership enforcement!
-          (let [new-listing (store/update-listing listing)]
-            {:status 200
-             :headers {"Content-Type" "application/json"}
-             :body new-listing})
-          {:status 403
-           :body "Can't modify listing: only listing owner can do so"})))
-
-    ;; ==================================================
-    ;; Asset purchases
-
-    (POST "/purchases" request
-      :body [purchase-body (s/maybe schemas/Purchase)]
-      :return schemas/Purchase
-      :summary "Create a new purchase on the marketplace.
+      (POST "/purchases" request
+        :body [purchase-body (s/maybe schemas/Purchase)]
+        :return schemas/Purchase
+        :summary "Create a new purchase on the marketplace.
                        Marketplace will return a new Purchase record"
-      ;; (println (:body request) )
-      (let [purchase (json-from-input-stream (:body request))
-            userid (get-current-userid request)
-            listingid (:listingid purchase)
-            listing (store/get-listing listingid)]
-        (cond
-          (not userid) (response/bad-request (str "Cannot create a purchase unless logged in"))
-          (not listing) (response/bad-request (str "Invalid purchase request - listing does not exist: " listingid))
-          :else (let [purchase (assoc purchase :userid userid)
-                      result (store/create-purchase purchase)]
-                  ;; (println result)
-                  {:status 200
-                   :headers {"Content-Type" "application/json"}
-                   :body result
-                   })
-          )))
+        ;; (println (:body request) )
+        (let [purchase (json-from-input-stream (:body request))
+              userid (get-current-userid app-context request)
+              listingid (:listingid purchase)
+              listing (store/get-listing db listingid)]
+          (cond
+            (not userid) (response/bad-request (str "Cannot create a purchase unless logged in"))
+            (not listing) (response/bad-request (str "Invalid purchase request - listing does not exist: " listingid))
+            :else (let [purchase (assoc purchase :userid userid)
+                        result (store/create-purchase purchase)]
+                    ;; (println result)
+                    {:status 200
+                     :headers {"Content-Type" "application/json"}
+                     :body result
+                     })
+            )))
 
 
-    (GET "/purchases" request
-      :query-params [{username :- schemas/Username nil}
-                     {userid :- schemas/UserID nil}]
-      :summary "Gets all current purchases from the marketplace by user"
-      :return [schemas/Purchase]
-      ;; TODO access control
-      (let [userid (if (not (empty? username))
-                     (:id (store/get-user-by-name username))
-                     userid)
-            opts (if userid {:userid userid} nil)
-            purchases (store/get-purchases opts)]
-        {:status 200
-         :headers {"Content-Type" "application/json"}
-         :body purchases}))
+      (GET "/purchases" request
+        :query-params [{username :- schemas/Username nil}
+                       {userid :- schemas/UserID nil}]
+        :summary "Gets all current purchases from the marketplace by user"
+        :return [schemas/Purchase]
+        ;; TODO access control
+        (let [userid (if (not (empty? username))
+                       (:id (store/get-user-by-name db username))
+                       userid)
+              opts (if userid {:userid userid} nil)
+              purchases (store/get-purchases opts)]
+          {:status 200
+           :headers {"Content-Type" "application/json"}
+           :body purchases}))
 
-    (GET "/purchases/:id" [id]
-      :summary "Gets data for a specified purchase"
-      :return schemas/Purchase
-      (let [purchase (store/get-purchase id)]
-        (cond
-          purchase {:status 200
-                    :headers {"Content-Type" "application/json"}
-                    :body purchase
-                    }
-          :else (response/not-found (str "No purchase found for id: " id)))))
+      (GET "/purchases/:id" [id]
+        :summary "Gets data for a specified purchase"
+        :return schemas/Purchase
+        (let [purchase (store/get-purchase id)]
+          (cond
+            purchase {:status 200
+                      :headers {"Content-Type" "application/json"}
+                      :body purchase
+                      }
+            :else (response/not-found (str "No purchase found for id: " id)))))
 
-    (PUT "/purchases/:id" {{:keys [id]} :params :as request}
-      :summary "Updates data for a specified Purchase"
-      :body [purchase-body (s/maybe schemas/Purchase)]
-      :return schemas/Purchase
-      (let [purchase (json-from-input-stream (:body request))
+      (PUT "/purchases/:id" {{:keys [id]} :params :as request}
+        :summary "Updates data for a specified Purchase"
+        :body [purchase-body (s/maybe schemas/Purchase)]
+        :return schemas/Purchase
+        (let [purchase (json-from-input-stream (:body request))
 
-            ;; check the exitsing purchase
-            old-purchase (store/get-purchase id)
-            _ (when (not old-purchase) (throw (IllegalArgumentException. "Purchase ID does not exist: ")))
+              ;; check the exitsing purchase
+              old-purchase (store/get-purchase id)
+              _ (when (not old-purchase) (throw (IllegalArgumentException. "Purchase ID does not exist: ")))
 
-            ownerid (:userid old-purchase)
-            userid (get-current-userid request)
+              ownerid (:userid old-purchase)
+              userid (get-current-userid app-context request)
 
-            purchase (merge old-purchase purchase)          ;; merge changes. This allows single field edits etc.
-            purchase (assoc purchase :id id)                ;; ensure ID is present.
-            ]
-        (if (= ownerid userid)                              ;; strong ownership enforcement!
-          (let [new-purchase (store/update-purchase purchase)]
-            {:status 200
-             :headers {"Content-Type" "application/json"}
-             :body new-purchase})
-          {:status 403
-           :body "Can't modify purchase: only purchase owner can do so"})))
-    ))
+              purchase (merge old-purchase purchase)        ;; merge changes. This allows single field edits etc.
+              purchase (assoc purchase :id id)              ;; ensure ID is present.
+              ]
+          (if (= ownerid userid)                            ;; strong ownership enforcement!
+            (let [new-purchase (store/update-purchase purchase)]
+              {:status 200
+               :headers {"Content-Type" "application/json"}
+               :body new-purchase})
+            {:status 403
+             :body "Can't modify purchase: only purchase owner can do so"})))
+      )))
 
 (defn admin-api [app-context]
-  (routes
-    {:swagger
-     {:data {:info {:title "Market Admin API"
-                    :description "Administration API for Ocean Marketplace"}
-             :tags [{:name "Admin API", :description "Administration API for Ocean Marketplace"}]
-             ;;:consumes ["application/json"]
-             ;;:produces ["application/json"]
-             }}}
+  (let [db (get-in app-context [:h2 :db])]
+    (routes
+      {:swagger
+       {:data {:info {:title "Market Admin API"
+                      :description "Administration API for Ocean Marketplace"}
+               :tags [{:name "Admin API", :description "Administration API for Ocean Marketplace"}]
+               ;;:consumes ["application/json"]
+               ;;:produces ["application/json"]
+               }}}
 
-    ;; ===========================================
-    ;; Admin tools
+      ;; ===========================================
+      ;; Admin tools
 
-    (GET "/auth" request
-      :summary "Gets the authentication map for the current user. Useful for debugging."
-      (response/response (friend/current-authentication request)))
+      (GET "/auth" request
+        :summary "Gets the authentication map for the current user. Useful for debugging."
+        (response/response (friend/current-authentication request)))
 
-    ;; ===========================================
-    ;; CKAN Functionality
+      ;; ===========================================
+      ;; CKAN Functionality
 
-    (POST "/ckan-import" request
-      :query-params [{userid :- schemas/UserID nil},
-                     repo :- String,
-                     {count :- s/Int 10}]
-      :summary "Imports assets from a CKAN repository"
-      (friend/authorize #{:admin}
-                        (let [userid (or userid (get-current-userid request) (throw (IllegalArgumentException. "No valid userid")))]
-                          (let [all-names (ckan/package-list repo)
-                                names (if count (take count (shuffle all-names)) all-names)]
-                            (binding [ckan/*import-userid* userid]
-                              (ckan/import-packages repo names))))
-                        ))
+      (POST "/ckan-import" request
+        :query-params [{userid :- schemas/UserID nil},
+                       repo :- String,
+                       {count :- s/Int 10}]
+        :summary "Imports assets from a CKAN repository"
+        (friend/authorize #{:admin}
+                          (let [userid (or userid (get-current-userid app-context request) (throw (IllegalArgumentException. "No valid userid")))]
+                            (let [all-names (ckan/package-list repo)
+                                  names (if count (take count (shuffle all-names)) all-names)]
+                              (binding [ckan/*import-userid* userid]
+                                (ckan/import-packages db repo names))))))
 
-    ;; ===========================================
-    ;; Marketplace database management
+      ;; ===========================================
+      ;; Marketplace database management
 
-    (POST "/clear-db" []
-      :summary "Clears the current database. DANGER."
-      (friend/authorize #{:admin}
-                        (store/truncate-db!)
-                        (response/response "Successful")))
+      (POST "/clear-db" []
+        :summary "Clears the current database. DANGER."
+        (friend/authorize #{:admin}
+                          (store/truncate-db!)
+                          (response/response "Successful")))
 
-    (POST "/migrate-db" []
-      :summary "Performs database migration. DANGER."
-      (friend/authorize #{:admin}
-                        (let [r (store/migrate-db!)]
-                          (response/response (str "Successful: " r)))))
+      (POST "/migrate-db" []
+        :summary "Performs database migration. DANGER."
+        (friend/authorize #{:admin}
+                          (let [r (store/migrate-db!)]
+                            (response/response (str "Successful: " r)))))
 
-    (POST "/create-db-test-data" []
-      :summary "Creates test data for the current database. DANGER."
-      (friend/authorize #{:admin}
-                        (store/generate-test-data!)
-                        (response/response "Successful")))
-    ))
+      (POST "/create-db-test-data" []
+        :summary "Creates test data for the current database. DANGER."
+        (friend/authorize #{:admin}
+                          (store/generate-test-data! db)
+                          (response/response "Successful"))))))
 
 ;; ==========================================
 ;; Authentication API
@@ -599,10 +600,11 @@
 (defn get-auth-api-user
   "Based on the request return the a map with :user (if authorized), else
   :response 401 (if unauthenticated) or 403 (if unauthorized)"
-  [request]
-  (let [userid (get-current-userid request)
+  [app-context request]
+  (let [db (get-in app-context [:h2 :db])
+        userid (get-current-userid app-context request)
         user (if userid
-               (dissoc (store/get-user userid) :password :ctime))
+               (dissoc (store/get-user db userid) :password :ctime))
         roles (or (:roles user) #{})
         rv (cond
              (nil? userid)
@@ -636,7 +638,7 @@
       :summary "Gets a list of OAuth2 tokens for the currently authenticated user"
       :coercion nil
       :return [schemas/OAuth2Token]
-      (let [{:keys [response user]} (get-auth-api-user request)]
+      (let [{:keys [response user]} (get-auth-api-user app-context request)]
         (or response
             (response-json (store/all-tokens (:id user))))))
 
@@ -644,7 +646,7 @@
       :summary "Creates a new OAuth2Token"
       :coercion nil
       :return schemas/OAuth2Token
-      (let [{:keys [response user]} (get-auth-api-user request)]
+      (let [{:keys [response user]} (get-auth-api-user app-context request)]
         (or response
             (response-json (str "\"" (store/create-token (:id user)) "\"")))))
 
@@ -653,7 +655,7 @@
       :coercion nil
       :path-params [token :- schemas/OAuth2Token]
       :return s/Bool
-      (let [{:keys [response user]} (get-auth-api-user request)]
+      (let [{:keys [response user]} (get-auth-api-user app-context request)]
         (or response
             (let [result (store/delete-token (:id user) token)]
               (if-not result
@@ -667,7 +669,7 @@
       :path-params [token :- schemas/OAuth2Token]
       :return s/Bool
       :coercion nil
-      (let [{:keys [response user]} (get-auth-api-user request)]
+      (let [{:keys [response user]} (get-auth-api-user app-context request)]
         (or response
             (let [result (store/delete-token (:id user) token)]
               (if-not result
@@ -678,8 +680,8 @@
   "Display a simple web form for the authenticated user showing any
   OAuth2 tokens (with the option to revoke each one) as well as
   the abililty to create a new token"
-  [request]
-  (let [userid (get-current-userid request)
+  [app-context request]
+  (let [userid (get-current-userid app-context request)
         token (get-current-token request)
         query-params (if token (str "?access_token=" token) "")
         tokens (if userid (store/all-tokens userid) [])
@@ -761,7 +763,9 @@
         "</body>"
         ))
 
-    (GET "/tokens" request tokens-page)
+    (GET "/tokens" request
+      (fn [request]
+        (tokens-page app-context request)))
 
     (GET "/logout" [] logout-page)
 
@@ -837,24 +841,25 @@
 
 (def AUTH_REALM "OceanRM")
 
-(defn surfer-credential-function
+(defn credential-fn
   "A friend credential function.
 
    Accepts a friend credential map as sole input.
 
    Returns an authentication map, including the :identity and :roles set"
-  [creds]
-  (let [{:keys [username password]} creds]
-    (or (and (not (empty? username))
-             (not (empty? password))
-             (creds/bcrypt-credential-fn @users creds))
-        (let [user (store/get-user-by-name username)]
-          (when (and user
-                     (= "Active" (:status user))
-                     (creds/bcrypt-verify password (:password user)))
-            {:identity username
-             :roles (:roles user)
-             :userid (:id user)})))))
+  [db]
+  (fn [credential]
+    (let [{:keys [username password]} credential]
+      (or (and (not (empty? username))
+               (not (empty? password))
+               (creds/bcrypt-credential-fn @users credential))
+          (let [user (store/get-user-by-name db username)]
+            (when (and user
+                       (= "Active" (:status user))
+                       (creds/bcrypt-verify password (:password user)))
+              {:identity username
+               :roles (:roles user)
+               :userid (:id user)}))))))
 
 (defn workflow-logout
   "Workflow to log out of basic authentication"
@@ -865,23 +870,24 @@
 
 (defn workflow-oauth2
   "Workflow to check for an OAuth2 token"
-  [request]
-  (let [{:keys [headers params]} request
-        {:strs [authorization]} headers
-        {:strs [access_token]} params
-        match (and authorization (re-matches #"\s*token\s+(.+)" authorization))
-        token (or (if match (second match)) access_token)
-        userid (if token (store/get-userid-by-token token))
-        user (if userid (store/get-user userid))]
-    (when (and user (= "Active" (:status user)))
-      (workflows/make-auth
-        {:identity (:username user)
-         :roles (:roles user)
-         :userid (:id user)
-         :token token}
-        {::friend/workflow :oauth2
-         ::friend/redirect-on-auth? false
-         ::friend/ensure-session false}))))
+  [db]
+  (fn [request]
+    (let [{:keys [headers params]} request
+          {:strs [authorization]} headers
+          {:strs [access_token]} params
+          match (and authorization (re-matches #"\s*token\s+(.+)" authorization))
+          token (or (if match (second match)) access_token)
+          userid (if token (store/get-userid-by-token token))
+          user (if userid (store/get-user db userid))]
+      (when (and user (= "Active" (:status user)))
+        (workflows/make-auth
+          {:identity (:username user)
+           :roles (:roles user)
+           :userid (:id user)
+           :token token}
+          {::friend/workflow :oauth2
+           ::friend/redirect-on-auth? false
+           ::friend/ensure-session false})))))
 
 (def workflow-http-basic
   (workflows/http-basic :realm AUTH_REALM))
@@ -889,21 +895,22 @@
 (def http-basic-deny
   (partial workflows/http-basic-deny AUTH_REALM))
 
-(def auth-config
+(defn auth-config [db]
   {:allow-anon? false
-   :credential-fn surfer-credential-function
+   :credential-fn (credential-fn db)
    :workflows [workflow-logout
-               workflow-oauth2
+               (workflow-oauth2 db)
                workflow-http-basic]
    :unauthenticated-handler http-basic-deny
    :unauthorized-handler http-basic-deny})
 
-(defn api-auth-middleware
+(defn wrap-auth
   "Middlware for API authentications"
-  ([handler]
-   (-> handler
-       (friend/wrap-authorize #{:user :admin})
-       (friend/authenticate auth-config))))
+  [db]
+  (fn [handler]
+    (-> handler
+        (friend/wrap-authorize #{:user :admin})
+        (friend/authenticate (auth-config db)))))
 
 ;; =====================================================
 ;; Main routes
@@ -937,4 +944,4 @@
                     [:get :put :post :delete :options])
         wrap-params
         wrap-cache-buster
-        api-auth-middleware))))
+        (wrap-auth (get-in app-context [:h2 :db]))))))

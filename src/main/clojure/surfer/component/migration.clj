@@ -34,14 +34,14 @@
             (not username)
             (log/info "No :username provided in user-config!")
 
-            (store/get-user-by-name username)
+            (store/get-user-by-name (:db h2) username)
             (log/info (str "User already registered: " username))
 
-            (and id (store/get-user id))
+            (and id (store/get-user (:db h2) id))
             (log/info (str "User ID already exists: " id))
 
             :else
-            (do (store/register-user user)
+            (do (store/register-user (:db h2) user)
                 (log/info (str "Auto-registered default user:" username))))
           (catch Throwable t
             (log/error (str "Problem auto-registering default users: " t))))))
