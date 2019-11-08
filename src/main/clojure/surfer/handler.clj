@@ -96,7 +96,7 @@
 ;; ==========================================
 ;; Meta API
 
-(def meta-api
+(defn meta-api [app-context]
   (routes
     {:swagger
      {:data {:info {:title "Meta API"
@@ -226,7 +226,7 @@
         (response/not-found (str "Job not found: " jobid))))))
 
 
-(def storage-api
+(defn storage-api [app-context]
   (routes
     {:swagger
      {:data {:info {:title "Storage API"
@@ -304,23 +304,21 @@
                   (str "Expected map with :tempfile, got param: " file)))
         ))))
 
-
-(def trust-api
+(defn trust-api [app-context]
   (routes
     {:swagger
-     {:data {:info {:title "Trust API"
-                    :description "Trust API for Ocean Marketplace"}
-             :tags [{:name "Trust API", :description "Trust API for Ocean Marketplace"}]
-             ;;:consumes ["application/json"]
-             :produces ["application/json"]
-             }}}
+     {:data
+      {:info
+       {:title "Trust API"
+        :description "Trust API for Ocean Marketplace"}
+       :tags [{:name "Trust API", :description "Trust API for Ocean Marketplace"}]
+       :produces ["application/json"]}}}
 
     (GET "/groups" []
       :summary "Gets the list of current groups"
-      (throw (UnsupportedOperationException. "Not yet implemented!")))
-    ))
+      (throw (UnsupportedOperationException. "Not yet implemented!")))))
 
-(def market-api
+(defn market-api [app-context]
   (routes
     {:swagger
      {:data {:info {:title "Market API"
@@ -533,7 +531,7 @@
            :body "Can't modify purchase: only purchase owner can do so"})))
     ))
 
-(def admin-api
+(defn admin-api [app-context]
   (routes
     {:swagger
      {:data {:info {:title "Market Admin API"
@@ -622,14 +620,15 @@
                "authorized:" (boolean (:user rv)))
     rv))
 
-(def auth-api
+(defn auth-api [app-context]
   (routes
     {:swagger
-     {:data {:info {:title "Authentication API"
-                    :description "Authentication API for Ocean Marketplace"}
-             :tags [{:name "Authentication API",
-                     :description "Authentication API for Ocean Marketplace"}]
-             :produces ["application/json"]}}}
+     {:data
+      {:info
+       {:title "Authentication API"
+        :description "Authentication API for Ocean Marketplace"}
+       :tags [{:name "Authentication API", :description "Authentication API for Ocean Marketplace"}]
+       :produces ["application/json"]}}}
 
     (GET "/token" request
       :summary "Gets a list of OAuth2 tokens for the currently authenticated user"
@@ -766,27 +765,27 @@
 
     (context "/api/v1/meta" []
       :tags ["Meta API"]
-      meta-api)
+      (meta-api app-context))
 
     (context "/api/v1/assets" []
       :tags ["Storage API"]
-      storage-api)
+      (storage-api app-context))
 
     (context "/api/v1/market" []
       :tags ["Market API"]
-      market-api)
+      (market-api app-context))
 
     (context "/api/v1/trust" []
       :tags ["Trust API"]
-      trust-api)
+      (trust-api app-context))
 
     (context "/api/v1/market-admin" []
       :tags ["Market Admin API"]
-      admin-api)
+      (admin-api app-context))
 
     (context "/api/v1/auth" []
       :tags ["Authentication API"]
-      auth-api)
+      (auth-api app-context))
 
     (context "/api/v1/invoke" []
       :tags ["Invoke API"]
@@ -794,11 +793,7 @@
 
     (context "/api" []
       :tags ["Status API"]
-      (status-api app-context))
-
-
-    ;; (response/not-found "404")
-    ))
+      (status-api app-context))))
 
 (def web-routes
   (api
