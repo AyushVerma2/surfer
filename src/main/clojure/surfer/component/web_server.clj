@@ -7,11 +7,10 @@
   component/Lifecycle
 
   (start [component]
-    (let [handler (handler/make-handler {:config config
-                                         :h2 h2})
-
-          port (get-in config [:config :http-port])]
-      (assoc component :kill (run-server handler {:port port}))))
+    (let [handler (handler/make-handler {:config config :h2 h2})
+          http-port (get-in config [:config :http-port])
+          kill-server (run-server handler {:port http-port})]
+      (assoc component :kill kill-server)))
 
   (stop [component]
     (if kill

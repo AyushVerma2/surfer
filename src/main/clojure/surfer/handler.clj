@@ -906,11 +906,11 @@
 
 (defn wrap-auth
   "Middlware for API authentications"
-  [db]
+  [config]
   (fn [handler]
     (-> handler
         (friend/wrap-authorize #{:user :admin})
-        (friend/authenticate (auth-config db)))))
+        (friend/authenticate config))))
 
 ;; =====================================================
 ;; Main routes
@@ -933,15 +933,19 @@
         {}))))
 
 (defn make-handler [app-context]
-  (routes
-    web-routes
-    (add-middleware
-      (routes (api-routes app-context))
-      (comp
-        #(wrap-cors % :access-control-allow-origin #".*"
-                    :access-control-allow-credentials true
-                    :access-control-allow-methods
-                    [:get :put :post :delete :options])
-        wrap-params
-        wrap-cache-buster
-        (wrap-auth (get-in app-context [:h2 :db]))))))
+  (let [db (get-in app-context [:h2 :db])
+        config (auth-config db)
+        wrap-auth (wrap-auth config)]
+    (routes
+      web-routes
+      (add-middleware
+        (routes (api-routes app-context))
+        (comp
+          (fn [handler]
+            (wrap-cors handler
+                       :access-control-allow-origin #".*"
+                       :access-control-allow-credentials true
+                       :access-control-allow-methods [:get :put :post :delete :options]))
+          wrap-params
+          wrap-cache-buster
+          wrap-auth)))))
