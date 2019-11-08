@@ -809,8 +809,8 @@
             [:span.dib.f5.f4-ns.fw6.black-70 "Surfer"]]
            [:article.pa3.ph5-ns
             [:div.flex.flex-column
+             (link "/api-docs" "API Documentation")
              (link "/assets" "Assets")
-             (link "/api-docs" "Swagger")
              (link "/echo" "Echo Test")
              (link "/tokens" "Manage Tokens")
              (link "/logout" "Logout")]]])))
