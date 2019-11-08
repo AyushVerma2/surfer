@@ -11,6 +11,7 @@
 
   sg.dex/starfish-clj {:mvn/version "0.7.4"}
 
+  hiccup {:mvn/version "1.0.5"}
   http-kit {:mvn/version "2.3.0"}
   ring {:mvn/version "1.7.1"}
   ring/ring-defaults {:mvn/version "0.3.2"}

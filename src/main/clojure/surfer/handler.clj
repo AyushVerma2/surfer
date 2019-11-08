@@ -26,7 +26,9 @@
     [cemerick.friend :as friend]
     [cemerick.friend [workflows :as workflows]
      [credentials :as creds]]
-    [clojure.tools.logging :as log])
+    [clojure.tools.logging :as log]
+    [hiccup.core :as hiccup]
+    [hiccup.page :as hiccup.page])
   (:import [java.io InputStream StringWriter PrintWriter]
            [org.apache.commons.codec.binary Base64]))
 
@@ -797,14 +799,21 @@
 
 (def web-routes
   (api
-    (GET "/" [] "<body>
-                   <h1>Welcome to surfer!!!!</h1>
-                   <p><a href='/assets'>Explore imported asset list</a></p>
-                   <p><a href='/api-docs'>API Documentation</a></p>
-                   <p><a href='/echo'>Echo request body</a></p>
-                   <p><a href='/tokens'>Manage Tokens</a></p>
-                   <p><a href='/logout'>Logout</a> (click SignIn with no username/password, then Cancel)</p>
-                 </body>")
+    (GET "/" []
+      (let [link (fn [href content]
+                   [:a.link.fw6.blue.dim.mv1 {:href href} content])]
+        (hiccup.page/html5
+          [:head (hiccup.page/include-css "https://unpkg.com/tachyons@4/css/tachyons.min.css")]
+          [:body.sans-serif
+           [:header.w-100.pa3.ph5-ns.bg-white
+            [:span.dib.f5.f4-ns.fw6.black-70 "Surfer"]]
+           [:article.pa3.ph5-ns
+            [:div.flex.flex-column
+             (link "/assets" "Assets")
+             (link "/api-docs" "Swagger")
+             (link "/echo" "Echo Test")
+             (link "/tokens" "Manage Tokens")
+             (link "/logout" "Logout")]]])))
 
     (GET "/echo" request (str request))))
 
