@@ -726,7 +726,7 @@
                   "</body></html>\n")]
     (response/response body)))
 
-(defn make-api-routes [app-context]
+(defn api-routes [app-context]
   (api
     {:api {:invalid-routes-fn nil}                          ;; supress warning on child routes
      :exceptions {:handlers
@@ -929,7 +929,7 @@
   (routes
     web-routes
     (add-middleware
-      (routes (make-api-routes app-context))
+      (routes (api-routes app-context))
       (comp
         #(wrap-cors % :access-control-allow-origin #".*"
                     :access-control-allow-credentials true
