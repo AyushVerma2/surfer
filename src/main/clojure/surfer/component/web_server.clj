@@ -3,7 +3,7 @@
             [org.httpkit.server :refer [run-server]]
             [surfer.handler :as handler]))
 
-(defrecord WebServer [server config h2]
+(defrecord WebServer [config h2 kill]
   component/Lifecycle
 
   (start [component]
@@ -11,11 +11,11 @@
                                          :h2 h2})
 
           port (get-in config [:config :http-port])]
-      (assoc component :server (run-server handler {:port port}))))
+      (assoc component :kill (run-server handler {:port port}))))
 
   (stop [component]
-    (if server
+    (if kill
       (do
-        (server)
-        (assoc component :server nil))
+        (kill)
+        (assoc component :kill nil))
       component)))
