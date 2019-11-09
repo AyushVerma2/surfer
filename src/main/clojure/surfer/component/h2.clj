@@ -5,10 +5,10 @@
   component/Lifecycle
 
   (start [component]
-    (Class/forName "org.h2.Driver")
-
-    (assoc component :db {:dbtype "h2"
-                          :dbname "~/surfertest"}))
+    (let [h2-config (get-in config [:config :h2])]
+      (assoc component :db (merge {:dbtype "h2"
+                                   :dbname "~/.surfer/surfer"}
+                                  (select-keys h2-config [:dbname])))))
 
   (stop [component]
     component))

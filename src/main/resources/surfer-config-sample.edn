@@ -6,6 +6,8 @@
 
  :http-port 3030
 
+ :h2 {:dbname "~/.surfer/surfer"}
+
  ;; Define key metadata about the Agent deployment 
  :agent
  {;; specify the name of the Agent
