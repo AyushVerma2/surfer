@@ -4,7 +4,7 @@
  ;; 1. The file specified in the CONFIG_PATH environment variable
  ;; 2. The "surfer-config.edn" file in the current directory
 
- :http-port 3030
+ :web-server {:port 3030}
 
  :h2 {:dbname "~/.surfer/surfer"}
 
