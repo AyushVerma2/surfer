@@ -5,10 +5,13 @@
   component/Lifecycle
 
   (start [component]
-    (let [h2-config (get-in config [:config :h2])]
-      (assoc component :db (merge {:dbtype "h2"
-                                   :dbname "~/.surfer/surfer"}
-                                  (select-keys h2-config [:dbname])))))
+    (let [default-config {:dbtype "h2"
+                          :dbname "~/.surfer/h2/surfer"}
+
+          user-config (-> (get-in config [:config :h2])
+                          (select-keys [:dbtype :dbname]))]
+
+      (assoc component :db (merge default-config user-config))))
 
   (stop [component]
     component))
