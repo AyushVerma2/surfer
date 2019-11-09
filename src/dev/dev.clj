@@ -6,8 +6,7 @@
             [clojure.data.json :as data.json]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]))
 
-(set-init (init-fn {:http-port 3030
-                    :migration {:truncate-on-stop? true}}))
+(set-init (init-fn))
 
 (comment
 

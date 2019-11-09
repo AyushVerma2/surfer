@@ -49,13 +49,4 @@
     component)
 
   (stop [component]
-    (when (get-in config [:config :migration :truncate-on-stop?])
-      (try
-        (truncate (:db h2))
-
-        (log/info "Successfully truncated tables!")
-
-        (catch Exception e
-          (log/info e "Failed to truncate tables."))))
-
     component))
