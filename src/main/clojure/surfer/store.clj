@@ -444,7 +444,7 @@
 ;; returns nilable schemas/UserID
 (defn get-userid-by-token
   "Return userid for this token (else nil)."
-  [token]
+  [db token]
   (let [sql "SELECT userid FROM tokens WHERE token = ?;"
         rs (jdbc/query db [sql token])
         userid (-> rs first :userid)]
@@ -454,7 +454,7 @@
 ;; returns [schemas/OAuth2Token]
 (defn all-tokens
   "Returns a list of all tokens for this user."
-  [userid]
+  [db userid]
   (let [sql "SELECT tokens.token FROM tokens JOIN users ON tokens.userid = users.id WHERE users.id = ?;"
         rs (jdbc/query db [sql userid])
         tokens (mapv :token rs)]
@@ -464,7 +464,7 @@
 ;; returns schemas/OAuth2Token
 (defn create-token
   "Create an OAuth2Token for this user."
-  [userid]
+  [db userid]
   (let [token (u/new-random-id)
         sql "INSERT INTO tokens (token, userid) VALUES (?, ?);"
        rs (jdbc/execute! db [sql token userid])] ;; expect '(1)
@@ -474,7 +474,7 @@
 ;; returns s/Bool
 (defn delete-token
   "Deletes an OAuth2Token for this user."
-  [userid token]
+  [db userid token]
   (let [sql "token = ?"
         rs (jdbc/delete! db :tokens [sql token])
         success (= (first rs) 1)]

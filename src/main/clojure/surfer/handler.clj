@@ -625,56 +625,57 @@
     rv))
 
 (defn auth-api [app-context]
-  (routes
-    {:swagger
-     {:data
-      {:info
-       {:title "Authentication API"
-        :description "Authentication API for Ocean Marketplace"}
-       :tags [{:name "Authentication API", :description "Authentication API for Ocean Marketplace"}]
-       :produces ["application/json"]}}}
+  (let [db (get-in app-context [:h2 :db])]
+    (routes
+      {:swagger
+       {:data
+        {:info
+         {:title "Authentication API"
+          :description "Authentication API for Ocean Marketplace"}
+         :tags [{:name "Authentication API", :description "Authentication API for Ocean Marketplace"}]
+         :produces ["application/json"]}}}
 
-    (GET "/token" request
-      :summary "Gets a list of OAuth2 tokens for the currently authenticated user"
-      :coercion nil
-      :return [schemas/OAuth2Token]
-      (let [{:keys [response user]} (get-auth-api-user app-context request)]
-        (or response
-            (response-json (store/all-tokens (:id user))))))
+      (GET "/token" request
+        :summary "Gets a list of OAuth2 tokens for the currently authenticated user"
+        :coercion nil
+        :return [schemas/OAuth2Token]
+        (let [{:keys [response user]} (get-auth-api-user app-context request)]
+          (or response
+              (response-json (store/all-tokens db (:id user))))))
 
-    (POST "/token" request
-      :summary "Creates a new OAuth2Token"
-      :coercion nil
-      :return schemas/OAuth2Token
-      (let [{:keys [response user]} (get-auth-api-user app-context request)]
-        (or response
-            (response-json (str "\"" (store/create-token (:id user)) "\"")))))
+      (POST "/token" request
+        :summary "Creates a new OAuth2Token"
+        :coercion nil
+        :return schemas/OAuth2Token
+        (let [{:keys [response user]} (get-auth-api-user app-context request)]
+          (or response
+              (response-json (str "\"" (store/create-token db (:id user)) "\"")))))
 
-    (DELETE "/revoke/:token" request
-      :summary "Revokes one of the existing OAuth2 tokens for the authenticated user"
-      :coercion nil
-      :path-params [token :- schemas/OAuth2Token]
-      :return s/Bool
-      (let [{:keys [response user]} (get-auth-api-user app-context request)]
-        (or response
-            (let [result (store/delete-token (:id user) token)]
-              (if-not result
-                (response/not-found "Token not found.")
-                (response-json (str result)))))))
+      (DELETE "/revoke/:token" request
+        :summary "Revokes one of the existing OAuth2 tokens for the authenticated user"
+        :coercion nil
+        :path-params [token :- schemas/OAuth2Token]
+        :return s/Bool
+        (let [{:keys [response user]} (get-auth-api-user app-context request)]
+          (or response
+              (let [result (store/delete-token db (:id user) token)]
+                (if-not result
+                  (response/not-found "Token not found.")
+                  (response-json (str result)))))))
 
-    ;; Synonym for DELETE for use in the web form (only) as forms only support
-    ;; GET,POST methods: https://www.w3.org/TR/1999/REC-html401-19991224/interact/forms.html#adef-method
-    (POST "/revoke/:token" request
-      :summary "Revokes one of the existing OAuth2 tokens for the authenticated user (via web form) [DEVELOPMENT]"
-      :path-params [token :- schemas/OAuth2Token]
-      :return s/Bool
-      :coercion nil
-      (let [{:keys [response user]} (get-auth-api-user app-context request)]
-        (or response
-            (let [result (store/delete-token (:id user) token)]
-              (if-not result
-                (response/not-found "Token not found.")
-                (response-json (str result)))))))))
+      ;; Synonym for DELETE for use in the web form (only) as forms only support
+      ;; GET,POST methods: https://www.w3.org/TR/1999/REC-html401-19991224/interact/forms.html#adef-method
+      (POST "/revoke/:token" request
+        :summary "Revokes one of the existing OAuth2 tokens for the authenticated user (via web form) [DEVELOPMENT]"
+        :path-params [token :- schemas/OAuth2Token]
+        :return s/Bool
+        :coercion nil
+        (let [{:keys [response user]} (get-auth-api-user app-context request)]
+          (or response
+              (let [result (store/delete-token db (:id user) token)]
+                (if-not result
+                  (response/not-found "Token not found.")
+                  (response-json (str result))))))))))
 
 (defn tokens-page
   "Display a simple web form for the authenticated user showing any
@@ -877,7 +878,7 @@
           {:strs [access_token]} params
           match (and authorization (re-matches #"\s*token\s+(.+)" authorization))
           token (or (if match (second match)) access_token)
-          userid (if token (store/get-userid-by-token token))
+          userid (if token (store/get-userid-by-token db token))
           user (if userid (store/get-user db userid))]
       (when (and user (= "Active" (:status user)))
         (workflows/make-auth
