@@ -4,7 +4,8 @@
             [clojure.java.io :as io]
             [clojure.edn :as edn]
             [clojure.pprint :as pprint]
-            [cemerick.friend.credentials :as creds]))
+            [cemerick.friend.credentials :as creds]
+            [clojure.tools.logging :as log]))
 
 (defrecord Config [config-path config user-config-path user-config]
   component/Lifecycle
@@ -17,8 +18,11 @@
               (let [config (edn/read-string (slurp (io/resource "surfer-config-sample.edn")))]
                 (spit config-path (with-out-str (pprint/pprint config)))))
 
-          ;; Merge configs - one is read from disk, and the other is passed as an argument
-          config (merge (edn/read-string (slurp config-path)) config)
+          default-config {:web-server {:port 3030}
+                          :h2 {:dbname "~/.surfer/surfer"}}
+
+          ;; Merge configs - defaults, config (disk), overrides
+          config (merge default-config (edn/read-string (slurp config-path)) config)
 
           user-config-path (get-in config [:security :user-config])
 
@@ -34,6 +38,9 @@
                              ;; by storing plaintext passwords in memory.
                              (mapv (fn [{:keys [password] :as user}]
                                      (assoc user :password (creds/hash-bcrypt password))))))]
+
+      (log/debug (str "-- CONFIG\n" (with-out-str (pprint/pprint config))))
+      (log/debug (str "-- USER CONFIG\n" (with-out-str (pprint/pprint user-config))))
 
       (assoc component :config-path config-path
                        :config config
