@@ -1,4 +1,4 @@
-(ns surfer.component.config
+(ns surfer.component.env
   (:require [com.stuartsierra.component :as component]
             [environ.core :refer [env]]
             [clojure.java.io :as io]
@@ -7,7 +7,7 @@
             [cemerick.friend.credentials :as creds]
             [clojure.tools.logging :as log]))
 
-(defrecord Config [config-path config user-config-path user-config]
+(defrecord Env [config-path config user-config-path user-config]
   component/Lifecycle
 
   (start [component]
@@ -18,11 +18,8 @@
               (let [config (edn/read-string (slurp (io/resource "surfer-config-sample.edn")))]
                 (spit config-path (with-out-str (pprint/pprint config)))))
 
-          default-config {:web-server {:port 3030}
-                          :h2 {:dbname "~/.surfer/surfer"}}
-
-          ;; Merge configs - defaults, config (disk), overrides
-          config (merge default-config (edn/read-string (slurp config-path)) config)
+          ;; Merge configs - config (disk), overrides
+          config (merge (edn/read-string (slurp config-path)) config)
 
           user-config-path (get-in config [:security :user-config])
 

@@ -3,19 +3,23 @@
             [org.httpkit.server :refer [run-server]]
             [surfer.handler :as handler]))
 
-(defrecord WebServer [config h2 kill]
+(defrecord WebServer [env database stop-server]
   component/Lifecycle
 
   (start [component]
-    (let [app-context {:config config :h2 h2}
+    (let [app-context {:env env
+                       :db (:db-spec database)}
+
           handler (handler/make-handler app-context)
-          http-port (get-in config [:config :web-server :port])
-          kill-server (run-server handler {:port http-port})]
-      (assoc component :kill kill-server)))
+
+          http-port (get-in env [:config :web-server :port])
+
+          stop-server (run-server handler {:port http-port})]
+      (assoc component :stop-server stop-server)))
 
   (stop [component]
-    (if kill
+    (if stop-server
       (do
-        (kill)
-        (assoc component :kill nil))
+        (stop-server)
+        (assoc component :stop-server nil))
       component)))

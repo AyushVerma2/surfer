@@ -6,7 +6,9 @@
 
  :web-server {:port 3030}
 
- :h2 {:dbname "~/.surfer/h2/surfer"}
+ :h2
+ {:dbtype "h2"
+  :dbname "~/.surfer/surfer"}
 
  ;; Define key metadata about the Agent deployment 
  :agent

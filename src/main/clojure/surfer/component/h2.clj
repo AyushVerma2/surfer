@@ -1,17 +1,11 @@
 (ns surfer.component.h2
   (:require [com.stuartsierra.component :as component]))
 
-(defrecord H2 [db config]
+(defrecord H2 [env db-spec]
   component/Lifecycle
 
   (start [component]
-    (let [default-config {:dbtype "h2"
-                          :dbname "~/.surfer/h2/surfer"}
-
-          user-config (-> (get-in config [:config :h2])
-                          (select-keys [:dbtype :dbname]))]
-
-      (assoc component :db (merge default-config user-config))))
+    (assoc component :db-spec (get-in env [:config :h2])))
 
   (stop [component]
     component))

@@ -19,29 +19,29 @@
                             "Users"])]
     (jdbc/execute! db (str "TRUNCATE TABLE " table ";"))))
 
-(defrecord Migration [config h2]
+(defrecord Migration [env database]
   component/Lifecycle
 
   (start [component]
-    (migrate (:db h2))
+    (migrate (:db-spec database))
 
     (log/info "Successfully migrated database!")
 
-    (when-let [users (:user-config config)]
+    (when-let [users (:user-config env)]
       (doseq [{:keys [id username] :as user} users]
         (try
           (cond
             (not username)
             (log/info "No :username provided in user-config!")
 
-            (store/get-user-by-name (:db h2) username)
+            (store/get-user-by-name (:db-spec database) username)
             (log/info (str "User already registered: " username))
 
-            (and id (store/get-user (:db h2) id))
+            (and id (store/get-user (:db-spec database) id))
             (log/info (str "User ID already exists: " id))
 
             :else
-            (do (store/register-user (:db h2) user)
+            (do (store/register-user (:db-spec database) user)
                 (log/info (str "Auto-registered default user:" username))))
           (catch Throwable t
             (log/error (str "Problem auto-registering default users: " t))))))
