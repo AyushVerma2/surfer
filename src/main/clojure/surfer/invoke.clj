@@ -1,13 +1,14 @@
 (ns surfer.invoke
-  (:require 
+  (:require
     [surfer.storage :as storage]
     [surfer.store :as store]
-    [surfer.config :as config]
+    [surfer.env :as env]
     [starfish.core :as sf]
     [surfer.utils :as utils]
     [schema.core :as s]
     [clojure.data.json :as json]
-    [clojure.tools.logging :as log])
+    [clojure.tools.logging :as log]
+    [surfer.app-context :as app-context])
   (:import [sg.dex.starfish.util DID]))
 
 (defonce JOBS (atom {}))
@@ -80,7 +81,7 @@
   "Gets the appropriate response map for a job result, or null if the job does not exist."
   [app-context jobid]
   (when-let [job (get-job jobid)]
-    (let [agent-did (config/agent-did (:config app-context))
+    (let [agent-did (env/agent-did (app-context/env app-context))
 
           _ (try
               (sf/poll-result job)

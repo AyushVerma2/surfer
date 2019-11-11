@@ -13,8 +13,10 @@
     [surfer.storage :as storage]
     [starfish.core :as sf]
     [surfer.utils :as utils]
-    [surfer.config :as config]
+    [surfer.env :as env]
     [surfer.invoke :as invoke]
+    [surfer.app-context :as app-context]
+    [surfer.database :as database]
     [schema.core :as s]
     [clojure.data.json :as json]
     [clojure.pprint :as pprint :refer [pprint]]
@@ -67,33 +69,34 @@
 ;; ==========================================
 ;; Status API
 
-(defn status-api [{:keys [config] :as app-context}]
-  (routes
-    {:swagger
-     {:data
-      {:info
-       {:title "Status API"
-        :description "Status API for DEP Agents"}
-       :tags [{:name "Status API",
-               :description "Status API for DEP Agents"}]}}}
+(defn status-api [app-context]
+  (let [env (app-context/env app-context)]
+    (routes
+      {:swagger
+       {:data
+        {:info
+         {:title "Status API"
+          :description "Status API for DEP Agents"}
+         :tags [{:name "Status API",
+                 :description "Status API for DEP Agents"}]}}}
 
-    (GET "/ddo" request
-      :summary "Gets the ddo for this Agent"
-      :return schemas/DDO
-      {:status 200
-       :headers {"Content-Type" "application/json"}
-       :body (config/remote-ddo config)})
-
-    (GET "/status" request
-      :summary "Gets the status for this Agent"
-      :return s/Any
-      (let [agent (get-in config [:config :agent])]
+      (GET "/ddo" request
+        :summary "Gets the ddo for this Agent"
+        :return schemas/DDO
         {:status 200
          :headers {"Content-Type" "application/json"}
-         :body {:name (or (:name agent) "Unnamed Agent")
-                :description (or (:description agent) "No description")
-                :api-versions ["v1"]
-                :custom {:server-type "Surfer"}}}))))
+         :body (env/remote-ddo env)})
+
+      (GET "/status" request
+        :summary "Gets the status for this Agent"
+        :return s/Any
+        (let [agent (env/agent-config env)]
+          {:status 200
+           :headers {"Content-Type" "application/json"}
+           :body {:name (or (:name agent) "Unnamed Agent")
+                  :description (or (:description agent) "No description")
+                  :api-versions ["v1"]
+                  :custom {:server-type "Surfer"}}})))))
 
 
 ;; ==========================================
@@ -685,7 +688,7 @@
   (let [userid (get-current-userid app-context request)
         token (get-current-token request)
         query-params (if token (str "?access_token=" token) "")
-        tokens (if userid (store/all-tokens userid) [])
+        tokens (if userid (store/all-tokens (database/db (app-context/database app-context)) userid) [])
         header (str "<html><head><style type=\"text/css\">"
                     "html {"
                     "  font-family: 'courier new', monospace;"
@@ -934,7 +937,7 @@
         {}))))
 
 (defn make-handler [app-context]
-  (let [db (get-in app-context [:h2 :db])
+  (let [db (database/db (app-context/database app-context))
         config (auth-config db)
         wrap-auth (wrap-auth config)]
     (routes

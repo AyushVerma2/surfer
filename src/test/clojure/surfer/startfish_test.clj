@@ -3,7 +3,7 @@
             [clojure.walk :refer [stringify-keys]]
             [com.stuartsierra.component :as component]
             [surfer.system :as system]
-            [surfer.config :as config]
+            [surfer.env :as config]
             [starfish.core :as sf]))
 
 (def test-system
@@ -33,8 +33,8 @@
     {:output (sf/memory-asset {:name "Result of computation"} C)}))
 
 (deftest ^:integration test-startfish
-  (let [local-did (config/agent-did (:config test-system))
-        local-ddo (config/local-ddo (:config test-system))
+  (let [local-did (config/agent-did (system/env test-system))
+        local-ddo (config/local-ddo (system/env test-system))
         local-ddo-string (sf/json-string-pprint local-ddo)
 
         username "Aladdin"
@@ -58,8 +58,8 @@
   (component/stop system)
 
   (def local-agent-aladdin
-    (let [local-did (config/agent-did (:config system))
-          local-ddo (config/local-ddo (:config system))
+    (let [local-did (config/agent-did (system/env system))
+          local-ddo (config/local-ddo (system/env system))
           local-ddo-string (sf/json-string-pprint local-ddo)
 
           username "Aladdin"

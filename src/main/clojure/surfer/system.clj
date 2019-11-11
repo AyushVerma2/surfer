@@ -30,3 +30,6 @@
   (fn [system]
     (new-system config)))
 
+(defn env [system]
+  (:env system))
+
