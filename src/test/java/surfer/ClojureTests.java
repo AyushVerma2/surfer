@@ -20,7 +20,8 @@ public class ClojureTests extends ClojureTest {
 	// }
 	public List<String> namespaces() {
 		return Arrays.asList(new String[] {
-			"surfer.test-handler",
+			"surfer.handler-test",
+			"surfer.startfish-test",
 			"surfer.test-schemas",
 			"surfer.test-storage",
 			"surfer.test-users",
