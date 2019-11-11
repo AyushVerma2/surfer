@@ -11,4 +11,5 @@
               :password (creds/hash-bcrypt "OpenSesame")}
         id (store/register-user user)]
     (is (u/valid-user-id? id))
-    (is (= id (:id (store/get-user id))))))
+    ;; TODO Fix `nil` db
+    (is (= id (:id (store/get-user nil id))))))

@@ -11,13 +11,14 @@
 
   sg.dex/starfish-clj {:mvn/version "0.7.4"}
 
+  hiccup {:mvn/version "1.0.5"}
   http-kit {:mvn/version "2.3.0"}
   ring {:mvn/version "1.7.1"}
   ring/ring-defaults {:mvn/version "0.3.2"}
   ring-middleware-format {:mvn/version "0.7.4"}
   ring-cors {:mvn/version "0.1.13"}
   compojure {:mvn/version "1.6.1"}
-  metosin/compojure-api {:mvn/version "1.1.11"}
+  metosin/compojure-api {:mvn/version "1.1.13"}
   environ {:mvn/version "1.1.0"}
   com.stuartsierra/component {:mvn/version "0.4.0"}
   clj-http {:mvn/version "3.10.0"}

@@ -1,21 +1,22 @@
 (ns surfer.invoke
-  (:require 
+  (:require
     [surfer.storage :as storage]
     [surfer.store :as store]
-    [surfer.config :as config]
+    [surfer.env :as env]
     [starfish.core :as sf]
     [surfer.utils :as utils]
     [schema.core :as s]
     [clojure.data.json :as json]
-    [clojure.tools.logging :as log])
+    [clojure.tools.logging :as log]
+    [surfer.app-context :as app-context])
   (:import [sg.dex.starfish.util DID]))
 
 (defonce JOBS (atom {}))
 
 (defn get-operation
   "Gets an in-memory operation for the given operation id"
-  [op-id]
-  (let [op-meta (store/lookup op-id)
+  [db op-id]
+  (let [op-meta (store/lookup db op-id)
         md (sf/read-json-string op-meta)
         op-function (:function (:additionalInfo md))
         params (keys (:params (:operation md)))
@@ -47,8 +48,8 @@
   "Launch a job using the given function. 
 
    Returns jobid if successful, null if operation cannot be found."
-  [op-id invoke-req]
-  (let [op (get-operation op-id)]
+  [db op-id invoke-req]
+  (let [op (get-operation db op-id)]
     (when op
       (let [jobid (sf/random-hex-string 32)
             md (sf/metadata op) 
@@ -62,35 +63,37 @@
   [jobid]
   (@JOBS jobid))
 
-(defn format-asset-result 
-  [a]
-  (let [id (sf/asset-id a)
-        ^DID d config/DID
-        d (.withPath d id)]
-    {:did (str d)}))
+(defn format-asset-result
+  [^DID agent-did asset]
+  {:did (str (.withPath agent-did (sf/asset-id asset)))})
 
 (defn format-results
   "Formats results ready for output in a job status :result value."
-  [rs]
+  [^DID agent-did rs]
   (into {}
         (map (fn [[k v]]
                (if (sf/asset? v)
-                 [(keyword k) (format-asset-result v)]
+                 [(keyword k) (format-asset-result agent-did v)]
                  [(keyword k) v]))
              rs)))
 
-(defn job-response 
+(defn job-response
   "Gets the appropriate response map for a job result, or null if the job does not exist."
-  [jobid]
+  [app-context jobid]
   (when-let [job (get-job jobid)]
-    (let [_ (try (sf/poll-result job) (catch Throwable t))
+    (let [agent-did (env/agent-did (app-context/env app-context))
+
+          _ (try
+              (sf/poll-result job)
+              (catch Throwable _))
+
           status (sf/job-status job)
           resp {:status status}
           resp (if (= status :succeeded)
-                 (assoc resp :results (format-results (sf/get-result job)))
+                 (assoc resp :results (format-results agent-did (sf/get-result job)))
                  resp)
           resp (if (= status :failed)
-                 (assoc resp :message (try (sf/get-result job) 
-                                        (catch Throwable t (.getMessage t))))
+                 (assoc resp :message (try (sf/get-result job)
+                                           (catch Throwable t (.getMessage t))))
                  resp)]
       resp)))

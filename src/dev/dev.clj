@@ -1,12 +1,12 @@
 (ns dev
   (:require [surfer.store :as store]
-            [surfer.config :as config]
+            [surfer.env :as env]
             [surfer.system :as system]
             [starfish.core :as sf]
             [clojure.data.json :as data.json]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]))
 
-(set-init system/new-system)
+(set-init (system/init-fn))
 
 (comment
 
@@ -16,13 +16,13 @@
     {:time (data.json/json-str (str (java.util.Date.)))})
 
   (def aladdin
-    (let [local-did config/DID
-          local-ddo config/LOCAL-DDO
+    (let [local-did (env/agent-did (system/env system))
+          local-ddo (env/local-ddo (system/env system))
           local-ddo-string (sf/json-string-pprint local-ddo)]
       (sf/remote-agent local-did local-ddo-string "Aladdin" "OpenSesame")))
 
   (def get-time-operation
-    (->> (sf/in-memory-operation (sf/invokable-metadata  #'get-time))
+    (->> (sf/in-memory-operation (sf/invokable-metadata #'get-time))
          (sf/register aladdin)))
 
   ;; Param keys *must be* a string
