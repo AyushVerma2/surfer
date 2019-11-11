@@ -1,4 +1,7 @@
 (ns surfer.component.migration
+  "Migration Component namespace
+
+   This namespace should only be required by `surfer.system`."
   (:require [com.stuartsierra.component :as component]
             [clojure.java.jdbc :as jdbc]
             [clojure.tools.logging :as log]

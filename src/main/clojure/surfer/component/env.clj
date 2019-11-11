@@ -1,4 +1,7 @@
 (ns surfer.component.env
+  "Env Component namespace
+
+   This namespace should only be required by `surfer.system`."
   (:require [com.stuartsierra.component :as component]
             [environ.core :refer [env]]
             [clojure.java.io :as io]

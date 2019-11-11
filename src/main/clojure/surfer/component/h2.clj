@@ -1,4 +1,7 @@
 (ns surfer.component.h2
+  "H2 Component namespace
+
+   This namespace should only be required by `surfer.system`."
   (:require [com.stuartsierra.component :as component]
             [surfer.env :as env]))
 
