@@ -15,8 +15,8 @@
 
 (defn get-operation
   "Gets an in-memory operation for the given operation id"
-  [op-id]
-  (let [op-meta (store/lookup op-id)
+  [db op-id]
+  (let [op-meta (store/lookup db op-id)
         md (sf/read-json-string op-meta)
         op-function (:function (:additionalInfo md))
         params (keys (:params (:operation md)))
@@ -48,8 +48,8 @@
   "Launch a job using the given function. 
 
    Returns jobid if successful, null if operation cannot be found."
-  [op-id invoke-req]
-  (let [op (get-operation op-id)]
+  [db op-id invoke-req]
+  (let [op (get-operation db op-id)]
     (when op
       (let [jobid (sf/random-hex-string 32)
             md (sf/metadata op) 

@@ -96,7 +96,7 @@
           extra-data (utils/remove-nil-values ;; extra fields related to import
                        {:dateCreated (Instant/now)})
           odata (merge odata extra-data)
-          assetid (store/register-asset (json/write-str odata))]
+          assetid (store/register-asset db (json/write-str odata))]
       (store/create-listing
         db
         {:assetid assetid

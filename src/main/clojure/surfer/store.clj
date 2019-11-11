@@ -17,21 +17,12 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 ;; ====================================================
-;; Database setup and management
-
-(def db {:dbtype "h2"
-         :dbname "~/surfertest"})
-
-;; ====================================================
 ;; Database migration
 
-(def ragtime-config
-  {:datastore (ragtime.jdbc/sql-database db)
-   :migrations (ragtime.jdbc/load-resources "migrations")
-   :strategy ragtime.strategy/rebase})
-
-(defn migrate-db! []
-  (ragtime.repl/migrate ragtime-config))
+(defn migrate-db! [db]
+  (ragtime.repl/migrate {:datastore (ragtime.jdbc/sql-database db)
+                         :migrations (ragtime.jdbc/load-resources "migrations")
+                         :strategy ragtime.strategy/rebase}))
 
 ;; ===================================================
 ;; Listing management
@@ -137,69 +128,65 @@
 (defn get-purchase
   "Gets a purchase map from the data store.
    Returns nil if not found"
-  ([id]
-    (let [rs (jdbc/query db ["select * from Purchases where id = ?" id])]
-      (if (empty? rs)
-        nil ;; user not found
-        (clean-purchase (first rs))))))
+  [db id]
+  (let [rs (jdbc/query db ["select * from Purchases where id = ?" id])]
+    (if (empty? rs)
+      nil                                                   ;; user not found
+      (clean-purchase (first rs)))))
 
 (defn get-purchases
   "Gets a full list of purchases from the marketplace"
-  ([]
-    (let [rs (jdbc/query db ["select * from Purchases order by ctime desc"])]
-      (map clean-purchase rs)))
-  ([opts]
-    (if-let [userid (:userid opts)]
-      (let [rs (jdbc/query db ["select * from Purchases where userid = ? order by ctime desc" userid])]
-        (map clean-purchase rs))
-      (get-purchases))))
+  ([db]
+   (let [rs (jdbc/query db ["select * from Purchases order by ctime desc"])]
+     (map clean-purchase rs)))
+  ([db opts]
+   (if-let [userid (:userid opts)]
+     (let [rs (jdbc/query db ["select * from Purchases where userid = ? order by ctime desc" userid])]
+       (map clean-purchase rs))
+     (get-purchases db))))
 
 (defn create-purchase
   "Creates a purchase in the data store. Returns the new Purchase."
-  ([purchase]
-    ;; (println listing)
-    (let [id (or
-               (if-let [givenid (:id purchase)]
-                 (and (u/valid-purchase-id? givenid) (not (get-purchase givenid)) givenid))
-               (u/new-random-id))
-          userid (:userid purchase)
-          info (:info purchase)
-          info (when info (json/write-str info))
-          instant-now (Instant/now)
-          insert-data (u/remove-nil-values {:id id
-                                            :userid userid
-                                            :listingid (:listingid purchase)
-                                            :ctime instant-now
-                                            :utime instant-now
-                                            :status (or (:status purchase) "wishlist")
-                                            :info info
-                                            :agreement (:agreement purchase)
-                                            })]
-      (jdbc/insert! db "Purchases" insert-data)
-      (clean-purchase insert-data) ;; return the cleaned purchase
-      )))
+  [db purchase]
+  (let [id (or
+             (if-let [givenid (:id purchase)]
+               (and (u/valid-purchase-id? givenid) (not (get-purchase db givenid)) givenid))
+             (u/new-random-id))
+        userid (:userid purchase)
+        info (:info purchase)
+        info (when info (json/write-str info))
+        instant-now (Instant/now)
+        insert-data (u/remove-nil-values {:id id
+                                          :userid userid
+                                          :listingid (:listingid purchase)
+                                          :ctime instant-now
+                                          :utime instant-now
+                                          :status (or (:status purchase) "wishlist")
+                                          :info info
+                                          :agreement (:agreement purchase)})]
+    (jdbc/insert! db "Purchases" insert-data)
+    (clean-purchase insert-data)))
 
 (defn update-purchase
   "Updates a purchase in the data store. Returns the new Purchase.
    Uses the Purchase ID provided in the purchase record."
-  ([purchase]
-    ;; (println listing)
-      (let [id (:id purchase)
-            userid (:userid purchase)
-            info (:info purchase)
-            info (when info (json/write-str info))
-            update-data {;; :id                     ; id must already be correct!
-                           :userid userid
-                           :listingid (:listingid purchase)
-                           :status (:status purchase)
-                           :info info
-                           :agreement (:agreement purchase)
-                           ;; :ctime deliberately excluded
-                           :utime (Instant/now) ;; utime = current time
-                         }]
-      (jdbc/update! db "Purchases" update-data ["id = ?" id])
-      (get-purchase id) ;; return the updated purchase
-        )))
+  [db purchase]
+  ;; (println listing)
+  (let [id (:id purchase)
+        userid (:userid purchase)
+        info (:info purchase)
+        info (when info (json/write-str info))
+        update-data {;; :id                     ; id must already be correct!
+                     :userid userid
+                     :listingid (:listingid purchase)
+                     :status (:status purchase)
+                     :info info
+                     :agreement (:agreement purchase)
+                     ;; :ctime deliberately excluded
+                     :utime (Instant/now)                   ;; utime = current time
+                     }]
+    (jdbc/update! db "Purchases" update-data ["id = ?" id])
+    (get-purchase db id)))
 
 ;; ===================================================
 ;; User management
@@ -275,24 +262,22 @@
                      :ctime (Instant/now)})
       id)))
 
-(defn truncate-db!
-  ([] (truncate-db! db))
-  ([db]
-    (jdbc/execute! db "truncate TABLE Metadata;")
-    (jdbc/execute! db "truncate TABLE Listings;")
-    (jdbc/execute! db "truncate TABLE Purchases;")
-    (jdbc/execute! db "truncate TABLE Users;")
-  ))
+(defn truncate [db & tables]
+  (doseq [table (or tables ["Metadata"
+                            "Listings"
+                            "Purchases"
+                            "Users"])]
+    (jdbc/execute! db (str "TRUNCATE TABLE " table ";"))))
 
 ;; =========================================================
 ;; Asset management and metadata
 
 (defn register-asset
   "Registers asset metadata in the data store. Returns the Asset ID as a string."
-  ([^String asset-metadata-str]
+  ([db ^String asset-metadata-str]
     (let [hash (u/sha256 asset-metadata-str)]
-      (register-asset hash asset-metadata-str)))
-  ([^String hash ^String asset-metadata-str]
+      (register-asset db hash asset-metadata-str)))
+  ([db ^String hash ^String asset-metadata-str]
     (let [rs (jdbc/query db ["select * from Metadata where id = ?" hash])]
       (if (empty? rs)
         (jdbc/insert! db "Metadata"
@@ -338,53 +323,50 @@
 (defn get-purchase
   "Gets a purchase map from the data store.
    Returns nil if not found"
-  ([id]
-    (let [rs (jdbc/query db ["select * from Purchases where id = ?" id])]
-      (if (empty? rs)
-        nil ;; user not found
-        (clean-purchase (first rs))))))
+  [db id]
+  (let [rs (jdbc/query db ["select * from Purchases where id = ?" id])]
+    (if (empty? rs)
+      nil                                                   ;; user not found
+      (clean-purchase (first rs)))))
 
 (defn get-purchases
   "Gets a full list of purchases from the marketplace"
-  ([]
+  ([db]
     (let [rs (jdbc/query db ["select * from Purchases order by ctime desc"])]
       (map clean-purchase rs)))
-  ([opts]
+  ([db opts]
     (if-let [userid (:userid opts)]
       (let [rs (jdbc/query db ["select * from Purchases where userid = ? order by ctime desc" userid])]
         (map clean-purchase rs))
-      (get-purchases))))
+      (get-purchases db))))
 
 (defn create-purchase
   "Creates a purchase in the data store. Returns the new Purchase."
-  ([purchase]
-    ;; (println listing)
-    (let [id (or
-               (if-let [givenid (:id purchase)]
-                 (and (u/valid-purchase-id? givenid) (not (get-purchase givenid)) givenid))
-               (u/new-random-id))
-          userid (:userid purchase)
-          info (:info purchase)
-          info (when info (json/write-str info))
-          instant-now (Instant/now)
-          insert-data (u/remove-nil-values {:id id
-                                            :userid userid
-                                            :listingid (:listingid purchase)
-                                            :ctime instant-now
-                                            :utime instant-now
-                                            :status (or (:status purchase) "wishlist")
-                                            :info info
-                                            :agreement (:agreement purchase)
-                                            })]
-      (jdbc/insert! db "Purchases" insert-data)
-      (clean-purchase insert-data) ;; return the cleaned purchase
-      )))
+  [db purchase]
+  (let [id (or
+             (if-let [givenid (:id purchase)]
+               (and (u/valid-purchase-id? givenid) (not (get-purchase db givenid)) givenid))
+             (u/new-random-id))
+        userid (:userid purchase)
+        info (:info purchase)
+        info (when info (json/write-str info))
+        instant-now (Instant/now)
+        insert-data (u/remove-nil-values {:id id
+                                          :userid userid
+                                          :listingid (:listingid purchase)
+                                          :ctime instant-now
+                                          :utime instant-now
+                                          :status (or (:status purchase) "wishlist")
+                                          :info info
+                                          :agreement (:agreement purchase)
+                                          })]
+    (jdbc/insert! db "Purchases" insert-data)
+    (clean-purchase insert-data)))
 
 (defn update-purchase
   "Updates a purchase in the data store. Returns the new Purchase.
    Uses the Purchase ID provided in the purchase record."
-  ([purchase]
-    ;; (println listing)
+  [db purchase]
       (let [id (:id purchase)
             userid (:userid purchase)
             info (:info purchase)
@@ -399,8 +381,7 @@
                            :utime (Instant/now) ;; utime = current time
                          }]
       (jdbc/update! db "Purchases" update-data ["id = ?" id])
-      (get-purchase id) ;; return the updated purchase
-        )))
+      (get-purchase db id)))
 
 ;; =========================================================
 ;; Test data generation
@@ -416,27 +397,27 @@
                      :password (creds/hash-bcrypt "OpenSesame")})
   ;; Authorization: Basic QWxhZGRpbjpPcGVuU2VzYW1l
 
-  (let [assetid (register-asset (json/write-str {:name "Test Asset"
-                                                 :description "A sample asset for testing purposes"}))]
+  (let [assetid (register-asset db (json/write-str {:name "Test Asset"
+                                                    :description "A sample asset for testing purposes"}))]
     (create-listing db {:id "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
                         :userid "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
                         :assetid assetid
                         :info {:title "Ocean Test Asset"
                                :custom "Some custom information"}})
 
-    (let [assetid (register-asset (json/write-str {:name "Test Asset"
-                                                   :description "A sample asset for testing purposes"}))]
+    (let [assetid (register-asset db (json/write-str {:name "Test Asset"
+                                                      :description "A sample asset for testing purposes"}))]
       (create-listing db {:id "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
                           :userid "9671e2c4dabf1b0ea4f4db909b9df3814ca481e3d110072e0e7d776774a68e0d"
                           :assetid assetid
                           :info {:title "Ocean Test Asset"
                                  :custom "Some custom information"}})
 
-      (create-purchase {:userid "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
-                        :listingid "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
+      (create-purchase db {:userid "789e3f52da1020b56981e1cb3ee40c4df72103452f0986569711b64bdbdb4ca6"
+                           :listingid "56f04c9b25576ef4a0c7491d47417009edefde8e75f788f05e1eab782fd0f102"
 
-                        :info nil
-                        :status "wishlist"}))))
+                           :info nil
+                           :status "wishlist"}))))
 
 ;; ===================================================
 ;; Authentication API

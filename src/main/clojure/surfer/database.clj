@@ -1,4 +1,6 @@
 (ns surfer.database)
 
-(defn db [database]
+(defn db
+  "DB Spec"
+  [database]
   (:db-spec database))

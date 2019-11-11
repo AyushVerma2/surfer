@@ -144,7 +144,7 @@
           ;; (println (str (class metadata) ":" metadata ))
           (if (empty? body)
             (response/bad-request "No metadata body!")
-            (let [id (store/register-asset body)]
+            (let [id (store/register-asset db body)]
               ;; (println "Created: " id)
               (response/response
                 ;; (str "/api/v1/meta/data/" id)
@@ -160,156 +160,158 @@
               ^String body (slurp body-stream)
               hash (utils/sha256 body)]
           (if (= id hash)
-            (store/register-asset id body)                  ;; OK, write to store
+            (store/register-asset db id body)                  ;; OK, write to store
             (response/bad-request (str "Invalid ID for metadata, expected: " hash " got " id)))))
       )))
 
 (defn invoke-api [app-context]
-  (routes
-    {:swagger
-     {:data
-      {:info
-       {:title "Invoke API"
-        :description "Invoke API for Remote Operations"}
-       :tags [{:name "Invoke API" :description "Invoke API for Remote Operations"}]
-       :produces ["application/json"]}}}
+  (let [database (app-context/database app-context)
+        db (database/db database)]
+    (routes
+      {:swagger
+       {:data
+        {:info
+         {:title "Invoke API"
+          :description "Invoke API for Remote Operations"}
+         :tags [{:name "Invoke API" :description "Invoke API for Remote Operations"}]
+         :produces ["application/json"]}}}
 
-    (POST "/sync/:op-id" request
-      :coercion nil
-      :body [body schemas/InvokeRequest]
-      (let [op-id (get-in request [:params :op-id])
-            op-meta (some-> op-id (store/lookup-json {:key-fn keyword}))]
-        (cond
-          (nil? op-meta)
-          (response/not-found (str "Operation (" op-id ") metadata not found."))
-
-          (not= "operation" (:type op-meta))
-          (response/bad-request (str "Operation ( " op-id ") metadata type value is not 'operation': " op-meta))
-
-          :else
-          (try
-            (let [^InputStream body-stream (:body request)
-                  _ (.reset body-stream)
-
-                  operation (sf/in-memory-operation op-meta)
-
-                  params (-> (slurp body-stream)
-                             (json/read-str :key-fn str))]
-              {:status 200
-               :body (sf/invoke-result operation params)})
-            (catch Exception e
-              (log/error e "Failed to invoke operation." op-meta)
-
-              {:status 500
-               :body "Failed to invoke operation. Please try again."})))))
-
-    (POST "/async/:op-id"
-      {{:keys [op-id]} :params :as request}
-      :coercion nil                                         ;; prevents coercion so we get the original input stream
-      :body [body schemas/InvokeRequest]
-      ;; (println (:body request))
-      (if-let [op-meta (store/lookup op-id)]
-        (let [md (sf/read-json-string op-meta)
-              ^InputStream body-stream (:body request)
-              _ (.reset body-stream)
-              ^String body-string (slurp body-stream)
-              invoke-req (sf/read-json-string body-string)]
-          (log/debug (str "POST INVOKE on operation [" op-id "] body=" invoke-req))
+      (POST "/sync/:op-id" request
+        :coercion nil
+        :body [body schemas/InvokeRequest]
+        (let [op-id (get-in request [:params :op-id])
+              op-meta (some-> op-id (store/lookup-json {:key-fn keyword}))]
           (cond
-            (not (= "operation" (:type md))) (response/bad-request (str "Not a valid operation: " op-id))
-            :else (if-let [jobid (invoke/launch-job op-id invoke-req)]
-                    {:status 201
-                     :body (str "{\"jobid\" : \"" jobid "\" , "
-                                "\"status\" : \"scheduled\""
-                                "}")}
-                    (response/not-found "Operation not invokable."))))
-        (response/not-found "Operation metadata not available.")))
+            (nil? op-meta)
+            (response/not-found (str "Operation (" op-id ") metadata not found."))
 
-    (GET "/jobs/:jobid"
-         [jobid]
-      (log/debug (str "GET JOB on job [" jobid "]"))
-      (if-let [job (invoke/get-job jobid)]
-        (response/response (invoke/job-response app-context jobid))
-        (response/not-found (str "Job not found: " jobid))))))
+            (not= "operation" (:type op-meta))
+            (response/bad-request (str "Operation ( " op-id ") metadata type value is not 'operation': " op-meta))
+
+            :else
+            (try
+              (let [^InputStream body-stream (:body request)
+                    _ (.reset body-stream)
+
+                    operation (sf/in-memory-operation op-meta)
+
+                    params (-> (slurp body-stream)
+                               (json/read-str :key-fn str))]
+                {:status 200
+                 :body (sf/invoke-result operation params)})
+              (catch Exception e
+                (log/error e "Failed to invoke operation." op-meta)
+
+                {:status 500
+                 :body "Failed to invoke operation. Please try again."})))))
+
+      (POST "/async/:op-id"
+        {{:keys [op-id]} :params :as request}
+        :coercion nil                                       ;; prevents coercion so we get the original input stream
+        :body [body schemas/InvokeRequest]
+        ;; (println (:body request))
+        (if-let [op-meta (store/lookup db op-id)]
+          (let [md (sf/read-json-string op-meta)
+                ^InputStream body-stream (:body request)
+                _ (.reset body-stream)
+                ^String body-string (slurp body-stream)
+                invoke-req (sf/read-json-string body-string)]
+            (log/debug (str "POST INVOKE on operation [" op-id "] body=" invoke-req))
+            (cond
+              (not (= "operation" (:type md))) (response/bad-request (str "Not a valid operation: " op-id))
+              :else (if-let [jobid (invoke/launch-job db op-id invoke-req)]
+                      {:status 201
+                       :body (str "{\"jobid\" : \"" jobid "\" , "
+                                  "\"status\" : \"scheduled\""
+                                  "}")}
+                      (response/not-found "Operation not invokable."))))
+          (response/not-found "Operation metadata not available.")))
+
+      (GET "/jobs/:jobid"
+           [jobid]
+        (log/debug (str "GET JOB on job [" jobid "]"))
+        (if-let [job (invoke/get-job jobid)]
+          (response/response (invoke/job-response app-context jobid))
+          (response/not-found (str "Job not found: " jobid)))))))
 
 
 (defn storage-api [app-context]
-  (routes
-    {:swagger
-     {:data {:info {:title "Storage API"
-                    :description "Storage API for Ocean Marketplace"}
-             :tags [{:name "Storage API", :description "Storage API for Ocean Marketplace"}]
-             ;; :consumes ["application/json"]
-             :produces ["application/json"]
-             }}}
+  (let [database (app-context/database app-context)
+        db (database/db database)]
+    (routes
+      {:swagger
+       {:data {:info {:title "Storage API"
+                      :description "Storage API for Ocean Marketplace"}
+               :tags [{:name "Storage API", :description "Storage API for Ocean Marketplace"}]
+               ;; :consumes ["application/json"]
+               :produces ["application/json"]}}}
 
-    (GET "/:id" [id]
-      :summary "Gets data for a specified asset ID"
-      (if-let [meta (store/lookup-json id)]                 ;; NOTE meta is JSON (not EDN)!
-        (if-let [body (storage/load-stream id)]
+      (GET "/:id" [id]
+        :summary "Gets data for a specified asset ID"
+        (if-let [meta (store/lookup-json db id)]            ;; NOTE meta is JSON (not EDN)!
+          (if-let [body (storage/load-stream id)]
 
-          (let [ctype (get meta "contentType" "application/octet-stream")
-                ext (utils/ext-for-content-type ctype)
-                return-filename (str "asset-" id ext)
-                headers {"Content-Type" ctype
-                         "Content-Disposition"
-                         (str "attachment; filename=\"" return-filename "\"")}]
-            (log/debug "DOWNLOAD" return-filename "AS" ctype)
-            (utils/remove-nil-values
-              {:status 200
-               :headers headers
-               :body body}))
-          (response/not-found "Asset data not available."))
-        (response/not-found "Asset metadata not available.")))
+            (let [ctype (get meta "contentType" "application/octet-stream")
+                  ext (utils/ext-for-content-type ctype)
+                  return-filename (str "asset-" id ext)
+                  headers {"Content-Type" ctype
+                           "Content-Disposition"
+                           (str "attachment; filename=\"" return-filename "\"")}]
+              (log/debug "DOWNLOAD" return-filename "AS" ctype)
+              (utils/remove-nil-values
+                {:status 200
+                 :headers headers
+                 :body body}))
+            (response/not-found "Asset data not available."))
+          (response/not-found "Asset metadata not available.")))
 
-    (PUT "/:id" {{:keys [id]} :params :as request}
-      :coercion nil
-      ;:body [uploaded nil]
-      :summary "Stores asset data for a given asset ID"
-      ;; (println (:body request))
-      (let [^InputStream body (:body request)
-            _ (.reset body)
-            userid (get-current-userid app-context request)
-            meta (store/lookup-json id)]
-        (cond
-          (nil? userid) (response/status
-                          (response/response "User not authenticated")
-                          401)
-          ;;(not (map? uploaded)) (response/bad-request
-          ;;                        (str "Expected file upload, got body: " uploaded))
-          (nil? meta) (response/not-found (str "Attempting to store unregistered asset [" id "]")))
-        :else (if-let [file body]                           ;; we have a body
-                ;; (println request)
-                (do
-                  (storage/save id file)
-                  (response/created (str "/api/v1/assets/" id)))
-                (response/bad-request
-                  (str "No uploaded data?: " body)))
-        ))
+      (PUT "/:id" {{:keys [id]} :params :as request}
+        :coercion nil
+        ;:body [uploaded nil]
+        :summary "Stores asset data for a given asset ID"
+        ;; (println (:body request))
+        (let [^InputStream body (:body request)
+              _ (.reset body)
+              userid (get-current-userid app-context request)
+              meta (store/lookup-json db id)]
+          (cond
+            (nil? userid) (response/status
+                            (response/response "User not authenticated")
+                            401)
+            ;;(not (map? uploaded)) (response/bad-request
+            ;;                        (str "Expected file upload, got body: " uploaded))
+            (nil? meta) (response/not-found (str "Attempting to store unregistered asset [" id "]")))
+          :else (if-let [file body]                         ;; we have a body
+                  ;; (println request)
+                  (do
+                    (storage/save id file)
+                    (response/created (str "/api/v1/assets/" id)))
+                  (response/bad-request
+                    (str "No uploaded data?: " body)))
+          ))
 
-    (POST "/:id" request
-      :multipart-params [file :- upload/TempFileUpload]
-      :middleware [wrap-multipart-params]
-      :path-params [id :- schemas/AssetID]
-      :return s/Str
-      :summary "upload an asset"
-      (let [userid (get-current-userid app-context request)
-            meta (store/lookup-json id)]
-        (cond
-          (nil? userid) (response/status
-                          (response/response "User not authenticated")
-                          401)
-          (nil? meta) (response/not-found (str "Attempting to store unregistered asset [" id "]")))
-        (not (map? file)) (response/bad-request
-                            (str "Expected file upload, got param: " file))
-        :else (if-let [tempfile (:tempfile file)]           ;; we have a body
-                (do
-                  ;; (binding [*out* *err*] (pprint/pprint request))
-                  (storage/save id tempfile)
-                  (response/created (str "/api/v1/assets/" id)))
-                (response/bad-request
-                  (str "Expected map with :tempfile, got param: " file)))
-        ))))
+      (POST "/:id" request
+        :multipart-params [file :- upload/TempFileUpload]
+        :middleware [wrap-multipart-params]
+        :path-params [id :- schemas/AssetID]
+        :return s/Str
+        :summary "upload an asset"
+        (let [userid (get-current-userid app-context request)
+              meta (store/lookup-json db id)]
+          (cond
+            (nil? userid) (response/status
+                            (response/response "User not authenticated")
+                            401)
+            (nil? meta) (response/not-found (str "Attempting to store unregistered asset [" id "]")))
+          (not (map? file)) (response/bad-request
+                              (str "Expected file upload, got param: " file))
+          :else (if-let [tempfile (:tempfile file)]         ;; we have a body
+                  (do
+                    ;; (binding [*out* *err*] (pprint/pprint request))
+                    (storage/save id tempfile)
+                    (response/created (str "/api/v1/assets/" id)))
+                  (response/bad-request
+                    (str "Expected map with :tempfile, got param: " file))))))))
 
 (defn trust-api [app-context]
   (routes
@@ -326,15 +328,15 @@
       (throw (UnsupportedOperationException. "Not yet implemented!")))))
 
 (defn market-api [app-context]
-  (let [db (get-in app-context [:h2 :db])]
+  (let [database (app-context/database app-context)
+        db (database/db database)]
     (routes
       {:swagger
        {:data {:info {:title "Market API"
                       :description "Market API for Ocean Marketplace"}
                :tags [{:name "Market API", :description "Market API for Ocean Marketplace"}]
                ;;:consumes ["application/json"]
-               :produces ["application/json"]
-               }}}
+               :produces ["application/json"]}}}
 
       ;; ===========================================
       ;; User management
@@ -388,7 +390,7 @@
               userid (get-current-userid app-context request)]
           ;; (println listing)
           (if userid
-            (if-let [asset (store/lookup (:assetid listing))]
+            (if-let [asset (store/lookup db (:assetid listing))]
               (let [listing (assoc listing :userid userid)
                     ;; _ (println userid)
                     result (store/create-listing db listing)]
@@ -479,7 +481,7 @@
             (not userid) (response/bad-request (str "Cannot create a purchase unless logged in"))
             (not listing) (response/bad-request (str "Invalid purchase request - listing does not exist: " listingid))
             :else (let [purchase (assoc purchase :userid userid)
-                        result (store/create-purchase purchase)]
+                        result (store/create-purchase db purchase)]
                     ;; (println result)
                     {:status 200
                      :headers {"Content-Type" "application/json"}
@@ -506,7 +508,7 @@
       (GET "/purchases/:id" [id]
         :summary "Gets data for a specified purchase"
         :return schemas/Purchase
-        (let [purchase (store/get-purchase id)]
+        (let [purchase (store/get-purchase db id)]
           (cond
             purchase {:status 200
                       :headers {"Content-Type" "application/json"}
@@ -521,7 +523,7 @@
         (let [purchase (json-from-input-stream (:body request))
 
               ;; check the exitsing purchase
-              old-purchase (store/get-purchase id)
+              old-purchase (store/get-purchase db id)
               _ (when (not old-purchase) (throw (IllegalArgumentException. "Purchase ID does not exist: ")))
 
               ownerid (:userid old-purchase)
@@ -531,7 +533,7 @@
               purchase (assoc purchase :id id)              ;; ensure ID is present.
               ]
           (if (= ownerid userid)                            ;; strong ownership enforcement!
-            (let [new-purchase (store/update-purchase purchase)]
+            (let [new-purchase (store/update-purchase db purchase)]
               {:status 200
                :headers {"Content-Type" "application/json"}
                :body new-purchase})
@@ -540,7 +542,8 @@
       )))
 
 (defn admin-api [app-context]
-  (let [db (get-in app-context [:h2 :db])]
+  (let [database (app-context/database app-context)
+        db (database/db database)]
     (routes
       {:swagger
        {:data {:info {:title "Market Admin API"
@@ -578,13 +581,13 @@
       (POST "/clear-db" []
         :summary "Clears the current database. DANGER."
         (friend/authorize #{:admin}
-                          (store/truncate-db!)
+                          (store/truncate db)
                           (response/response "Successful")))
 
       (POST "/migrate-db" []
         :summary "Performs database migration. DANGER."
         (friend/authorize #{:admin}
-                          (let [r (store/migrate-db!)]
+                          (let [r (store/migrate-db! db)]
                             (response/response (str "Successful: " r)))))
 
       (POST "/create-db-test-data" []
@@ -605,7 +608,8 @@
   "Based on the request return the a map with :user (if authorized), else
   :response 401 (if unauthenticated) or 403 (if unauthorized)"
   [app-context request]
-  (let [db (get-in app-context [:h2 :db])
+  (let [database (app-context/database app-context)
+        db (database/db database)
         userid (get-current-userid app-context request)
         user (if userid
                (dissoc (store/get-user db userid) :password :ctime))
@@ -629,7 +633,8 @@
     rv))
 
 (defn auth-api [app-context]
-  (let [db (get-in app-context [:h2 :db])]
+  (let [database (app-context/database app-context)
+        db (database/db database)]
     (routes
       {:swagger
        {:data
@@ -734,77 +739,78 @@
     (response/response body)))
 
 (defn api-routes [app-context]
-  (api
-    {:api {:invalid-routes-fn nil}                          ;; supress warning on child routes
-     :exceptions {:handlers
-                  {:compojure.api.exception/default
-                   (fn [^Throwable ex ex-data request]
-                     ;; (.printStackTrace ^Throwable ex)
-                     (log/error (str ex))
-                     (response/status
-                       (response/response
-                         (let [sw (StringWriter.)
-                               pw (PrintWriter. sw)]
-                           (.printStackTrace ex pw)
-                           (str (class ex) "/n"
-                                (.toString sw))))
-                       500))}}}
-    (swagger-routes
-      {:ui "/api-docs", :spec "/swagger.json"})
+  (let [database (app-context/database app-context)
+        db (database/db database)]
+   (api
+     {:api {:invalid-routes-fn nil}                         ;; supress warning on child routes
+      :exceptions {:handlers
+                   {:compojure.api.exception/default
+                    (fn [^Throwable ex ex-data request]
+                      ;; (.printStackTrace ^Throwable ex)
+                      (log/error (str ex))
+                      (response/status
+                        (response/response
+                          (let [sw (StringWriter.)
+                                pw (PrintWriter. sw)]
+                            (.printStackTrace ex pw)
+                            (str (class ex) "/n"
+                                 (.toString sw))))
+                        500))}}}
+     (swagger-routes
+       {:ui "/api-docs", :spec "/swagger.json"})
 
-    (GET "/assets" []
-      (str
-        "<body style=\"font-family: 'courier new', monospace;\">"
-        (apply str
-               (mapv
-                 (fn [id]
-                   (try
-                     (let [j (json/read-str (store/lookup id))
-                           title (j "title")]
-                       (str "<a href=\"api/v1/meta/data/" id "\">" id " - " title "<br/>\n"))
-                     (catch Throwable t
-                       (str "Fail in asset id:" id " - " t "<br/>\n"))))
-                 (store/all-keys)))
-        "</body>"
-        ))
+     (GET "/assets" []
+       (str
+         "<body style=\"font-family: 'courier new', monospace;\">"
+         (apply str
+                (mapv
+                  (fn [id]
+                    (try
+                      (let [j (json/read-str (store/lookup db id))
+                            title (j "title")]
+                        (str "<a href=\"api/v1/meta/data/" id "\">" id " - " title "<br/>\n"))
+                      (catch Throwable t
+                        (str "Fail in asset id:" id " - " t "<br/>\n"))))
+                  (store/all-keys db)))
+         "</body>"))
 
-    (GET "/tokens" request
-      (fn [request]
-        (tokens-page app-context request)))
+     (GET "/tokens" request
+       (fn [request]
+         (tokens-page app-context request)))
 
-    (GET "/logout" [] logout-page)
+     (GET "/logout" [] logout-page)
 
-    (context "/api/v1/meta" []
-      :tags ["Meta API"]
-      (meta-api app-context))
+     (context "/api/v1/meta" []
+       :tags ["Meta API"]
+       (meta-api app-context))
 
-    (context "/api/v1/assets" []
-      :tags ["Storage API"]
-      (storage-api app-context))
+     (context "/api/v1/assets" []
+       :tags ["Storage API"]
+       (storage-api app-context))
 
-    (context "/api/v1/market" []
-      :tags ["Market API"]
-      (market-api app-context))
+     (context "/api/v1/market" []
+       :tags ["Market API"]
+       (market-api app-context))
 
-    (context "/api/v1/trust" []
-      :tags ["Trust API"]
-      (trust-api app-context))
+     (context "/api/v1/trust" []
+       :tags ["Trust API"]
+       (trust-api app-context))
 
-    (context "/api/v1/market-admin" []
-      :tags ["Market Admin API"]
-      (admin-api app-context))
+     (context "/api/v1/market-admin" []
+       :tags ["Market Admin API"]
+       (admin-api app-context))
 
-    (context "/api/v1/auth" []
-      :tags ["Authentication API"]
-      (auth-api app-context))
+     (context "/api/v1/auth" []
+       :tags ["Authentication API"]
+       (auth-api app-context))
 
-    (context "/api/v1/invoke" []
-      :tags ["Invoke API"]
-      (invoke-api app-context))
+     (context "/api/v1/invoke" []
+       :tags ["Invoke API"]
+       (invoke-api app-context))
 
-    (context "/api" []
-      :tags ["Status API"]
-      (status-api app-context))))
+     (context "/api" []
+       :tags ["Status API"]
+       (status-api app-context)))))
 
 (def web-routes
   (api
