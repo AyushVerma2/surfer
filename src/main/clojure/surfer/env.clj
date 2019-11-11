@@ -20,7 +20,7 @@
 
 (defn agent-did [env]
   (sf/did
-    (let [did (get-in env [:config :agent :did])]
+    (let [did (agent-config env [:did])]
       (cond
         (= :auto-generate did)
         (sf/random-did)
