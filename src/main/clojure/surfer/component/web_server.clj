@@ -14,6 +14,10 @@
   (start [component]
     (let [app-context (app-context/new-context env database)
 
+          ;; Surfer is a web application and handler functions are essentially
+          ;; the entry point of the system.
+          ;; Web handler functions have access to a subset of System's components so
+          ;; it can pass such components to other functions or the the app context itself.
           handler (handler/make-handler app-context)
 
           http-port (env/web-server-config env [:port])
