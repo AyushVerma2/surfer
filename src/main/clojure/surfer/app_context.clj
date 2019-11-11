@@ -4,8 +4,18 @@
   {:env env
    :database database})
 
-(defn database [app-context]
+(defn database
+  "Database Component
+
+   Abstraction over the concrete database implementation.
+
+   See `surfer.component.web-server` namespace."
+  [app-context]
   (:database app-context))
 
-(defn env [app-context]
+(defn env
+  "Env component
+
+   See `surfer.component.web-server` namespace."
+  [app-context]
   (:env app-context))

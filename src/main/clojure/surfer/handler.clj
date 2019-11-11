@@ -55,7 +55,7 @@
 (defn get-current-userid
   "Gets the current user ID from a request, or nil if not registered / logged in"
   [app-context request]
-  (let [db (get-in app-context [:h2 :db])
+  (let [db (database/db (app-context/database app-context))
         auth (friend/current-authentication request)
         username (:identity auth)
         userid (:id (store/get-user-by-name db username))]
@@ -103,65 +103,66 @@
 ;; Meta API
 
 (defn meta-api [app-context]
-  (routes
-    {:swagger
-     {:data {:info {:title "Meta API"
-                    :description "Meta API for Data Ecosystem Agents"}
-             :tags [{:name "Meta API", :description "Meta API for Ocean Marketplace"}]
-             ;;:consumes ["application/json"]
+  (let [db (database/db (app-context/database app-context))]
+    (routes
+      {:swagger
+       {:data {:info {:title "Meta API"
+                      :description "Meta API for Data Ecosystem Agents"}
+               :tags [{:name "Meta API", :description "Meta API for Ocean Marketplace"}]
+               ;;:consumes ["application/json"]
 
-             }}}
+               }}}
 
-    (GET "/data/" request
-      :summary "Gets a list of assets where metadata is available"
-      :return [schemas/AssetID]
-      {:status 200
-       :headers {"Content-Type" "application/json"}
-       :body (store/all-keys)})
-
-    (GET "/data/:id" [id]
-      :summary "Gets metadata for a specified asset"
-      :coercion nil
-      :return schemas/Asset
-      (if-let [meta (store/lookup id)]
+      (GET "/data/" request
+        :summary "Gets a list of assets where metadata is available"
+        :return [schemas/AssetID]
         {:status 200
          :headers {"Content-Type" "application/json"}
-         :body meta}
-        (response/not-found "Metadata for this Asset ID is not available.")))
+         :body (store/all-keys db)})
 
-    (POST "/data" request
-      :coercion nil                                         ;; prevents coercion so we get the original input stream
-      :body [metadata schemas/Asset]
-      :return schemas/AssetID
-      :summary "Stores metadata, creating a new Asset ID"
-      (let [^InputStream body-stream (:body request)
-            _ (.reset body-stream)
-            ^String body (slurp body-stream)
-            hash (utils/sha256 body)]
+      (GET "/data/:id" [id]
+        :summary "Gets metadata for a specified asset"
+        :coercion nil
+        :return schemas/Asset
+        (if-let [meta (store/lookup db id)]
+          {:status 200
+           :headers {"Content-Type" "application/json"}
+           :body meta}
+          (response/not-found "Metadata for this Asset ID is not available.")))
 
-        ;; (println (str (class body) ":" body ))
-        ;; (println (str (class metadata) ":" metadata ))
-        (if (empty? body)
-          (response/bad-request "No metadata body!")
-          (let [id (store/register-asset body)]
-            ;; (println "Created: " id)
-            (response/response
-              ;; (str "/api/v1/meta/data/" id)
-              (str "\"" id "\"")
-              )))))
+      (POST "/data" request
+        :coercion nil                                       ;; prevents coercion so we get the original input stream
+        :body [metadata schemas/Asset]
+        :return schemas/AssetID
+        :summary "Stores metadata, creating a new Asset ID"
+        (let [^InputStream body-stream (:body request)
+              _ (.reset body-stream)
+              ^String body (slurp body-stream)
+              hash (utils/sha256 body)]
 
-    (PUT "/data/:id" {{:keys [id]} :params :as request}
-      {:coercion nil
-       :body [metadata schemas/Asset]
-       :summary "Stores metadata for the given asset ID"}
-      (let [^InputStream body-stream (:body request)
-            _ (.reset body-stream)
-            ^String body (slurp body-stream)
-            hash (utils/sha256 body)]
-        (if (= id hash)
-          (store/register-asset id body)                    ;; OK, write to store
-          (response/bad-request (str "Invalid ID for metadata, expected: " hash " got " id)))))
-    ))
+          ;; (println (str (class body) ":" body ))
+          ;; (println (str (class metadata) ":" metadata ))
+          (if (empty? body)
+            (response/bad-request "No metadata body!")
+            (let [id (store/register-asset body)]
+              ;; (println "Created: " id)
+              (response/response
+                ;; (str "/api/v1/meta/data/" id)
+                (str "\"" id "\"")
+                )))))
+
+      (PUT "/data/:id" {{:keys [id]} :params :as request}
+        {:coercion nil
+         :body [metadata schemas/Asset]
+         :summary "Stores metadata for the given asset ID"}
+        (let [^InputStream body-stream (:body request)
+              _ (.reset body-stream)
+              ^String body (slurp body-stream)
+              hash (utils/sha256 body)]
+          (if (= id hash)
+            (store/register-asset id body)                  ;; OK, write to store
+            (response/bad-request (str "Invalid ID for metadata, expected: " hash " got " id)))))
+      )))
 
 (defn invoke-api [app-context]
   (routes
