@@ -39,8 +39,8 @@
                              (mapv (fn [{:keys [password] :as user}]
                                      (assoc user :password (creds/hash-bcrypt password))))))]
 
-      (log/debug (str "-- CONFIG\n" (with-out-str (pprint/pprint config))))
-      (log/debug (str "-- USER CONFIG\n" (with-out-str (pprint/pprint user-config))))
+      (log/debug (str "Config\n" (with-out-str (pprint/pprint config))))
+      (log/debug (str "Users\n" (with-out-str (pprint/pprint user-config))))
 
       (assoc component :config-path config-path
                        :config config
