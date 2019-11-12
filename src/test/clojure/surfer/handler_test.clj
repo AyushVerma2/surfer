@@ -13,7 +13,9 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn system-fixture [f]
-  (let [system (component/start (system/new-system))]
+  (let [system (component/start
+                 (system/new-system {:web-server
+                                     {:port (utils/random-port)}}))]
     (try
       (f)
       (finally
