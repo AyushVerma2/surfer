@@ -201,3 +201,9 @@
           (if-let [ss ^ServerSocket (:ss @state)]
             (.close ss)))))
     (:available? @state)))
+
+(defn random-port
+  "Returns a random available port."
+  []
+  (with-open [server (ServerSocket. 0)]
+    (.getLocalPort server)))

@@ -3,6 +3,7 @@
             [clojure.walk :refer [stringify-keys]]
             [com.stuartsierra.component :as component]
             [surfer.system :as system]
+            [surfer.utils :as utils]
             [surfer.env :as config]
             [starfish.core :as sf]))
 
@@ -10,7 +11,9 @@
   nil)
 
 (defn system-fixture [f]
-  (let [system (component/start (system/new-system))]
+  (let [system (component/start
+                 (system/new-system {:web-server
+                                     {:port (utils/random-port)}}))]
 
     (alter-var-root #'test-system (constantly system))
 
