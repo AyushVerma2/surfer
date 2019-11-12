@@ -8,6 +8,7 @@
     [ring.middleware.multipart-params :refer [wrap-multipart-params]]
     [ring.middleware.cors :refer [wrap-cors]]
     [ring.middleware.params :refer [wrap-params]]
+    [ring.logger :refer [wrap-log-response]]
     [surfer.store :as store]
     [ocean.schemas :as schemas]
     [surfer.storage :as storage]
@@ -952,6 +953,7 @@
                        :access-control-allow-origin #".*"
                        :access-control-allow-credentials true
                        :access-control-allow-methods [:get :put :post :delete :options]))
+          wrap-log-response
           wrap-params
           wrap-cache-buster
           wrap-auth)))))
