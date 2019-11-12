@@ -470,9 +470,7 @@
       (POST "/purchases" request
         :body [purchase-body (s/maybe schemas/Purchase)]
         :return schemas/Purchase
-        :summary "Create a new purchase on the marketplace.
-                       Marketplace will return a new Purchase record"
-        ;; (println (:body request) )
+        :summary "Create a new purchase on the marketplace. Marketplace will return a new Purchase record"
         (let [purchase (json-from-input-stream (:body request))
               userid (get-current-userid app-context request)
               listingid (:listingid purchase)
@@ -482,12 +480,9 @@
             (not listing) (response/bad-request (str "Invalid purchase request - listing does not exist: " listingid))
             :else (let [purchase (assoc purchase :userid userid)
                         result (store/create-purchase db purchase)]
-                    ;; (println result)
                     {:status 200
                      :headers {"Content-Type" "application/json"}
-                     :body result
-                     })
-            )))
+                     :body result}))))
 
 
       (GET "/purchases" request
@@ -500,7 +495,7 @@
                        (:id (store/get-user-by-name db username))
                        userid)
               opts (if userid {:userid userid} nil)
-              purchases (store/get-purchases opts)]
+              purchases (store/get-purchases db opts)]
           {:status 200
            :headers {"Content-Type" "application/json"}
            :body purchases}))

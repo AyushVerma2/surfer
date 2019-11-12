@@ -7,31 +7,43 @@
     [surfer.system :as system]
     [slingshot.slingshot :refer [try+ throw+]]
     [com.stuartsierra.component :as component]
-    [clojure.test :refer :all]))
+    [clojure.test :refer :all]
+    [surfer.env :as env]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
+
+(def test-system
+  nil)
 
 (defn system-fixture [f]
   (let [system (component/start
                  (system/new-system {:web-server
                                      {:port (utils/random-port)}}))]
+
+    (alter-var-root #'test-system (constantly system))
+
     (try
       (f)
       (finally
-        (component/stop system)))))
+        (component/stop system)
+
+        (alter-var-root #'test-system (constantly nil))))))
 
 (use-fixtures :once system-fixture)
 
-(def BASE_URL "http://localhost:3030/")
-(def AUTH_HEADERS {:headers {"Authorization", "Basic QWxhZGRpbjpPcGVuU2VzYW1l"}})
+(def AUTH_HEADERS
+  {:headers {"Authorization", "Basic QWxhZGRpbjpPcGVuU2VzYW1l"}})
+
+(defn base-url []
+  (str "http://localhost:" (env/web-server-config (system/env test-system) [:port]) "/"))
 
 (deftest ^:integration test-welcome
-  (is (= 200 (:status (client/get (str BASE_URL) AUTH_HEADERS)))))
+  (is (= 200 (:status (client/get (base-url) AUTH_HEADERS)))))
 
 (deftest ^:integration test-register-upload
   (let [adata (json/write-str {"name" "test asset 1"})
-        r1 (client/post (str BASE_URL "api/v1/meta/data")
+        r1 (client/post (str (base-url) "api/v1/meta/data")
                         (merge AUTH_HEADERS
                                {:body adata}))
         id (json/read-str (:body r1))]
@@ -40,31 +52,30 @@
     (is (= (utils/sha256 adata) id))
 
     ;; test we can get the asset metadata
-    (let [r2 (client/get (str BASE_URL "api/v1/meta/data/" id) AUTH_HEADERS)]
+    (let [r2 (client/get (str (base-url) "api/v1/meta/data/" id) AUTH_HEADERS)]
       (is (= 200 (:status r2))))
 
     ;; (println (str "Registered: " id))
 
     ;; test re-upload of identical metadata
-    (let [r2a (client/put (str BASE_URL "api/v1/meta/data/" id)
+    (let [r2a (client/put (str (base-url) "api/v1/meta/data/" id)
                           (merge AUTH_HEADERS
                                  {:body adata}))]
       (is (= 200 (:status r2a))))
 
     ;; check validation failure with erroneous metadata
     (is (try+
-          (client/put (str BASE_URL "api/v1/meta/data/" id)
+          (client/put (str (base-url) "api/v1/meta/data/" id)
                       (merge AUTH_HEADERS
                              {:body (str adata " some extra stuff")}))
           (catch [:status 400] {:keys [request-time headers body]}
             ;; OK, should expect validation failue here
-            true
-            )))
+            true)))
 
     ;; test upload
     (try+
       (let [content (io/input-stream (io/resource "testfile.txt"))
-            r3 (client/post (str BASE_URL "api/v1/assets/" id)
+            r3 (client/post (str (base-url) "api/v1/assets/" id)
                             (merge AUTH_HEADERS
                                    {:multipart [{:name "file"
                                                  :content content}]}))]
@@ -74,19 +85,19 @@
         (is false)))
 
     ;; test download
-    (let [r4 (client/get (str BASE_URL "api/v1/assets/" id) AUTH_HEADERS)]
+    (let [r4 (client/get (str (base-url) "api/v1/assets/" id) AUTH_HEADERS)]
       (is (= 200 (:status r4)))
       (is (= "This is a test file" (:body r4))))
 
     ;; test POST listing
     (let [ldata (json/write-str {:assetid id})
-          r5 (client/post (str BASE_URL "api/v1/market/listings")
+          r5 (client/post (str (base-url) "api/v1/market/listings")
                           (merge AUTH_HEADERS
                                  {:body ldata
                                   :info {:title "Blah blah"}}))])))
 
 (deftest ^:integration test-get-purchases
-  (let [r1 (client/get (str BASE_URL "api/v1/market/purchases")
+  (let [r1 (client/get (str (base-url) "api/v1/market/purchases")
                        (merge AUTH_HEADERS
                               {:body nil}))
         result (json/read-str (:body r1))]
@@ -94,14 +105,14 @@
 
 (deftest ^:integration test-no-asset
   (is (try+
-        (client/get (str BASE_URL "api/v1/meta/data/"
+        (client/get (str (base-url) "api/v1/meta/data/"
                          "000011112222333344445556666777788889999aaaabbbbccccddddeeeeffff") AUTH_HEADERS)
         (catch [:status 404] {:keys [request-time headers body]}
           ;; OK, not found expected
           true)))
 
   (is (try+
-        (client/get (str BASE_URL "api/v1/meta/data/"
+        (client/get (str (base-url) "api/v1/meta/data/"
                          "0000") AUTH_HEADERS)
         (catch [:status 404] {:keys [request-time headers body]}
           ;; OK, not found expected
