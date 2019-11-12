@@ -28,12 +28,10 @@
 
 (defn test-function-1
   "Sample function to invoke"
-  [inputs]
-  (let [_ (println (str "function received:" inputs))
-        a (sf/asset (:input inputs))
-        ^String c (sf/to-string a)
-        C (.toUpperCase c)]
-    {:output (sf/memory-asset {:name "Result of computation"} C)}))
+  [input]
+  (let [asset (sf/asset (:asset input))
+        asset-as-string (sf/to-string asset)]
+    {:output (sf/memory-asset {:name "Result of computation"} (.toUpperCase asset-as-string))}))
 
 (deftest ^:integration test-startfish
   (let [local-did (config/agent-did (system/env test-system))
@@ -55,6 +53,12 @@
            (sf/metadata-string foo-remote-data-asset)))))
 
 (comment
+
+  (def memory-asset-example
+    (sf/memory-asset {:name "Result of computation"} "Hello"))
+
+  (sf/invokable-metadata #'test-function-1)
+  (sf/invokable-metadata #'test-function-1 {:params {"input" "asset"}})
 
   (def system (component/start (system/new-system)))
 
