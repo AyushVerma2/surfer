@@ -1,4 +1,4 @@
-(ns surfer.test-schemas
+(ns surfer.schemas-test
   (:require [clojure.test :refer :all])
   (:require [surfer.utils :as u])
   (:require [schema.core :as s]

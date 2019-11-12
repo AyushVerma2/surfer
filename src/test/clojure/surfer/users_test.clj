@@ -1,4 +1,4 @@
-(ns surfer.test-users
+(ns surfer.users-test
   (:require
     [surfer.store :as store]
     [surfer.utils :as u]
@@ -15,7 +15,11 @@
 (defn system-fixture [f]
   (let [system (component/start
                  (system/new-system {:web-server
-                                     {:port (utils/random-port)}}))]
+                                     {:port (utils/random-port)}
+
+                                     :h2
+                                     {:dbtype "h2:mem"
+                                      :dbname "~/.surfer/surfer"}}))]
 
     (alter-var-root #'test-system (constantly system))
 
@@ -28,7 +32,7 @@
 
 (use-fixtures :once system-fixture)
 
-(deftest test-register
+(deftest ^:integration test-register
   (let [user {:username (str "bob" (System/currentTimeMillis))
               :password (creds/hash-bcrypt "OpenSesame")}
 

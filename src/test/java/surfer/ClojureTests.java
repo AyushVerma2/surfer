@@ -22,10 +22,10 @@ public class ClojureTests extends ClojureTest {
 		return Arrays.asList(new String[] {
 			"surfer.handler-test",
 			"surfer.startfish-test",
-			"surfer.test-schemas",
-			"surfer.test-storage",
-			"surfer.test-users",
-			"surfer.test-utils"
+			"surfer.schemas-test",
+			"surfer.storage-test",
+			"surfer.users-test",
+			"surfer.utils-test"
 		});
 	}
 }
