@@ -849,9 +849,9 @@
 (def AUTH_REALM "OceanRM")
 
 (defn credential-fn
-  "A friend credential function.
+  "A Friend credential function.
 
-   Accepts a friend credential map as sole input.
+   Accepts a Friend credential map as sole input.
 
    Returns an authentication map, including the :identity and :roles set"
   [db]
@@ -918,26 +918,6 @@
     (-> handler
         (friend/wrap-authorize #{:user :admin})
         (friend/authenticate config))))
-
-;; =====================================================
-;; Main routes
-
-(defn pp-debug [tag m]
-  (log/debug tag \newline (with-out-str (clojure.pprint/pprint m)))
-  m)
-
-(defn debug-handler [handler step]
-  (fn [req]
-    (log/debug "DEBUG HANDLER BEFORE" step)
-    (pp-debug :req req)
-    (try
-      (let [rv (handler req)]
-        (log/debug "DEBUG HANDLER AFTER" step)
-        (pp-debug :req req)
-        rv)
-      (catch IllegalArgumentException e
-        (log/debug "BROWSER CLOSED")
-        {}))))
 
 (defn make-handler [app-context]
   (let [db (database/db (app-context/database app-context))
