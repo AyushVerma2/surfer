@@ -1,0 +1,73 @@
+(ns integration.agent
+  (:require [clojure.test :refer :all]
+            [surfer.env :as env]
+            [surfer.system :as system]
+            [surfer.utils :as utils]
+            [starfish.core :as sf]
+            [com.stuartsierra.component :as component]
+            [clojure.string :as str]))
+
+(def test-system
+  nil)
+
+(defn system-fixture [f]
+  (let [system (component/start
+                 (system/new-system {:web-server
+                                     {:port (utils/random-port)}
+
+                                     :h2
+                                     {:dbtype "h2:mem"
+                                      :dbname "~/.surfer/surfer"}}))]
+
+    (alter-var-root #'test-system (constantly system))
+
+    (try
+      (f)
+      (finally
+        (component/stop system)
+
+        (alter-var-root #'test-system (constantly nil))))))
+
+(use-fixtures :once system-fixture)
+
+(defn upper-case-text
+  "Convert text to upper case."
+  [params]
+  (update params :text str/upper-case))
+
+(deftest ^:integration agent-integration
+  (let [local-did (env/agent-did (system/env test-system))
+        local-ddo (env/local-ddo (system/env test-system))
+        local-ddo-string (sf/json-string-pprint local-ddo)
+
+        username "Aladdin"
+        password "OpenSesame"
+
+        agent (sf/remote-agent local-did local-ddo-string username password)]
+
+    (let [foo-memory-asset (sf/memory-asset "Foo")
+          foo-remote-data-asset (sf/upload agent foo-memory-asset)]
+      (testing "Asset Content"
+        (is (= (sf/to-string (sf/content foo-memory-asset))
+               (sf/to-string (sf/content foo-remote-data-asset)))))
+
+      (testing "Asset Metadata"
+        (is (= (sf/metadata-string foo-memory-asset)
+               (sf/metadata-string foo-remote-data-asset)))))
+
+    (let [invokable-metadata (sf/invokable-metadata #'upper-case-text)]
+      (testing "Invokable Operation Metadata"
+        (is (= {:name "Convert text to upper case.",
+                :type "operation",
+                :additionalInfo {:function "integration.agent/upper-case-text"},
+                :operation {"modes" ["sync" "async"], "params" {"params" {"type" "json"}}}}
+               (select-keys invokable-metadata [:name :type :additionalInfo :operation]))))
+
+      (testing "Operation Registration"
+        (is (sf/register agent (sf/in-memory-operation invokable-metadata))))
+
+      (testing "Sync Invoke"
+        (is (= {:text "HELLO"} (sf/invoke-sync (sf/in-memory-operation invokable-metadata) {:text "hello"}))))
+
+      (testing "Sync Invoke Result"
+        (is (= {:text "HELLO"} (sf/invoke-result (sf/in-memory-operation invokable-metadata) {:text "hello"})))))))
