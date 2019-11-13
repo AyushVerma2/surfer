@@ -35,6 +35,16 @@
   [params]
   (update params :text str/upper-case))
 
+(defn upper-case-text-new-asset
+  "Convert text to upper case."
+  [params]
+  (update params :text (comp sf/memory-asset str/upper-case)))
+
+(defn upper-case-asset-text
+  "Convert asset's text content to upper case."
+  [params]
+  (update params :text str/upper-case))
+
 (deftest ^:integration agent-integration
   (let [local-did (env/agent-did (system/env test-system))
         local-ddo (env/local-ddo (system/env test-system))
@@ -70,4 +80,19 @@
         (is (= {:text "HELLO"} (sf/invoke-sync (sf/in-memory-operation invokable-metadata) {:text "hello"}))))
 
       (testing "Sync Invoke Result"
-        (is (= {:text "HELLO"} (sf/invoke-result (sf/in-memory-operation invokable-metadata) {:text "hello"})))))))
+        (is (= {:text "HELLO"} (sf/invoke-result (sf/in-memory-operation invokable-metadata) {:text "hello"}))))
+
+      (testing "Sync Invoke - Make Asset"
+        (let [{text-upper-case-asset :text} (-> (sf/invokable-metadata #'upper-case-text-new-asset)
+                                                (sf/in-memory-operation)
+                                                (sf/invoke-sync {:text "hello"}))]
+          (is (= "HELLO" (sf/to-string text-upper-case-asset))))))))
+
+
+(comment
+  (= (sf/to-string (sf/memory-asset "Hello"))
+     (sf/to-string (sf/asset (sf/memory-asset "Hello"))))
+
+  (sf/memory-asset "Hello")
+
+  (sf/asset (sf/memory-asset "Hello")))
