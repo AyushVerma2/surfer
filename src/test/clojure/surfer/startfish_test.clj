@@ -4,7 +4,7 @@
             [com.stuartsierra.component :as component]
             [surfer.system :as system]
             [surfer.utils :as utils]
-            [surfer.env :as config]
+            [surfer.env :as env]
             [starfish.core :as sf]))
 
 (def test-system
@@ -34,8 +34,8 @@
     {:output (sf/memory-asset {:name "Result of computation"} (.toUpperCase asset-as-string))}))
 
 (deftest ^:integration test-startfish
-  (let [local-did (config/agent-did (system/env test-system))
-        local-ddo (config/local-ddo (system/env test-system))
+  (let [local-did (env/agent-did (system/env test-system))
+        local-ddo (env/local-ddo (system/env test-system))
         local-ddo-string (sf/json-string-pprint local-ddo)
 
         username "Aladdin"
@@ -65,8 +65,8 @@
   (component/stop system)
 
   (def local-agent-aladdin
-    (let [local-did (config/agent-did (system/env system))
-          local-ddo (config/local-ddo (system/env system))
+    (let [local-did (env/agent-did (system/env system))
+          local-ddo (env/local-ddo (system/env system))
           local-ddo-string (sf/json-string-pprint local-ddo)
 
           username "Aladdin"
