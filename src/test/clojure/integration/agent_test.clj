@@ -1,4 +1,4 @@
-(ns integration.agent
+(ns integration.agent-test
   (:require [clojure.test :refer :all]
             [surfer.env :as env]
             [surfer.system :as system]
@@ -69,7 +69,7 @@
       (testing "Invokable Operation Metadata"
         (is (= {:name "Convert text to upper case.",
                 :type "operation",
-                :additionalInfo {:function "integration.agent/upper-case-text"},
+                :additionalInfo {:function "integration.agent-test/upper-case-text"},
                 :operation {"modes" ["sync" "async"], "params" {"params" {"type" "json"}}}}
                (select-keys invokable-metadata [:name :type :additionalInfo :operation]))))
 
