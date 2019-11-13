@@ -5,6 +5,7 @@
             [starfish.core :as sf]
             [clojure.data.json :as data.json]
             [clojure.java.jdbc :as jdbc]
+            [clojure.repl :refer :all]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]))
 
 (set-init (system/init-fn))
