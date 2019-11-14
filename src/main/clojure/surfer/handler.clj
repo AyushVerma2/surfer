@@ -167,6 +167,7 @@
 
       (GET "/index" _
         :summary "Gets a list of Metadata"
+        :return [schemas/AssetMetadata]
         {:status 200
          :headers {"Content-Type" "application/json"}
          :body (store.metadata/index db)}))))

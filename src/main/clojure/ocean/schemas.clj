@@ -53,6 +53,13 @@
      :description "A valid username for a user registered on the marketplace"}))
 
 ;; =====================================================
+;; Metadata
+
+(s/defschema AssetMetadata
+  {:id AssetID
+   :metadata s/Str})
+
+;; =====================================================
 ;; Common data types
 (s/defschema Instant
   (rjs/field
