@@ -1,13 +1,10 @@
 (ns integration.store-test
   (:require [clojure.test :refer :all]
-            [surfer.store :as store]
-            [starfish.core :as sf]
             [com.stuartsierra.component :as component]
             [surfer.utils :as utils]
+            [surfer.store :as store]
             [surfer.system :as system]
-            [surfer.env :as env]
-            [surfer.database :as database]
-            [clojure.java.jdbc :as jdbc]))
+            [surfer.database :as database]))
 
 (def test-system
   nil)
