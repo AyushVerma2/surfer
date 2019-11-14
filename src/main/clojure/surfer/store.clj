@@ -310,7 +310,7 @@
   "Returns a Metadata map indexed by Asset ID."
   [db]
   (->> (jdbc/query db ["SELECT ID, METADATA FROM METADATA"])
-       (map (juxt :id #(json/read-str (:metadata %))))
+       (map (juxt :id #(json/read-str (:metadata %) :key-fn keyword)))
        (into {})))
 
 ;; ===================================================
