@@ -2,33 +2,17 @@
   (:require [clojure.test :refer :all]
             [surfer.env :as env]
             [surfer.system :as system]
-            [surfer.utils :as utils]
             [starfish.core :as sf]
-            [com.stuartsierra.component :as component]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [integration.fixture :as fixture]))
 
 (def test-system
   nil)
 
-(defn system-fixture [f]
-  (let [system (component/start
-                 (system/new-system {:web-server
-                                     {:port (utils/random-port)}
+(def test-system
+  nil)
 
-                                     :h2
-                                     {:dbtype "h2:mem"
-                                      :dbname "~/.surfer/surfer"}}))]
-
-    (alter-var-root #'test-system (constantly system))
-
-    (try
-      (f)
-      (finally
-        (component/stop system)
-
-        (alter-var-root #'test-system (constantly nil))))))
-
-(use-fixtures :once system-fixture)
+(use-fixtures :once (fixture/system-fixture #'test-system))
 
 (defn upper-case-text
   "Convert text to upper case."

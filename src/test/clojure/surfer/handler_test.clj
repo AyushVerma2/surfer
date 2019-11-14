@@ -6,9 +6,9 @@
     [surfer.utils :as utils]
     [surfer.system :as system]
     [slingshot.slingshot :refer [try+ throw+]]
-    [com.stuartsierra.component :as component]
     [clojure.test :refer :all]
-    [surfer.env :as env]))
+    [surfer.env :as env]
+    [integration.fixture :as fixture]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -16,21 +16,10 @@
 (def test-system
   nil)
 
-(defn system-fixture [f]
-  (let [system (component/start
-                 (system/new-system {:web-server
-                                     {:port (utils/random-port)}}))]
+(def test-system
+  nil)
 
-    (alter-var-root #'test-system (constantly system))
-
-    (try
-      (f)
-      (finally
-        (component/stop system)
-
-        (alter-var-root #'test-system (constantly nil))))))
-
-(use-fixtures :once system-fixture)
+(use-fixtures :once (fixture/system-fixture #'test-system))
 
 (def AUTH_HEADERS
   {:headers {"Authorization", "Basic QWxhZGRpbjpPcGVuU2VzYW1l"}})
