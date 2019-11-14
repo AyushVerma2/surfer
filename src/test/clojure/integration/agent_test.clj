@@ -9,9 +9,6 @@
 (def test-system
   nil)
 
-(def test-system
-  nil)
-
 (use-fixtures :once (fixture/system-fixture #'test-system))
 
 (defn upper-case-text

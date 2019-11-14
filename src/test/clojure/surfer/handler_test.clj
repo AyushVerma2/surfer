@@ -16,9 +16,6 @@
 (def test-system
   nil)
 
-(def test-system
-  nil)
-
 (use-fixtures :once (fixture/system-fixture #'test-system))
 
 (def AUTH_HEADERS
