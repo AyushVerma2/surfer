@@ -306,6 +306,13 @@
   (let [rs (jdbc/query db ["select id from Metadata;"])]
     (map :id rs)))
 
+(defn metadata-index
+  "Returns a Metadata map indexed by Asset ID."
+  [db]
+  (->> (jdbc/query db ["SELECT ID, METADATA FROM METADATA"])
+       (map (juxt :id #(json/read-str (:metadata %))))
+       (into {})))
+
 ;; ===================================================
 ;; Purchase management
 

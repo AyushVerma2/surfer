@@ -54,9 +54,8 @@
 ;; =====================================================
 ;; Metadata
 
-(s/defschema AssetMetadata
-  {:id AssetID
-   :metadata s/Str})
+(s/defschema MetadataIndex
+  {AssetID {s/Any s/Any}})
 
 ;; =====================================================
 ;; Common data types
