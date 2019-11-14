@@ -10,6 +10,7 @@
     [ring.middleware.params :refer [wrap-params]]
     [ring.logger :refer [wrap-log-response]]
     [surfer.store :as store]
+    [surfer.store.metadata :as store.metadata]
     [ocean.schemas :as schemas]
     [surfer.storage :as storage]
     [starfish.core :as sf]
@@ -163,7 +164,12 @@
           (if (= id hash)
             (store/register-asset db id body)                  ;; OK, write to store
             (response/bad-request (str "Invalid ID for metadata, expected: " hash " got " id)))))
-      )))
+
+      (GET "/index" _
+        :summary "Gets a list of Metadata"
+        {:status 200
+         :headers {"Content-Type" "application/json"}
+         :body (store.metadata/index db)}))))
 
 (defn invoke-api [app-context]
   (let [database (app-context/database app-context)
