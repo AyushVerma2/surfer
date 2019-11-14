@@ -1,4 +1,4 @@
-(ns integration.fixture
+(ns surfer.test.fixture
   (:require [clojure.test :refer :all]
             [com.stuartsierra.component :as component]
             [surfer.utils :as utils]

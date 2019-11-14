@@ -1,9 +1,9 @@
-(ns integration.store-test
+(ns surfer.store-test
   (:require [clojure.test :refer :all]
-            [integration.fixture :as fixture]
             [surfer.store :as store]
             [surfer.system :as system]
-            [surfer.database :as database]))
+            [surfer.database :as database]
+            [surfer.test.fixture :as fixture]))
 
 (def test-system
   nil)

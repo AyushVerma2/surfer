@@ -6,7 +6,7 @@
     [clojure.test :refer :all]
     [surfer.system :as system]
     [surfer.database :as database]
-    [integration.fixture :as fixture]))
+    [surfer.test.fixture :as fixture]))
 
 (def test-system
   nil)

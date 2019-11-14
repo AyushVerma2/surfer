@@ -1,10 +1,10 @@
-(ns integration.agent-test
+(ns surfer.agent-test
   (:require [clojure.test :refer :all]
             [surfer.env :as env]
             [surfer.system :as system]
             [starfish.core :as sf]
             [clojure.string :as str]
-            [integration.fixture :as fixture]))
+            [surfer.test.fixture :as fixture]))
 
 (def test-system
   nil)
@@ -50,7 +50,7 @@
       (testing "Invokable Operation Metadata"
         (is (= {:name "Convert text to upper case.",
                 :type "operation",
-                :additionalInfo {:function "integration.agent-test/upper-case-text"},
+                :additionalInfo {:function "surfer.agent-test/upper-case-text"},
                 :operation {"modes" ["sync" "async"], "params" {"params" {"type" "json"}}}}
                (select-keys invokable-metadata [:name :type :additionalInfo :operation]))))
 

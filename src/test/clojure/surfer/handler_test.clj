@@ -8,7 +8,7 @@
     [slingshot.slingshot :refer [try+ throw+]]
     [clojure.test :refer :all]
     [surfer.env :as env]
-    [integration.fixture :as fixture]))
+    [surfer.test.fixture :as fixture]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
