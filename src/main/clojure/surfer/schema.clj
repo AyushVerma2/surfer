@@ -1,8 +1,7 @@
-(ns ocean.schemas
+(ns surfer.schema
   (:require
     [surfer.utils :as u]
     [schema.core :as s]
-    [clojure.data.json :as json]
     [ring.swagger.json-schema :as rjs]
     [schema-generators.generators :as g]))
 

@@ -11,7 +11,7 @@
     [ring.logger :refer [wrap-log-response]]
     [surfer.store :as store]
     [surfer.store.metadata :as store.metadata]
-    [ocean.schemas :as schemas]
+    [surfer.schema :as schema]
     [surfer.storage :as storage]
     [starfish.core :as sf]
     [surfer.utils :as utils]
@@ -84,7 +84,7 @@
 
       (GET "/ddo" request
         :summary "Gets the ddo for this Agent"
-        :return schemas/DDO
+        :return schema/DDO
         {:status 200
          :headers {"Content-Type" "application/json"}
          :body (env/remote-ddo env)})
@@ -117,7 +117,7 @@
 
       (GET "/data/" request
         :summary "Gets a list of assets where metadata is available"
-        :return [schemas/AssetID]
+        :return [schema/AssetID]
         {:status 200
          :headers {"Content-Type" "application/json"}
          :body (store/all-keys db)})
@@ -125,7 +125,7 @@
       (GET "/data/:id" [id]
         :summary "Gets metadata for a specified asset"
         :coercion nil
-        :return schemas/Asset
+        :return schema/Asset
         (if-let [meta (store/lookup db id)]
           {:status 200
            :headers {"Content-Type" "application/json"}
@@ -134,8 +134,8 @@
 
       (POST "/data" request
         :coercion nil                                       ;; prevents coercion so we get the original input stream
-        :body [metadata schemas/Asset]
-        :return schemas/AssetID
+        :body [metadata schema/Asset]
+        :return schema/AssetID
         :summary "Stores metadata, creating a new Asset ID"
         (let [^InputStream body-stream (:body request)
               _ (.reset body-stream)
@@ -155,7 +155,7 @@
 
       (PUT "/data/:id" {{:keys [id]} :params :as request}
         {:coercion nil
-         :body [metadata schemas/Asset]
+         :body [metadata schema/Asset]
          :summary "Stores metadata for the given asset ID"}
         (let [^InputStream body-stream (:body request)
               _ (.reset body-stream)
@@ -167,7 +167,7 @@
 
       (GET "/index" _
         :summary "Gets a list of Metadata"
-        :return [schemas/AssetMetadata]
+        :return [schema/AssetMetadata]
         {:status 200
          :headers {"Content-Type" "application/json"}
          :body (store.metadata/index db)}))))
@@ -186,7 +186,7 @@
 
       (POST "/sync/:op-id" request
         :coercion nil
-        :body [body schemas/InvokeRequest]
+        :body [body schema/InvokeRequest]
         (let [op-id (get-in request [:params :op-id])
               op-meta (some-> op-id (store/lookup-json {:key-fn keyword}))]
           (cond
@@ -216,7 +216,7 @@
       (POST "/async/:op-id"
         {{:keys [op-id]} :params :as request}
         :coercion nil                                       ;; prevents coercion so we get the original input stream
-        :body [body schemas/InvokeRequest]
+        :body [body schema/InvokeRequest]
         ;; (println (:body request))
         (if-let [op-meta (store/lookup db op-id)]
           (let [md (sf/read-json-string op-meta)
@@ -301,7 +301,7 @@
       (POST "/:id" request
         :multipart-params [file :- upload/TempFileUpload]
         :middleware [wrap-multipart-params]
-        :path-params [id :- schemas/AssetID]
+        :path-params [id :- schema/AssetID]
         :return s/Str
         :summary "upload an asset"
         (let [userid (get-current-userid app-context request)
@@ -358,7 +358,7 @@
 
       (GET "/users/:id" [id]
         :summary "Gets data for a specified user"
-        :path-params [id :- schemas/UserID]
+        :path-params [id :- schema/UserID]
         :return s/Any
         (or
           (when-let [user (store/get-user db id)]
@@ -371,9 +371,9 @@
           (response/not-found (str "Cannot find user with id: " id))))
 
       (POST "/users" request
-        :query-params [username :- schemas/Username,
+        :query-params [username :- schema/Username,
                        password :- String]
-        :return schemas/UserID
+        :return schema/UserID
         :summary "Attempts to register a new user"
         (let [crypt-pw (creds/hash-bcrypt password)
               user {:username username
@@ -389,8 +389,8 @@
 
       (POST "/listings" request
         ;; :body-params [listing :- schemas/Listing]
-        :body [listing-body (s/maybe schemas/Listing)]
-        :return schemas/Listing
+        :body [listing-body (s/maybe schema/Listing)]
+        :return schema/Listing
         :summary "Create a listing on the marketplace.
                        Marketplace will return a new listing record"
         ;; (println (:body request) )
@@ -415,12 +415,12 @@
 
 
       (GET "/listings" request
-        :query-params [{username :- schemas/Username nil}
-                       {userid :- schemas/UserID nil}
-                       {from :- schemas/From 0}
-                       {size :- schemas/Size 100}]
+        :query-params [{username :- schema/Username nil}
+                       {userid :- schema/UserID nil}
+                       {from :- schema/From 0}
+                       {size :- schema/Size 100}]
         :summary "Gets all current listings from the marketplace"
-        :return [schemas/Listing]
+        :return [schema/Listing]
         (let [userid (if (not (empty? username))
                        (:id (store/get-user-by-name db username))
                        userid)
@@ -438,8 +438,8 @@
 
       (GET "/listings/:id" [id]
         :summary "Gets data for a specified listing"
-        :path-params [id :- schemas/ListingID]
-        :return schemas/Listing
+        :path-params [id :- schema/ListingID]
+        :return schema/Listing
         (if-let [listing (store/get-listing db id)]
           {:status 200
            :headers {"Content-Type" "application/json"}
@@ -449,9 +449,9 @@
 
       (PUT "/listings/:id" {{:keys [id]} :params :as request}
         :summary "Updates data for a specified listing"
-        :path-params [id :- schemas/ListingID]
-        :body [listing-body (s/maybe schemas/Listing)]
-        :return schemas/Listing
+        :path-params [id :- schema/ListingID]
+        :body [listing-body (s/maybe schema/Listing)]
+        :return schema/Listing
         (let [listing (json-from-input-stream (:body request))
 
               ;; check the exitsing listing
@@ -476,8 +476,8 @@
       ;; Asset purchases
 
       (POST "/purchases" request
-        :body [purchase-body (s/maybe schemas/Purchase)]
-        :return schemas/Purchase
+        :body [purchase-body (s/maybe schema/Purchase)]
+        :return schema/Purchase
         :summary "Create a new purchase on the marketplace. Marketplace will return a new Purchase record"
         (let [purchase (json-from-input-stream (:body request))
               userid (get-current-userid app-context request)
@@ -494,10 +494,10 @@
 
 
       (GET "/purchases" request
-        :query-params [{username :- schemas/Username nil}
-                       {userid :- schemas/UserID nil}]
+        :query-params [{username :- schema/Username nil}
+                       {userid :- schema/UserID nil}]
         :summary "Gets all current purchases from the marketplace by user"
-        :return [schemas/Purchase]
+        :return [schema/Purchase]
         ;; TODO access control
         (let [userid (if (not (empty? username))
                        (:id (store/get-user-by-name db username))
@@ -510,7 +510,7 @@
 
       (GET "/purchases/:id" [id]
         :summary "Gets data for a specified purchase"
-        :return schemas/Purchase
+        :return schema/Purchase
         (let [purchase (store/get-purchase db id)]
           (cond
             purchase {:status 200
@@ -521,8 +521,8 @@
 
       (PUT "/purchases/:id" {{:keys [id]} :params :as request}
         :summary "Updates data for a specified Purchase"
-        :body [purchase-body (s/maybe schemas/Purchase)]
-        :return schemas/Purchase
+        :body [purchase-body (s/maybe schema/Purchase)]
+        :return schema/Purchase
         (let [purchase (json-from-input-stream (:body request))
 
               ;; check the exitsing purchase
@@ -567,7 +567,7 @@
       ;; CKAN Functionality
 
       (POST "/ckan-import" request
-        :query-params [{userid :- schemas/UserID nil},
+        :query-params [{userid :- schema/UserID nil},
                        repo :- String,
                        {count :- s/Int 10}]
         :summary "Imports assets from a CKAN repository"
@@ -650,7 +650,7 @@
       (GET "/token" request
         :summary "Gets a list of OAuth2 tokens for the currently authenticated user"
         :coercion nil
-        :return [schemas/OAuth2Token]
+        :return [schema/OAuth2Token]
         (let [{:keys [response user]} (get-auth-api-user app-context request)]
           (or response
               (response-json (store/all-tokens db (:id user))))))
@@ -658,7 +658,7 @@
       (POST "/token" request
         :summary "Creates a new OAuth2Token"
         :coercion nil
-        :return schemas/OAuth2Token
+        :return schema/OAuth2Token
         (let [{:keys [response user]} (get-auth-api-user app-context request)]
           (or response
               (response-json (str "\"" (store/create-token db (:id user)) "\"")))))
@@ -666,7 +666,7 @@
       (DELETE "/revoke/:token" request
         :summary "Revokes one of the existing OAuth2 tokens for the authenticated user"
         :coercion nil
-        :path-params [token :- schemas/OAuth2Token]
+        :path-params [token :- schema/OAuth2Token]
         :return s/Bool
         (let [{:keys [response user]} (get-auth-api-user app-context request)]
           (or response
@@ -679,7 +679,7 @@
       ;; GET,POST methods: https://www.w3.org/TR/1999/REC-html401-19991224/interact/forms.html#adef-method
       (POST "/revoke/:token" request
         :summary "Revokes one of the existing OAuth2 tokens for the authenticated user (via web form) [DEVELOPMENT]"
-        :path-params [token :- schemas/OAuth2Token]
+        :path-params [token :- schema/OAuth2Token]
         :return s/Bool
         :coercion nil
         (let [{:keys [response user]} (get-auth-api-user app-context request)]
