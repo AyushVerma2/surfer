@@ -244,6 +244,7 @@
 
 (defn storage-api [app-context]
   (let [database (app-context/database app-context)
+        env (app-context/env app-context)
         db (database/db database)]
     (routes
       {:swagger
@@ -256,7 +257,7 @@
       (GET "/:id" [id]
         :summary "Gets data for a specified asset ID"
         (if-let [meta (store/lookup-json db id)]            ;; NOTE meta is JSON (not EDN)!
-          (if-let [body (storage/load-stream id)]
+          (if-let [body (storage/load-stream env id)]
 
             (let [ctype (get meta "contentType" "application/octet-stream")
                   ext (utils/ext-for-content-type ctype)
@@ -291,7 +292,7 @@
           :else (if-let [file body]                         ;; we have a body
                   ;; (println request)
                   (do
-                    (storage/save id file)
+                    (storage/save env id file)
                     (response/created (str "/api/v1/assets/" id)))
                   (response/bad-request
                     (str "No uploaded data?: " body)))
@@ -315,7 +316,7 @@
           :else (if-let [tempfile (:tempfile file)]         ;; we have a body
                   (do
                     ;; (binding [*out* *err*] (pprint/pprint request))
-                    (storage/save id tempfile)
+                    (storage/save env id tempfile)
                     (response/created (str "/api/v1/assets/" id)))
                   (response/bad-request
                     (str "Expected map with :tempfile, got param: " file))))))))
