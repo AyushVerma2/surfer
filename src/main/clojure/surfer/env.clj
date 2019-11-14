@@ -18,6 +18,10 @@
   (let [config (get-in env [:config :h2])]
     (select-config-key config ks)))
 
+(defn storage-config [env & [ks]]
+  (let [config (get-in env [:config :storage])]
+    (select-config-key config ks)))
+
 (defn agent-did [env]
   (sf/did
     (let [did (agent-config env [:did])]
