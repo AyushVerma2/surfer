@@ -40,9 +40,6 @@
                     {:storage-path storage-path
                      :asset-id asset-id})))
 
-  (when-not (storage-path-exist? storage-path)
-    (mkdir-storage-path storage-path))
-
   (asset-path storage-path asset-id))
 
 (defn save
@@ -51,6 +48,10 @@
    Data may be an InputStream, Reader, File, byte[], char[], or String."
   [storage-path asset-id data]
   (let [asset-path (get-asset-path storage-path asset-id)]
+
+    (when-not (storage-path-exist? storage-path)
+      (mkdir-storage-path storage-path))
+
     (io/copy data (io/file asset-path))))
 
 (defn load-stream
