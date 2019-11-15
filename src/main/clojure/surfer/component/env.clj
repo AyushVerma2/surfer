@@ -8,7 +8,8 @@
             [clojure.edn :as edn]
             [clojure.pprint :as pprint]
             [cemerick.friend.credentials :as creds]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [clojure.string :as str]))
 
 (defrecord Env [config-path config user-config-path user-config]
   component/Lifecycle
@@ -23,6 +24,10 @@
 
           ;; Merge configs - config (disk), overrides
           config (merge (edn/read-string (slurp config-path)) config)
+          config (update config :storage (fn [{:keys [path] :as storage-config}]
+                                           (if path
+                                             (assoc storage-config :path (str/replace path #"^~" (System/getProperty "user.home")))
+                                             storage-config)))
 
           user-config-path (get-in config [:security :user-config])
 

@@ -1,8 +1,9 @@
 (ns surfer.storage
-  (:require [clojure.java.io :as io])
-  (:require [surfer.utils :as utils]
-            [surfer.env :as env])
-  (:import [java.io File DataInputStream InputStream]))
+  (:require [clojure.java.io :as io]
+            [surfer.utils :as utils]
+            [surfer.env :as env]
+            [clojure.string :as str])
+  (:import (java.io File)))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -18,39 +19,49 @@
   (let [^File file (io/file path)]
     (.mkdir file)))
 
+(defn asset-path [storage-path asset-id]
+  (str storage-path "/" asset-id ".ocb"))
+
 (defn get-asset-path
   "Gets a storage path given a valid Asset ID."
-  [env asset-id]
-  (let [storage-path (storage-path env)]
-    (when-not (storage-path-exist? storage-path)
-      (mkdir-storage-path storage-path))
+  [storage-path asset-id]
+  (when (str/blank? storage-path)
+    (throw (ex-info "Can't get asset path. Nil or empty storage path."
+                    {:storage-path storage-path
+                     :asset-id asset-id})))
 
-    (str storage-path "/" asset-id ".ocb")))
+  (when (str/blank? asset-id)
+    (throw (ex-info "Can't get asset path. Nil or empty Asset ID."
+                    {:storage-path storage-path
+                     :asset-id asset-id})))
+
+  (when-not (utils/valid-asset-id? asset-id)
+    (throw (ex-info "Can't get asset path. Invalid Asset ID."
+                    {:storage-path storage-path
+                     :asset-id asset-id})))
+
+  (when-not (storage-path-exist? storage-path)
+    (mkdir-storage-path storage-path))
+
+  (asset-path storage-path asset-id))
 
 (defn save
   "Saves data to the storage location for a given asset.
 
    Data may be an InputStream, Reader, File, byte[], char[], or String."
-  [env asset-id data]
-  (when-not (utils/valid-asset-id? asset-id)
-    (throw (IllegalArgumentException. (str "Asset ID not valid [" asset-id "]"))))
+  [storage-path asset-id data]
+  (let [asset-path (get-asset-path storage-path asset-id)]
+    (io/copy data (io/file asset-path))))
 
-  (let [path (get-asset-path env asset-id)
-        file (io/file path)]
-    (io/copy data file)))
-
-(defn load-stream 
+(defn load-stream
   "Gets an input stream for the specified asset ID.
 
    Returns null is the asset data does not exist.
 
    Should be used inside with-open to ensure the InputStream is properly
    closed."
-  [env asset-id]
-    (when-not (utils/valid-asset-id? asset-id)
-      (throw (IllegalArgumentException. (str "Asset ID not valid [" asset-id "]"))))
-
-    (let [path (get-asset-path env asset-id)
-          ^File file (io/file path)]
-      (when (.isFile file)
-        (io/input-stream file))))
+  [storage-path asset-id]
+  (let [path (get-asset-path storage-path asset-id)
+        ^File file (io/file path)]
+    (when (.isFile file)
+      (io/input-stream file))))

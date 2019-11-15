@@ -257,7 +257,7 @@
       (GET "/:id" [id]
         :summary "Gets data for a specified asset ID"
         (if-let [meta (store/lookup-json db id)]            ;; NOTE meta is JSON (not EDN)!
-          (if-let [body (storage/load-stream env id)]
+          (if-let [body (storage/load-stream (storage/storage-path env) id)]
 
             (let [ctype (get meta "contentType" "application/octet-stream")
                   ext (utils/ext-for-content-type ctype)
@@ -290,13 +290,11 @@
             ;;                        (str "Expected file upload, got body: " uploaded))
             (nil? meta) (response/not-found (str "Attempting to store unregistered asset [" id "]")))
           :else (if-let [file body]                         ;; we have a body
-                  ;; (println request)
                   (do
-                    (storage/save env id file)
+                    (storage/save (storage/storage-path env) id file)
                     (response/created (str "/api/v1/assets/" id)))
                   (response/bad-request
-                    (str "No uploaded data?: " body)))
-          ))
+                    (str "No uploaded data?: " body)))))
 
       (POST "/:id" request
         :multipart-params [file :- upload/TempFileUpload]
@@ -315,8 +313,7 @@
                               (str "Expected file upload, got param: " file))
           :else (if-let [tempfile (:tempfile file)]         ;; we have a body
                   (do
-                    ;; (binding [*out* *err*] (pprint/pprint request))
-                    (storage/save env id tempfile)
+                    (storage/save (storage/storage-path env) id tempfile)
                     (response/created (str "/api/v1/assets/" id)))
                   (response/bad-request
                     (str "Expected map with :tempfile, got param: " file))))))))

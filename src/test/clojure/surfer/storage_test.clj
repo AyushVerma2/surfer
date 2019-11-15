@@ -11,12 +11,11 @@
 (use-fixtures :once (fixture/system-fixture #'test-system))
 
 (deftest ^:integration test-store
-  (let [env (system/env test-system)
-
+  (let [storage-path (storage/storage-path (system/env test-system))
         id "a5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
         data (byte-array (range 10))]
 
-    (storage/save env id data)
+    (storage/save storage-path id data)
 
-    (is (storage/load-stream env id))
-    (is (= (seq data) (seq (utils/bytes-from-stream (storage/load-stream env id)))))))
+    (is (storage/load-stream storage-path id))
+    (is (= (seq data) (seq (utils/bytes-from-stream (storage/load-stream storage-path id)))))))
