@@ -187,7 +187,10 @@
         :coercion nil
         :body [body schema/InvokeRequest]
         (let [op-id (get-in request [:params :op-id])
-              op-meta (some-> op-id (store/lookup-json {:key-fn keyword}))]
+              op-meta (store/lookup-json db op-id {:key-fn keyword})]
+
+          (log/debug (str "Invoke Sync - " op-id " - " op-meta))
+
           (cond
             (nil? op-meta)
             (response/not-found (str "Operation (" op-id ") metadata not found."))
@@ -203,9 +206,14 @@
                     operation (sf/in-memory-operation op-meta)
 
                     params (-> (slurp body-stream)
-                               (json/read-str :key-fn str))]
+                               (json/read-str :key-fn str))
+
+                    result (sf/invoke-result operation params)]
+
+                (log/debug (str "Invoke Sync Result - " operation " - " params " -> " result))
+
                 {:status 200
-                 :body (sf/invoke-result operation params)})
+                 :body result})
               (catch Exception e
                 (log/error e "Failed to invoke operation." op-meta)
 
