@@ -8,7 +8,11 @@
 
  :h2
  {:dbtype "h2"
-  :dbname "~/.surfer/surfer"}
+  :dbname "~/.surfer/h2/surfer"}
+
+ :storage
+ {:type :filesystem
+  :path "~/.surfer/storage"}
 
  ;; Define key metadata about the Agent deployment 
  :agent
