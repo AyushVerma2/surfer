@@ -19,9 +19,10 @@
     (storage/save storage-path id data)
 
     (testing "Asset Path"
-      (is (thrown? ExceptionInfo (storage/get-asset-path nil nil)))
-      (is (thrown? ExceptionInfo (storage/get-asset-path "" "")))
-      (is (thrown? ExceptionInfo (storage/get-asset-path "~/.surfer/storage" "1234")))
+      (is (thrown-with-msg? ExceptionInfo #"Can't get asset path. Nil or empty storage path." (storage/get-asset-path nil nil)))
+      (is (thrown-with-msg? ExceptionInfo #"Can't get asset path. Nil or empty storage path." (storage/get-asset-path "" "")))
+      (is (thrown-with-msg? ExceptionInfo #"Can't get asset path. Nil or empty Asset ID." (storage/get-asset-path "~/.surfer/storage" "")))
+      (is (thrown-with-msg? ExceptionInfo #"Can't get asset path. Invalid Asset ID." (storage/get-asset-path "~/.surfer/storage" "1234")))
       (is (= (str "~/.surfer/storage/" id ".ocb") (storage/get-asset-path "~/.surfer/storage" id))))
 
     (is (storage/load-stream storage-path id))
