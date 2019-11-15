@@ -17,7 +17,7 @@
 
 (defn mkdir-storage-path [path]
   (let [^File file (io/file path)]
-    (.mkdir file)))
+    (.mkdirs file)))
 
 (defn asset-path [storage-path asset-id]
   (str storage-path "/" asset-id ".ocb"))
