@@ -166,17 +166,13 @@ Surfer may be used interactively at a Clojure REPL. Open a REPL in the 'surfer.c
 ### Unit Tests
 
 ```
-$ mvn test
+$ clojure -A:test:test-runner -e :integration
 ```
 
 ### Integration Tests
 
-This target will run Unit tests and Integration tests.
-_NOTE:_ the command line tests will be elided on Windows.
-
-
 ```
-$ mvn integration-test
+$ clojure -A:test:test-runner -i :integration
 ```
 
 ### Running the CLI tests
