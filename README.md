@@ -163,40 +163,16 @@ Surfer may be used interactively at a Clojure REPL. Open a REPL in the 'surfer.c
 
 ```
 
-### Unit Tests
+### Running the CLI tests
+
+#### Unit Tests
 
 ```
 $ clojure -A:test:test-runner -e :integration
 ```
 
-### Integration Tests
+#### Integration Tests
 
 ```
 $ clojure -A:test:test-runner -i :integration
 ```
-
-### Running the CLI tests
-
-Here are the steps required to run the command line tests on
-an Ubuntu 18.04 LTS system:
-
-```
-$ mkdir -p ~/.ocean
-$ touch ~/.ocean/.timestamp   # ensure ~/.ocean is writable
-$ sudo apt-get update
-$ sudo apt-get upgrade
-$ sudo apt-get install git git-core openjdk-8-jdk maven
-$ sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
-$ mkdir -p src/github/DEX-Company
-$ cd src/github/DEX-Company
-$ git clone https://github.com/DEX-Company/surfer.git
-$ cd surfer
-$ mvn clean
-$ mvn dependency:list  # download artifacts the first time
-$ mvn install # compile
-$ ./test/bin/cli-test
-```
-
-CLI test results can be found in target/cli-test/
-
-See also recent log entries in log/surfer.log
