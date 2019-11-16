@@ -51,8 +51,12 @@
   {:extra-deps {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
                                            :sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}
 
+   :jvm-opts ["-Dlog4j.configurationFile=src/test/resources/log4j2-continuous-integration.xml"]
+
    :main-opts ["-m" "cognitect.test-runner"
                "-d" "src/test/clojure"]}
 
   :kaocha
-  {:extra-deps {lambdaisland/kaocha {:mvn/version "0.0-554"}}}}}
+  {:extra-deps {lambdaisland/kaocha {:mvn/version "0.0-554"}}
+
+   :jvm-opts ["-Dlog4j.configurationFile=src/test/resources/log4j2-continuous-integration.xml"]}}}
