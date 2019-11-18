@@ -37,6 +37,21 @@
   (sf/asset-id operation-odd?)
 
 
+  (def n-asset
+    ;; Data should be a String encoded JSON
+    (sf/register aladdin (sf/memory-asset (data.json/write-str {:n 1}))))
+
+  (def n-asset-did
+    (str (env/agent-did (system/env system))  "/" (sf/asset-id n-asset)))
+
+  (-> (sf/asset n-asset-did)
+      (sf/content)
+      (sf/to-string)
+      (sf/read-json-string))
+
+  (sf/invoke-result demo.invokable/operation-asset-odd? {"n" {"did" n-asset-did}})
+
+
   ;; Param keys *must be* a string
   ;; when calling the Java API directly.
   (def job (.invoke demo.invokable/operation-odd? {"n" 1}))

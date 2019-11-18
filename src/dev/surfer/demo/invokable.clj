@@ -1,5 +1,6 @@
 (ns surfer.demo.invokable
-  (:require [starfish.core :as sf]))
+  (:require [starfish.core :as sf]
+            [clojure.tools.logging :as log]))
 
 (defn ^{:params {"n" "json"}} invokable-odd? [params]
   (let [n (:n params)]
@@ -12,12 +13,22 @@
 (def operation-odd?
   (sf/in-memory-operation invokable-odd?-metadata))
 
-;; TODO
-(defn invokable-asset-odd? [params]
-  ;; Asset -> Map
-  (let [n 1]
+
+(defn ^{:params {"n" "asset"}} invokable-asset-odd? [params]
+  (let [asset (sf/asset (get-in params [:n :did]))
+
+        {:keys [n]} (-> (sf/content asset)
+                        (sf/to-string)
+                        (sf/read-json-string))]
     {:n n
      :odd? (odd? n)}))
+
+(def invokable-asset-odd?-metadata
+  (sf/invokable-metadata #'invokable-asset-odd? (meta #'invokable-asset-odd?)))
+
+(def operation-asset-odd?
+  (sf/in-memory-operation invokable-asset-odd?-metadata))
+
 
 (defn invokable-asset2-odd? [params]
   ;; Asset -> Asset
