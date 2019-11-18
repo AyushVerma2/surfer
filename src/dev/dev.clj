@@ -29,6 +29,8 @@
           local-ddo-string (sf/json-string-pprint local-ddo)]
       (sf/remote-agent local-did local-ddo-string "Aladdin" "OpenSesame")))
 
+  demo.invokable/invokable-odd?-metadata
+
   (def operation-odd?
     (sf/register aladdin demo.invokable/operation-odd?))
 
@@ -48,6 +50,7 @@
   (sf/job-status job)
 
   (sf/invoke-result demo.invokable/operation-odd? {"n" 1})
+  (sf/invoke-result demo.invokable/operation-inc {"n" 1})
 
   )
 
