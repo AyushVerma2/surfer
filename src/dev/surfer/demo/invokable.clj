@@ -14,8 +14,8 @@
   (sf/in-memory-operation invokable-odd?-metadata))
 
 
-(defn ^{:params {"n" "asset"}} invokable-asset-odd? [params]
-  (let [asset (sf/asset (get-in params [:n :did]))
+(defn ^{:params {"n" "asset"}} asset-odd? [params]
+  (let [asset (sf/asset (get-in params [:n "did"]))
 
         {:keys [n]} (-> (sf/content asset)
                         (sf/to-string)
@@ -24,7 +24,7 @@
      :odd? (odd? n)}))
 
 (def invokable-asset-odd?-metadata
-  (sf/invokable-metadata #'invokable-asset-odd? (meta #'invokable-asset-odd?)))
+  (sf/invokable-metadata #'asset-odd? (meta #'asset-odd?)))
 
 (def operation-asset-odd?
   (sf/in-memory-operation invokable-asset-odd?-metadata))

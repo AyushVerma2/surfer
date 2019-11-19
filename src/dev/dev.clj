@@ -4,12 +4,15 @@
             [surfer.env :as env]
             [surfer.system :as system]
             [surfer.invoke :as invoke]
+            [surfer.agent :as agent]
             [starfish.core :as sf]
             [clojure.data.json :as data.json]
             [clojure.java.jdbc :as jdbc]
             [clojure.repl :refer :all]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log])
+  (:import (sg.dex.starfish.util Utils)
+           (sg.dex.starfish.impl.remote RemoteAccount RemoteAgent)))
 
 (set-init (system/init-fn))
 
@@ -24,32 +27,53 @@
   (store/truncate (db))
 
   (def aladdin
-    (let [local-did (env/agent-did (system/env system))
-          local-ddo (env/local-ddo (system/env system))
-          local-ddo-string (sf/json-string-pprint local-ddo)]
-      (sf/remote-agent local-did local-ddo-string "Aladdin" "OpenSesame")))
+    (let [env (system/env system)
 
-  demo.invokable/invokable-odd?-metadata
+          did (agent/parse-did (env/agent-config env [:did]))
+          ddo (agent/ddo did (env/agent-config env [:remote-url]))
 
-  (def operation-odd?
-    (sf/register aladdin demo.invokable/operation-odd?))
+          account (RemoteAccount/create (Utils/createRandomHexString 32)
+                                        (doto (new java.util.HashMap)
+                                          (.put "username" "Aladdin")
+                                          (.put "password" "OpenSesame")))]
 
-  (sf/asset-id operation-odd?)
+      (.registerDID sf/*resolver* did (data.json/write-str ddo))
+
+      (RemoteAgent/create sf/*resolver* did account)))
 
 
   (def n-asset
-    ;; Data should be a String encoded JSON
-    (sf/register aladdin (sf/memory-asset (data.json/write-str {:n 1}))))
+    ;; Data must be a JSON-encoded string
+    (sf/upload aladdin (sf/memory-asset (data.json/write-str {:n 1}))))
 
   (def n-asset-did
-    (str (env/agent-did (system/env system))  "/" (sf/asset-id n-asset)))
+    (sf/did n-asset))
 
-  (-> (sf/asset n-asset-did)
+  (-> (sf/asset n-asset)
       (sf/content)
       (sf/to-string)
       (sf/read-json-string))
 
-  (sf/invoke-result demo.invokable/operation-asset-odd? {"n" {"did" n-asset-did}})
+
+  ;; -- Resolver API
+  (.getDDOString sf/*resolver* n-asset-did)
+  (.getDDO sf/*resolver* n-asset-did)
+
+
+  ;; -- Agent API
+  (.getDID aladdin)
+  (.getDDO aladdin)
+  (.getEndpoint aladdin "Ocean.Meta.v1")
+  (.getMetaEndpoint aladdin)
+
+
+
+  ;; -- Invoke
+
+  (def operation-odd?
+    (sf/register aladdin demo.invokable/operation-asset-odd?))
+
+  (sf/invoke-result demo.invokable/operation-asset-odd? {"n" {"did" (str n-asset-did)}})
 
 
   ;; Param keys *must be* a string
