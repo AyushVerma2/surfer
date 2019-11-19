@@ -28,9 +28,10 @@
 
   (def aladdin
     (let [env (system/env system)
+          agent-config (env/agent-config env)
 
-          did (agent/parse-did (env/agent-config env [:did]))
-          ddo (agent/ddo did (env/agent-config env [:remote-url]))
+          did (agent/did agent-config)
+          ddo (agent/ddo agent-config)
 
           account (RemoteAccount/create (Utils/createRandomHexString 32)
                                         (doto (new java.util.HashMap)

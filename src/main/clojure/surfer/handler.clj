@@ -31,7 +31,8 @@
      [credentials :as creds]]
     [clojure.tools.logging :as log]
     [hiccup.core :as hiccup]
-    [hiccup.page :as hiccup.page])
+    [hiccup.page :as hiccup.page]
+    [surfer.agent :as agent])
   (:import [java.io InputStream StringWriter PrintWriter]
            [org.apache.commons.codec.binary Base64]))
 
@@ -86,7 +87,7 @@
         :return schema/DDO
         {:status 200
          :headers {"Content-Type" "application/json"}
-         :body (env/remote-ddo env)})
+         :body (agent/ddo (env/agent-config env))})
 
       (GET "/status" request
         :summary "Gets the status for this Agent"

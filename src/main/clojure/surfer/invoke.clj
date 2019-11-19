@@ -8,7 +8,8 @@
     [schema.core :as s]
     [clojure.data.json :as json]
     [clojure.tools.logging :as log]
-    [surfer.app-context :as app-context])
+    [surfer.app-context :as app-context]
+    [surfer.agent :as agent])
   (:import [sg.dex.starfish.util DID]))
 
 (defonce JOBS (atom {}))
@@ -81,7 +82,8 @@
   "Gets the appropriate response map for a job result, or null if the job does not exist."
   [app-context jobid]
   (when-let [job (get-job jobid)]
-    (let [agent-did (env/agent-did (app-context/env app-context))
+    (let [agent-config (env/agent-config (app-context/env app-context))
+          agent-did (agent/did agent-config)
 
           _ (try
               (sf/poll-result job)
