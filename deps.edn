@@ -9,7 +9,7 @@
   org.clojure/data.csv {:mvn/version "0.1.4"}
   org.clojure/java.jdbc {:mvn/version "0.7.10"}
 
-  sg.dex/starfish-clj {:mvn/version "0.7.6-SNAPSHOT"}
+  sg.dex/starfish-clj {:mvn/version "0.7.5"}
 
   hiccup {:mvn/version "1.0.5"}
   http-kit {:mvn/version "2.3.0"}
