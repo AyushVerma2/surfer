@@ -31,7 +31,8 @@
      [credentials :as creds]]
     [clojure.tools.logging :as log]
     [hiccup.core :as hiccup]
-    [hiccup.page :as hiccup.page])
+    [hiccup.page :as hiccup.page]
+    [surfer.agent :as agent])
   (:import [java.io InputStream StringWriter PrintWriter]
            [org.apache.commons.codec.binary Base64]))
 
@@ -86,7 +87,7 @@
         :return schema/DDO
         {:status 200
          :headers {"Content-Type" "application/json"}
-         :body (env/remote-ddo env)})
+         :body (agent/ddo (env/agent-config env))})
 
       (GET "/status" request
         :summary "Gets the status for this Agent"
@@ -187,7 +188,10 @@
         :coercion nil
         :body [body schema/InvokeRequest]
         (let [op-id (get-in request [:params :op-id])
-              op-meta (some-> op-id (store/lookup-json {:key-fn keyword}))]
+              op-meta (store/lookup-json db op-id {:key-fn keyword})]
+
+          (log/debug (str "Invoke Sync - " op-id " - " op-meta))
+
           (cond
             (nil? op-meta)
             (response/not-found (str "Operation (" op-id ") metadata not found."))
@@ -203,9 +207,14 @@
                     operation (sf/in-memory-operation op-meta)
 
                     params (-> (slurp body-stream)
-                               (json/read-str :key-fn str))]
+                               (json/read-str :key-fn str))
+
+                    result (sf/invoke-result operation params)]
+
+                (log/debug (str "Invoke Sync Result - " operation " - " params " -> " result))
+
                 {:status 200
-                 :body (sf/invoke-result operation params)})
+                 :body result})
               (catch Exception e
                 (log/error e "Failed to invoke operation." op-meta)
 
@@ -255,9 +264,9 @@
                :produces ["application/json"]}}}
 
       (GET "/:id" [id]
-        :summary "Gets data for a specified asset ID"
+        :summary "Gets data for a specified Asset ID"
         (if-let [meta (store/lookup-json db id)]            ;; NOTE meta is JSON (not EDN)!
-          (if-let [body (storage/load-stream (storage/storage-path env) id)]
+          (if-let [body (storage/load-stream (storage/storage-path (env/storage-config env)) id)]
 
             (let [ctype (get meta "contentType" "application/octet-stream")
                   ext (utils/ext-for-content-type ctype)
@@ -291,7 +300,7 @@
             (nil? meta) (response/not-found (str "Attempting to store unregistered asset [" id "]")))
           :else (if-let [file body]                         ;; we have a body
                   (do
-                    (storage/save (storage/storage-path env) id file)
+                    (storage/save (storage/storage-path (env/storage-config env)) id file)
                     (response/created (str "/api/v1/assets/" id)))
                   (response/bad-request
                     (str "No uploaded data?: " body)))))
@@ -313,7 +322,7 @@
                               (str "Expected file upload, got param: " file))
           :else (if-let [tempfile (:tempfile file)]         ;; we have a body
                   (do
-                    (storage/save (storage/storage-path env) id tempfile)
+                    (storage/save (storage/storage-path (env/storage-config env)) id tempfile)
                     (response/created (str "/api/v1/assets/" id)))
                   (response/bad-request
                     (str "Expected map with :tempfile, got param: " file))))))))

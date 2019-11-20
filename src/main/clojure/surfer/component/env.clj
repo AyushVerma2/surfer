@@ -24,10 +24,17 @@
 
           ;; Merge configs - config (disk), overrides
           config (merge (edn/read-string (slurp config-path)) config)
+          ;; Resolve storage path; e.g ~/.surfer => /home/user/.surfer
           config (update config :storage (fn [{:keys [path] :as storage-config}]
                                            (if path
                                              (assoc storage-config :path (str/replace path #"^~" (System/getProperty "user.home")))
                                              storage-config)))
+
+          web-server-port (get-in config [:web-server :port])
+
+          ;; Update Agent's remote url to use web server's port
+          config (update config :agent (fn [{:keys [remote-url] :as agent-config}]
+                                         (assoc agent-config :remote-url (str remote-url ":" web-server-port))))
 
           user-config-path (get-in config [:security :user-config])
 

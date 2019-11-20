@@ -15,9 +15,11 @@
     :h2 (component/using
           (component.h2/map->H2 {}) [:env])
 
+    ;; -- DATABASE KEY
     ;; *Migration* and *WebServer* use a generic database key
     ;; so it's possible to replace the (relational) database implementation
     ;; without changing other parts of the system.
+
     :migration (component/using
                  (component.migration/map->Migration {}) {:env :env
                                                           :database :h2})
