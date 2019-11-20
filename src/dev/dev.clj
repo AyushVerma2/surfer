@@ -10,7 +10,8 @@
             [clojure.java.jdbc :as jdbc]
             [clojure.repl :refer :all]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
-            [clojure.tools.logging :as log])
+            [clojure.tools.logging :as log]
+            [surfer.app-context :as app-context])
   (:import (sg.dex.starfish.util Utils)
            (sg.dex.starfish.impl.remote RemoteAccount RemoteAgent)))
 
@@ -21,6 +22,9 @@
 
 (defn query [sql-params]
   (jdbc/query (db) sql-params))
+
+(defn app-context []
+  (app-context/new-context (:env system) (:h2 system)))
 
 (comment
 
@@ -45,10 +49,12 @@
 
   (def n-asset
     ;; Data must be a JSON-encoded string
-    (sf/upload aladdin (sf/memory-asset (data.json/write-str {:n 1}))))
+    (sf/upload aladdin (sf/memory-asset (data.json/write-str {:n 2}))))
 
   (def n-asset-did
     (sf/did n-asset))
+
+  (sf/asset-id n-asset-did)
 
   (-> (sf/asset n-asset)
       (sf/content)
@@ -71,26 +77,27 @@
 
   ;; -- Invoke
 
+  (let [operation (demo.invokable/new-operation (app-context) #'demo.invokable/invokable-odd?)
+        params {"n" 1}]
+    (sf/invoke-result operation params))
+
+  (let [operation (demo.invokable/new-operation (app-context) #'demo.invokable/invokable-asset-odd?)
+        params {"n" {"did" (str n-asset-did)}}]
+    (sf/invoke-result operation params))
+
   (def operation-odd?
-    (sf/register aladdin demo.invokable/operation-asset-odd?))
+    (let [operation (demo.invokable/new-operation (app-context) #'demo.invokable/invokable-odd?)]
+      (sf/register aladdin operation)))
 
-  (sf/invoke-result demo.invokable/operation-asset-odd? {"n" {"did" (str n-asset-did)}})
+  ;; Param keys *must be* a string when calling the Java API directly.
+  (def job (.invoke (demo.invokable/new-operation (app-context) #'demo.invokable/invokable-odd?) {"n" 1}))
 
-
-  ;; Param keys *must be* a string
-  ;; when calling the Java API directly.
-  (def job (.invoke demo.invokable/operation-odd? {"n" 1}))
-
-  ;; Param keys can be a keyword because
-  ;; `starfish.core/invoke` uses `stringify-keys`.
-  (def job (sf/invoke demo.invokable/operation-odd? {"n" 1}))
+  ;; Param keys can be a keyword because `starfish.core/invoke` uses `stringify-keys`.
+  (def job (sf/invoke (demo.invokable/new-operation (app-context) #'demo.invokable/invokable-odd?) {:n 1}))
 
   (sf/poll-result job)
 
   (sf/job-status job)
-
-  (sf/invoke-result demo.invokable/operation-odd? {"n" 1})
-  (sf/invoke-result demo.invokable/operation-inc {"n" 1})
 
   )
 

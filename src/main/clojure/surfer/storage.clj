@@ -8,8 +8,11 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(defn storage-path [env]
+(defn storage-path-old [env]
   (env/storage-config env [:path]))
+
+(defn storage-path [config]
+  (:path config))
 
 (defn storage-path-exist? [path]
   (let [^File file (io/file path)]
