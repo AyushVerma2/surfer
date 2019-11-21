@@ -1,0 +1,64 @@
+{"datasets/john_mccarthy.jpeg"
+ {:name "John McCarthy Photo"
+  :description "John McCarthy was an American computer scientist and cognitive scientist"
+  :type "dataset"
+  :contentType "image/jpeg"
+  :tags ["computer science" "john mccarthy"]
+  :links [{:name "Wikipedia"
+           :url "https://en.wikipedia.org/wiki/John_McCarthy_(computer_scientist)"}]}
+
+ "datasets/glossary.md"
+ {:name "DEP Glossary"
+  :description "This Glossary provides definitions of common terms used in DEPs"
+  :type "dataset"
+  :contentType "text/markdown"
+  :enconding "UTF-8"
+  :dataCreated "2019-07-21"
+  :creator "Mike Anderson"
+  :license "Copyright (c) 2019 DEX Pte. Ltd."
+  :inLanguage "en"
+  :tags ["dex" "dep"]
+  :links [{:name "GitHub"
+           :url "https://github.com/DEX-Company/DEPs/tree/master/0"}]}
+
+ "datasets/african_crises.csv"
+ {:name "Africa Economic, Banking and Systemic Crisis Data"
+  :description "Data on Economic and Financial crises in 13 African Countries (1860 to 2014)"
+  :type "dataset"
+  :contentType "text/csv"
+  :enconding "UTF-8"
+  :dataCreated "2019-07-21"
+  :creator "Reinhart, C., Rogoff, K., Trebesch, C. and Reinhart, V. (2019)"
+  :license "Data files © Original Authors"
+  :inLanguage "en"
+  :tags ["kaggle" "dataset" "africa"]
+  :links [{:name "Kaggle"
+           :url "https://www.kaggle.com/chirin/africa-economic-banking-and-systemic-crisis-data"}]}
+
+ "datasets/military_expenditure.csv"
+ {:name "Military Spending of Countries (1960-2019)"
+  :description "Annual expenditure of over 200 countries in terms of current USD"
+  :type "dataset"
+  :contentType "text/csv"
+  :enconding "UTF-8"
+  :dataCreated "2019-10-10"
+  :creator "Nitin Singh"
+  :license "World Bank Dataset Terms of Use"
+  :inLanguage "en"
+  :tags ["kaggle" "dataset" "military"]
+  :links [{:name "Kaggle"
+           :url "https://www.kaggle.com/nitinsss/military-expenditure-of-countries-19602019"}]}
+
+ "datasets/world_happiness_2017.csv"
+ {:name "World Happiness Report"
+  :description "Happiness scored according to economic production, social support, etc."
+  :type "dataset"
+  :contentType "text/csv"
+  :enconding "UTF-8"
+  :dataCreated "2017-02-28"
+  :creator "Sustainable Development Solutions Network"
+  :license "CC0: Public Domain"
+  :inLanguage "en"
+  :tags ["kabble" "dataset" "world" "happiness"]
+  :links [{:name "Kaggle"
+           :url "https://www.kaggle.com/unsdsn/world-happiness"}]}}
