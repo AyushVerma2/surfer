@@ -266,7 +266,8 @@
   (doseq [table (or tables ["Metadata"
                             "Listings"
                             "Purchases"
-                            "Users"])]
+                            "Users"
+                            "Tokens"])]
     (jdbc/execute! db (str "TRUNCATE TABLE " table ";"))))
 
 ;; =========================================================
