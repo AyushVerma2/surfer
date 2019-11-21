@@ -1,4 +1,27 @@
-{"datasets/african_crises.csv"
+{"datasets/john_mccarthy.jpeg"
+ {:name "John McCarthy Photo"
+  :description "John McCarthy (September 4, 1927 – October 24, 2011) was an American computer scientist and cognitive scientist."
+  :type "dataset"
+  :contentType "image/jpeg"
+  :dataCreated "2019-07-21"
+  :tags ["computer science" "john mccarthy"]
+  :links [{:name "Wikipedia"
+           :url "https://en.wikipedia.org/wiki/John_McCarthy_(computer_scientist)"}]}
+
+ "datasets/glossary.md"
+ {:name "DEP Glossary"
+  :description "This Glossary provides definitions of common terms used in DEPs."
+  :type "dataset"
+  :contentType "text/markdown"
+  :enconding "UTF-8"
+  :dataCreated "2019-07-21"
+  :creator "Mike Anderson"
+  :license "Copyright (c) 2019 DEX Pte. Ltd."
+  :links []
+  :inLanguage "en"
+  :tags ["dex" "dep"]}
+
+ "datasets/african_crises.csv"
  {:name "Africa Economic, Banking and Systemic Crisis Data"
   :description "Data on Economic and Financial crises in 13 African Countries (1860 to 2014)"
   :type "dataset"
