@@ -8,7 +8,12 @@
             [clojure.edn :as edn]
             [surfer.database :as database]))
 
-(defn import! [database storage-path asset-path+metadata & [{:keys [overwrite?]}]]
+(defn import!
+  "Import, register and persist on disk, the asset file.
+
+   `asset-path+metadata` is a tuple where the first item is the path of the
+    file, and the second is the metadata map."
+  [database storage-path asset-path+metadata & [{:keys [overwrite?]}]]
   (let [[dataset-path metadata] asset-path+metadata]
     (let [dataset (io/file dataset-path)
 
