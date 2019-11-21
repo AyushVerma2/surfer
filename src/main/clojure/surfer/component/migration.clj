@@ -13,8 +13,6 @@
   (start [component]
     (store/migrate-db! (database/db database))
 
-    (log/info "Successfully migrated database!")
-
     (when-let [users (:user-config env)]
       (doseq [{:keys [id username] :as user} users]
         (try
