@@ -262,13 +262,8 @@
                      :ctime (Instant/now)})
       id)))
 
-(defn truncate [db & tables]
-  (doseq [table (or tables ["Metadata"
-                            "Listings"
-                            "Purchases"
-                            "Users"
-                            "Tokens"])]
-    (jdbc/execute! db (str "TRUNCATE TABLE " table ";"))))
+(defn clear-db [db]
+  (jdbc/execute! db "DROP ALL OBJECTS"))
 
 ;; =========================================================
 ;; Asset management and metadata

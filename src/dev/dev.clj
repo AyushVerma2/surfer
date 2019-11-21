@@ -24,7 +24,7 @@
   (:db-spec (system/h2 system)))
 
 (defn reset-db []
-  (jdbc/execute! (db) ["DROP ALL OBJECTS"])
+  (store/clear-db (db))
   (store/migrate-db! (db)))
 
 (defn query [& sql-params]

@@ -590,7 +590,7 @@
       (POST "/clear-db" []
         :summary "Clears the current database. DANGER."
         (friend/authorize #{:admin}
-                          (store/truncate db)
+                          (store/clear-db db)
                           (response/response "Successful")))
 
       (POST "/migrate-db" []
