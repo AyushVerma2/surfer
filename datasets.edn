@@ -1,0 +1,38 @@
+{"datasets/african_crises.csv"
+ {:name "Africa Economic, Banking and Systemic Crisis Data"
+  :description "Data on Economic and Financial crises in 13 African Countries (1860 to 2014)"
+  :type "dataset"
+  :contentType "text/csv"
+  :enconding "UTF-8"
+  :dataCreated "2019-07-21"
+  :creator "Reinhart, C., Rogoff, K., Trebesch, C. and Reinhart, V. (2019)"
+  :license "Data files © Original Authors"
+  :links []
+  :inLanguage "en"
+  :tags ["kabble" "dataset" "africa"]}
+
+ "datasets/military_expenditure.csv"
+ {:name "Military Spending of Countries (1960-2019)"
+  :description "Annual expenditure of over 200 countries in terms of current USD"
+  :type "dataset"
+  :contentType "text/csv"
+  :enconding "UTF-8"
+  :dataCreated "2019-07-21"
+  :creator "Reinhart, C., Rogoff, K., Trebesch, C. and Reinhart, V. (2019)"
+  :license "Data files © Original Authors"
+  :links []
+  :inLanguage "en"
+  :tags ["kabble" "dataset" "military"]}
+
+ "datasets/world_happiness_2017.csv"
+ {:name "World Happiness Report"
+  :description "Happiness scored according to economic production, social support, etc."
+  :type "dataset"
+  :contentType "text/csv"
+  :enconding "UTF-8"
+  :dataCreated "2019-07-21"
+  :creator "Reinhart, C., Rogoff, K., Trebesch, C. and Reinhart, V. (2019)"
+  :license "Data files © Original Authors"
+  :links []
+  :inLanguage "en"
+  :tags ["kabble" "dataset" "World" "happiness"]}}

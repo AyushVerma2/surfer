@@ -11,14 +11,19 @@
             [clojure.repl :refer :all]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
             [clojure.tools.logging :as log]
-            [surfer.app-context :as app-context])
+            [surfer.app-context :as app-context]
+            [clojure.java.io :as io]
+            [clojure.edn :as edn])
   (:import (sg.dex.starfish.util Utils)
            (sg.dex.starfish.impl.remote RemoteAccount RemoteAgent)))
 
 (set-init (system/init-fn))
 
 (defn db []
-  (get-in system [:h2 :db-spec]))
+  (:db-spec (system/h2 system)))
+
+(defn reset-db []
+  (jdbc/execute! (db) ["DROP ALL OBJECTS"]))
 
 (defn query [sql-params]
   (jdbc/query (db) sql-params))
@@ -26,9 +31,24 @@
 (defn app-context []
   (app-context/new-context (:env system) (:h2 system)))
 
+(defn import-datasets []
+  (let [datasets (edn/read-string (slurp (io/file "datasets.edn")))]
+    (doseq [[path metadata] datasets]
+      (let [dataset-file (io/file path)
+
+            metadata (assoc metadata :size (str (.length dataset-file))
+                                     :contentHash (sf/digest (slurp dataset-file)))
+
+            json-encoded-str (data.json/write-str metadata)
+            asset-id (store/register-asset (db) json-encoded-str)]
+
+        (prn asset-id json-encoded-str)))))
+
 (comment
 
-  (store/truncate (db))
+  (reset-db)
+
+  (import-datasets)
 
   (def aladdin
     (let [env (system/env system)
