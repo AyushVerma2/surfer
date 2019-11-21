@@ -606,7 +606,7 @@
                           (store/generate-test-data! db)
                           (response/response "Successful")))
 
-      (GET "/import-datasets" []
+      (POST "/import-datasets" []
         :summary "Import Datasets"
         (friend/authorize #{:admin}
           (let [database (app-context/database app-context)
