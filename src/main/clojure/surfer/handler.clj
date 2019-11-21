@@ -600,6 +600,13 @@
                           (let [r (store/migrate-db! db)]
                             (response/response (str "Successful: " r)))))
 
+      (POST "/reset-db" []
+        :summary "Clear & migrate database"
+        (friend/authorize #{:admin}
+          (store/clear-db db)
+          (store/migrate-db! db)
+          (response/response "Successful")))
+
       (POST "/create-db-test-data" []
         :summary "Creates test data for the current database. DANGER."
         (friend/authorize #{:admin}
@@ -607,7 +614,7 @@
                           (response/response "Successful")))
 
       (POST "/import-datasets" []
-        :summary "Import Datasets"
+        :summary "Import datasets"
         (friend/authorize #{:admin}
           (let [database (app-context/database app-context)
                 storage-path (-> (app-context/env app-context)
