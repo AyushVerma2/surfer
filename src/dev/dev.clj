@@ -13,7 +13,8 @@
             [clojure.tools.logging :as log]
             [surfer.app-context :as app-context]
             [clojure.java.io :as io]
-            [clojure.edn :as edn])
+            [clojure.edn :as edn]
+            [surfer.storage :as storage])
   (:import (sg.dex.starfish.util Utils)
            (sg.dex.starfish.impl.remote RemoteAccount RemoteAgent)))
 
@@ -23,13 +24,17 @@
   (:db-spec (system/h2 system)))
 
 (defn reset-db []
-  (jdbc/execute! (db) ["DROP ALL OBJECTS"]))
+  (jdbc/execute! (db) ["DROP ALL OBJECTS"])
+  (store/migrate-db! (db)))
 
-(defn query [sql-params]
+(defn query [& sql-params]
   (jdbc/query (db) sql-params))
 
+(defn env []
+  (system/env system))
+
 (defn app-context []
-  (app-context/new-context (:env system) (:h2 system)))
+  (app-context/new-context (system/env system) (system/h2 system)))
 
 (defn import-datasets []
   (let [datasets (edn/read-string (slurp (io/file "datasets.edn")))]
@@ -41,6 +46,8 @@
 
             json-encoded-str (data.json/write-str metadata)
             asset-id (store/register-asset (db) json-encoded-str)]
+
+        (storage/save (storage/storage-path (env/storage-config (env))) asset-id dataset-file)
 
         (prn asset-id json-encoded-str)))))
 
