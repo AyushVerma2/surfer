@@ -5,6 +5,7 @@
             [surfer.system :as system]
             [surfer.invoke :as invoke]
             [surfer.agent :as agent]
+            [surfer.asset :as asset]
             [starfish.core :as sf]
             [clojure.data.json :as data.json]
             [clojure.java.jdbc :as jdbc]
@@ -36,28 +37,14 @@
 (defn app-context []
   (app-context/new-context (system/env system) (system/h2 system)))
 
-(defn import-datasets []
-  (let [path->metadata (-> (io/file "datasets.edn")
-                           (slurp)
-                           (edn/read-string))]
-    (doseq [[path metadata] path->metadata]
-      (let [dataset-file (io/file path)
-
-            metadata (assoc metadata :size (str (.length dataset-file))
-                                     :contentHash (sf/digest (slurp dataset-file)))
-
-            json-encoded-str (data.json/write-str metadata)
-            id (sf/digest json-encoded-str)]
-        (when (empty? (jdbc/query (db) ["SELECT ID FROM METADATA WHERE ID=?" id]))
-          (store/register-asset (db) json-encoded-str)
-          (storage/save (storage/storage-path (env/storage-config (env))) id dataset-file)
-          (prn id json-encoded-str))))))
-
 (comment
 
   (reset-db)
 
-  (import-datasets)
+  ;; -- Import Datasets
+  (let [database (system/h2 system)
+        storage-path (storage/storage-path (env/storage-config (env)))]
+    (asset/import-datasets! database storage-path "datasets.edn"))
 
   (def aladdin
     (let [env (system/env system)

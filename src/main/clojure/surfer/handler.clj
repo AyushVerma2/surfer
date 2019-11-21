@@ -18,6 +18,7 @@
     [surfer.invoke :as invoke]
     [surfer.app-context :as app-context]
     [surfer.database :as database]
+    [surfer.asset :as asset]
     [schema.core :as s]
     [clojure.data.json :as json]
     [clojure.pprint :as pprint :refer [pprint]]
@@ -162,7 +163,7 @@
               ^String body (slurp body-stream)
               hash (utils/sha256 body)]
           (if (= id hash)
-            (store/register-asset db id body)                  ;; OK, write to store
+            (store/register-asset db id body)               ;; OK, write to store
             (response/bad-request (str "Invalid ID for metadata, expected: " hash " got " id)))))
 
       (GET "/index" _
@@ -603,7 +604,16 @@
         :summary "Creates test data for the current database. DANGER."
         (friend/authorize #{:admin}
                           (store/generate-test-data! db)
-                          (response/response "Successful"))))))
+                          (response/response "Successful")))
+
+      (GET "/import-datasets" []
+        :summary "Import Datasets"
+        (friend/authorize #{:admin}
+          (let [database (app-context/database app-context)
+                storage-path (-> (app-context/env app-context)
+                                 (env/storage-config)
+                                 (storage/storage-path))]
+            (response/response (asset/import-datasets! database storage-path "datasets.edn"))))))))
 
 ;; ==========================================
 ;; Authentication API
@@ -750,76 +760,76 @@
 (defn api-routes [app-context]
   (let [database (app-context/database app-context)
         db (database/db database)]
-   (api
-     {:api {:invalid-routes-fn nil}                         ;; supress warning on child routes
-      :exceptions {:handlers
-                   {:compojure.api.exception/default
-                    (fn [^Throwable ex ex-data request]
-                      ;; (.printStackTrace ^Throwable ex)
-                      (log/error (str ex))
-                      (response/status
-                        (response/response
-                          (let [sw (StringWriter.)
-                                pw (PrintWriter. sw)]
-                            (.printStackTrace ex pw)
-                            (str (class ex) "/n"
-                                 (.toString sw))))
-                        500))}}}
-     (swagger-routes
-       {:ui "/api-docs", :spec "/swagger.json"})
+    (api
+      {:api {:invalid-routes-fn nil}                        ;; supress warning on child routes
+       :exceptions {:handlers
+                    {:compojure.api.exception/default
+                     (fn [^Throwable ex ex-data request]
+                       ;; (.printStackTrace ^Throwable ex)
+                       (log/error (str ex))
+                       (response/status
+                         (response/response
+                           (let [sw (StringWriter.)
+                                 pw (PrintWriter. sw)]
+                             (.printStackTrace ex pw)
+                             (str (class ex) "/n"
+                                  (.toString sw))))
+                         500))}}}
+      (swagger-routes
+        {:ui "/api-docs", :spec "/swagger.json"})
 
-     (GET "/assets" []
-       (str
-         "<body style=\"font-family: 'courier new', monospace;\">"
-         (apply str
-                (mapv
-                  (fn [id]
-                    (try
-                      (let [j (json/read-str (store/lookup db id))
-                            title (j "title")]
-                        (str "<a href=\"api/v1/meta/data/" id "\">" id " - " title "<br/>\n"))
-                      (catch Throwable t
-                        (str "Fail in asset id:" id " - " t "<br/>\n"))))
-                  (store/all-keys db)))
-         "</body>"))
+      (GET "/assets" []
+        (str
+          "<body style=\"font-family: 'courier new', monospace;\">"
+          (apply str
+                 (mapv
+                   (fn [id]
+                     (try
+                       (let [j (json/read-str (store/lookup db id))
+                             title (j "title")]
+                         (str "<a href=\"api/v1/meta/data/" id "\">" id " - " title "<br/>\n"))
+                       (catch Throwable t
+                         (str "Fail in asset id:" id " - " t "<br/>\n"))))
+                   (store/all-keys db)))
+          "</body>"))
 
-     (GET "/tokens" request
-       (fn [request]
-         (tokens-page app-context request)))
+      (GET "/tokens" request
+        (fn [request]
+          (tokens-page app-context request)))
 
-     (GET "/logout" [] logout-page)
+      (GET "/logout" [] logout-page)
 
-     (context "/api/v1/meta" []
-       :tags ["Meta API"]
-       (meta-api app-context))
+      (context "/api/v1/meta" []
+        :tags ["Meta API"]
+        (meta-api app-context))
 
-     (context "/api/v1/assets" []
-       :tags ["Storage API"]
-       (storage-api app-context))
+      (context "/api/v1/assets" []
+        :tags ["Storage API"]
+        (storage-api app-context))
 
-     (context "/api/v1/market" []
-       :tags ["Market API"]
-       (market-api app-context))
+      (context "/api/v1/market" []
+        :tags ["Market API"]
+        (market-api app-context))
 
-     (context "/api/v1/trust" []
-       :tags ["Trust API"]
-       (trust-api app-context))
+      (context "/api/v1/trust" []
+        :tags ["Trust API"]
+        (trust-api app-context))
 
-     (context "/api/v1/market-admin" []
-       :tags ["Market Admin API"]
-       (admin-api app-context))
+      (context "/api/v1/market-admin" []
+        :tags ["Market Admin API"]
+        (admin-api app-context))
 
-     (context "/api/v1/auth" []
-       :tags ["Authentication API"]
-       (auth-api app-context))
+      (context "/api/v1/auth" []
+        :tags ["Authentication API"]
+        (auth-api app-context))
 
-     (context "/api/v1/invoke" []
-       :tags ["Invoke API"]
-       (invoke-api app-context))
+      (context "/api/v1/invoke" []
+        :tags ["Invoke API"]
+        (invoke-api app-context))
 
-     (context "/api" []
-       :tags ["Status API"]
-       (status-api app-context)))))
+      (context "/api" []
+        :tags ["Status API"]
+        (status-api app-context)))))
 
 (def web-routes
   (api
