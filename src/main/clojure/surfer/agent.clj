@@ -11,7 +11,7 @@
       (sf/did x))))
 
 (defn ddo [config]
-  {"@context" "https://www.w3.org/2019/did/v1"
+  {(keyword "@context") "https://www.w3.org/2019/did/v1"
    :id (:did config)
    :service
    [{:type "Ocean.Invoke.v1"
