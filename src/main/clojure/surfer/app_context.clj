@@ -20,9 +20,10 @@
    # No component should be aware of the system which contains it Each
    component receives references only to the components on which it depends.")
 
-(defn new-context [env database]
-  {:env env
-   :database database})
+(defn new-context [env database starfish]
+  #:app-context{:env env
+                :database database
+                :starfish starfish})
 
 (defn database
   "Database Component
@@ -31,11 +32,11 @@
 
    See `surfer.component.web-server` namespace."
   [app-context]
-  (:database app-context))
+  (:app-context/database app-context))
 
 (defn env
   "Env component
 
    See `surfer.component.web-server` namespace."
   [app-context]
-  (:env app-context))
+  (:app-context/env app-context))
