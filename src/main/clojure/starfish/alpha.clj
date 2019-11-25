@@ -1,7 +1,11 @@
 (ns starfish.alpha
-  (:require [starfish.core :as sf])
+  (:require [starfish.core :as sf]
+            [clojure.data.json :as data.json])
   (:import (sg.dex.starfish Agent Resolver)
            (sg.dex.starfish.util DID)))
+
+(defn register! [^Resolver resolver ^DID did ddo]
+  (.registerDID resolver did (data.json/write-str ddo)))
 
 (defn provides? [ddo services]
   (let [ddo-services (->> (get ddo "service")

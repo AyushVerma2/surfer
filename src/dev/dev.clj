@@ -52,20 +52,26 @@
         storage-path (storage/storage-path (env/storage-config (env)))]
     (asset/import-datasets! database storage-path "datasets.edn"))
 
-  (def aladdin
-    (let [did (agent/did (env/agent-config (system/env system)))
-          ddo (agent/ddo (env/agent-config (system/env system)))
+  (def default-resolver
+    (let [{:starfish/keys [resolvers]} (system/starfish system)]
+      (first resolvers)))
 
-          credentials ^java.util.Map (doto (new HashMap)
+  (def did
+    (agent/did (env/agent-config (system/env system))))
+
+  (def ddo
+    (agent/ddo (env/agent-config (system/env system))))
+
+  (sfa/register! default-resolver did ddo)
+
+  (def aladdin
+    (let [^java.util.Map credentials (doto (new HashMap)
                                        (.put "username" "Aladdin")
                                        (.put "password" "OpenSesame"))
 
-          account (RemoteAccount/create ^String (Utils/createRandomHexString 32)
-                                        ^java.util.Map credentials)]
+          account (RemoteAccount/create (Utils/createRandomHexString 32) credentials)]
 
-      (.registerDID (system/default-resolver system) did (data.json/write-str ddo))
-
-      (RemoteAgent/create (system/default-resolver system) did account)))
+      (RemoteAgent/create default-resolver did account)))
 
 
   (def n-asset
@@ -84,8 +90,8 @@
 
 
   ;; -- Resolver API
-  (.getDDOString sf/*resolver* n-asset-did)
-  (.getDDO sf/*resolver* n-asset-did)
+  (.getDDOString default-resolver did)
+  (.getDDO default-resolver did)
 
 
   ;; -- Agent API
