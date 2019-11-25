@@ -1,5 +1,6 @@
 (ns surfer.demo.invokable
   (:require [starfish.core :as sf]
+            [starfish.alpha :as sfa]
             [clojure.tools.logging :as log]
             [surfer.storage :as storage]
             [surfer.env :as env]
@@ -27,6 +28,14 @@
         storage-path (storage/storage-path config)
         asset-id (sf/asset-id (get-in params [:n "did"]))]
     (with-open [input-stream (storage/load-stream storage-path asset-id)]
+      (let [{:keys [n]} (data.json/read (io/reader input-stream) :key-fn keyword)]
+        {:n n
+         :is_odd (odd? n)}))))
+
+(defn ^{:params {"n" "asset"}} invokable-asset-odd?2 [{:app-context/keys [starfish]} params]
+  (let [did (sf/did (get-in params [:n "did"]))
+        asset (sfa/get-asset starfish did)]
+    (with-open [input-stream (sf/content-stream asset)]
       (let [{:keys [n]} (data.json/read (io/reader input-stream) :key-fn keyword)]
         {:n n
          :is_odd (odd? n)}))))

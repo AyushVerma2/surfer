@@ -15,11 +15,15 @@
             [surfer.app-context :as app-context]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
-            [surfer.storage :as storage])
+            [surfer.storage :as storage]
+            [starfish.alpha :as sfa])
   (:import (sg.dex.starfish.util Utils)
-           (sg.dex.starfish.impl.remote RemoteAccount RemoteAgent)))
+           (sg.dex.starfish.impl.remote RemoteAccount RemoteAgent)
+           (java.util HashMap)))
 
 (set-init (system/init-fn))
+
+;; ---
 
 (defn db []
   (:db-spec (system/h2 system)))
@@ -35,7 +39,9 @@
   (system/env system))
 
 (defn app-context []
-  (app-context/new-context (system/env system) (system/h2 system)))
+  (app-context/new-context (system/env system)
+                           (system/h2 system)
+                           (system/starfish system)))
 
 (comment
 
@@ -47,20 +53,19 @@
     (asset/import-datasets! database storage-path "datasets.edn"))
 
   (def aladdin
-    (let [env (system/env system)
-          agent-config (env/agent-config env)
+    (let [did (agent/did (env/agent-config (system/env system)))
+          ddo (agent/ddo (env/agent-config (system/env system)))
 
-          did (agent/did agent-config)
-          ddo (agent/ddo agent-config)
+          credentials ^java.util.Map (doto (new HashMap)
+                                       (.put "username" "Aladdin")
+                                       (.put "password" "OpenSesame"))
 
-          account (RemoteAccount/create (Utils/createRandomHexString 32)
-                                        (doto (new java.util.HashMap)
-                                          (.put "username" "Aladdin")
-                                          (.put "password" "OpenSesame")))]
+          account (RemoteAccount/create ^String (Utils/createRandomHexString 32)
+                                        ^java.util.Map credentials)]
 
-      (.registerDID sf/*resolver* did (data.json/write-str ddo))
+      (.registerDID (system/default-resolver system) did (data.json/write-str ddo))
 
-      (RemoteAgent/create sf/*resolver* did account)))
+      (RemoteAgent/create (system/default-resolver system) did account)))
 
 
   (def n-asset
@@ -98,6 +103,10 @@
     (sf/invoke-result operation params))
 
   (let [operation (demo.invokable/new-operation (app-context) #'demo.invokable/invokable-asset-odd?)
+        params {"n" {"did" (str n-asset-did)}}]
+    (sf/invoke-result operation params))
+
+  (let [operation (demo.invokable/new-operation (app-context) #'demo.invokable/invokable-asset-odd?2)
         params {"n" {"did" (str n-asset-did)}}]
     (sf/invoke-result operation params))
 

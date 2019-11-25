@@ -8,11 +8,11 @@
             [surfer.env :as env]
             [surfer.app-context :as app-context]))
 
-(defrecord WebServer [env database stop-server]
+(defrecord WebServer [env database starfish stop-server]
   component/Lifecycle
 
   (start [component]
-    (let [app-context (app-context/new-context env database)
+    (let [app-context (app-context/new-context env database starfish)
 
           ;; Surfer is a web application and handler functions are essentially
           ;; the entry point of the system.
