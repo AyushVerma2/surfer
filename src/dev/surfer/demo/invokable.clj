@@ -12,7 +12,7 @@
 (def app-context->storage-config
   (comp env/storage-config app-context/env))
 
-(defn new-operation [app-context invokable]
+(defn memory-operation [app-context invokable]
   (let [params-results (select-keys (meta invokable) [:params :results])
         metadata (sf/invokable-metadata invokable params-results)]
     (ClojureOperation/create (data.json/write-str metadata) (MemoryAgent/create) (fn [params]
