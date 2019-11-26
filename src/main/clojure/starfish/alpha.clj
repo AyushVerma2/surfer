@@ -4,15 +4,12 @@
   (:import (sg.dex.starfish Resolver)
            (sg.dex.starfish.impl.memory LocalResolverImpl)))
 
-(def ^:dynamic *default-resolver*
+(def ^:dynamic *resolver*
   (LocalResolverImpl.))
-
-(def ^:dynamic *resolvers*
-  [*default-resolver*])
 
 (defn register!
   ([did ddo]
-   (register! *default-resolver* did ddo))
+   (register! *resolver* did ddo))
   ([^Resolver resolver did ddo]
    (.registerDID resolver did (data.json/write-str ddo))))
 
@@ -25,11 +22,8 @@
 
 (defn did->agent
   ([did]
-   (did->agent *resolvers* did))
-  ([resolvers did]
-   (some
-     (fn [^Resolver resolver]
-       (when-let [s (.getDDOString resolver did)]
-         (let [ddo (data.json/read-str s :key-fn str)]
-           (resolve-agent resolver did ddo))))
-     resolvers)))
+   (did->agent *resolver* did))
+  ([resolver did]
+   (when-let [s (.getDDOString resolver did)]
+     (let [ddo (data.json/read-str s :key-fn str)]
+       (resolve-agent resolver did ddo)))))

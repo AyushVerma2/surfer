@@ -55,8 +55,8 @@
     (agent/ddo (env/agent-config (system/env system))))
 
   ;; -- Resolver API
-  (.getDDOString sfa/*default-resolver* did)
-  (.getDDO sfa/*default-resolver* did)
+  (.getDDOString sfa/*resolver* did)
+  (.getDDO sfa/*resolver* did)
 
   (def aladdin
     (sfa/did->agent did))
