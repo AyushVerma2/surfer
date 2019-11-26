@@ -52,27 +52,16 @@
         storage-path (storage/storage-path (env/storage-config (env)))]
     (asset/import-datasets! database storage-path "datasets.edn"))
 
-  (def default-resolver
-    (let [{:starfish/keys [resolvers]} (system/starfish system)]
-      (first resolvers)))
-
   (def did
     (agent/did (env/agent-config (system/env system))))
 
   (def ddo
     (agent/ddo (env/agent-config (system/env system))))
 
-  (sfa/register! default-resolver did ddo)
+  (sfa/register! did ddo)
 
   (def aladdin
-    (let [^java.util.Map credentials (doto (new HashMap)
-                                       (.put "username" "Aladdin")
-                                       (.put "password" "OpenSesame"))
-
-          account (RemoteAccount/create (Utils/createRandomHexString 32) credentials)]
-
-      (RemoteAgent/create default-resolver did account)))
-
+    (sfa/did->agent did))
 
   (def n-asset
     ;; Data must be a JSON-encoded string
@@ -83,23 +72,15 @@
 
   (sf/asset-id n-asset-did)
 
-  (-> (sf/asset n-asset)
-      (sf/content)
-      (sf/to-string)
-      (sf/read-json-string))
-
-
   ;; -- Resolver API
-  (.getDDOString default-resolver did)
-  (.getDDO default-resolver did)
-
+  (.getDDOString sfa/*default-resolver* did)
+  (.getDDO sfa/*default-resolver* did)
 
   ;; -- Agent API
   (.getDID aladdin)
   (.getDDO aladdin)
   (.getEndpoint aladdin "Ocean.Meta.v1")
   (.getMetaEndpoint aladdin)
-
 
 
   ;; -- Invoke
