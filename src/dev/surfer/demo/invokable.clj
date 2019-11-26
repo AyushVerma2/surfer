@@ -12,11 +12,23 @@
 (def app-context->storage-config
   (comp env/storage-config app-context/env))
 
-(defn memory-operation [app-context invokable]
-  (let [params-results (select-keys (meta invokable) [:params :results])
-        metadata (sf/invokable-metadata invokable params-results)]
-    (ClojureOperation/create (data.json/write-str metadata) (MemoryAgent/create) (fn [params]
-                                                                                   (invokable app-context params)))))
+(defn resolve-invokable [metadata]
+  (some-> (get-in metadata [:additionalInfo :function])
+          (symbol)
+          (resolve)))
+
+(defn invokable-metadata [invokable]
+  (let [params-results (select-keys (meta invokable) [:params :results])]
+    (sf/invokable-metadata invokable params-results)))
+
+(defn invokable-operation [app-context metadata]
+  (let [invokable (resolve-invokable metadata)
+
+        metadata-str (data.json/write-str metadata)
+
+        closure (fn [params]
+                  (invokable app-context params))]
+    (ClojureOperation/create metadata-str (MemoryAgent/create) closure)))
 
 (defn ^{:params {"n" "json"}} invokable-odd? [_ params]
   (let [n (:n params)]
