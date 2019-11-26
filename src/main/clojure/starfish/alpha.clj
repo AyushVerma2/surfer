@@ -16,8 +16,12 @@
   ([^Resolver resolver did ddo]
    (.registerDID resolver did (data.json/write-str ddo))))
 
-(defmulti resolve-agent (fn [resolver did ddo]
-                          (sf/did-id did)))
+(defmulti resolve-agent
+  "Resolves Agent for the giving `resolver`, `did` and `ddo`.
+
+   Dispatches by DID ID (Agent ID)."
+  (fn [resolver did ddo]
+    (sf/did-id did)))
 
 (defn did->agent
   ([did]
