@@ -15,7 +15,8 @@
             [clojure.repl :refer :all]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
-            [com.stuartsierra.component.repl :refer [set-init reset start stop system]]))
+            [com.stuartsierra.component.repl :refer [set-init reset start stop system]])
+  (:import (sg.dex.starfish.impl.memory LocalResolverImpl)))
 
 (set-init (system/init-fn))
 
@@ -60,6 +61,18 @@
 
   (def aladdin
     (sfa/did->agent did))
+
+
+  ;; -- Dynamic *resolver*
+
+  (binding [sfa/*resolver* (LocalResolverImpl.)]
+    (.getDDOString sfa/*resolver* did))
+
+  (binding [sfa/*resolver* (LocalResolverImpl.)]
+    (sfa/did->agent did))
+
+  ;; ---
+
 
   ;; -- Agent API
   (.getDID aladdin)
