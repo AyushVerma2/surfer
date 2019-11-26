@@ -32,7 +32,7 @@
         {:n n
          :is_odd (odd? n)}))))
 
-(defn ^{:params {"n" "asset"}} invokable-asset-odd?2 [{:app-context/keys [starfish]} params]
+(defn ^{:params {"n" "asset"}} invokable-asset-odd?2 [app-context params]
   (let [did (sf/did (get-in params [:n "did"]))
         agent (sfa/did->agent did)
         asset (sf/get-asset agent did)]

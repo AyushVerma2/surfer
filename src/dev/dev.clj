@@ -58,8 +58,6 @@
   (def ddo
     (agent/ddo (env/agent-config (system/env system))))
 
-  (sfa/register! did ddo)
-
   (def aladdin
     (sfa/did->agent did))
 
