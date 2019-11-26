@@ -2,12 +2,9 @@
   (:require [com.stuartsierra.component :as component]
             [surfer.component.env :as component.env]
             [surfer.component.h2 :as component.h2]
+            [surfer.component.starfish :as component.starfish]
             [surfer.component.migration :as component.migration]
-            [surfer.component.web-server :as component.web-server])
-  (:import (sg.dex.starfish.impl.memory LocalResolverImpl)
-           (sg.dex.starfish.impl.remote RemoteAgent RemoteAccount)
-           (sg.dex.starfish.util Utils)
-           (java.util Map HashMap)))
+            [surfer.component.web-server :as component.web-server]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -19,14 +16,8 @@
     :h2 (component/using
           (component.h2/map->H2 {}) [:env])
 
-    :starfish #:starfish{:resolvers [(LocalResolverImpl.)]
-
-                         :procurer (fn [_ resolver did]
-                                     (let [^Map credentials (doto (new HashMap)
-                                                              (.put "username" "Aladdin")
-                                                              (.put "password" "OpenSesame"))
-                                           account (RemoteAccount/create (Utils/createRandomHexString 32) credentials)]
-                                       (RemoteAgent/create resolver did account)))}
+    :starfish (component/using
+                (component.starfish/map->Starfish {}) [:env])
 
     ;; -- DATABASE KEY
     ;; *Migration* and *WebServer* use a generic database key

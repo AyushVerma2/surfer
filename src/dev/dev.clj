@@ -6,20 +6,17 @@
             [surfer.invoke :as invoke]
             [surfer.agent :as agent]
             [surfer.asset :as asset]
+            [surfer.storage :as storage]
+            [surfer.app-context :as app-context]
             [starfish.core :as sf]
+            [starfish.alpha :as sfa]
             [clojure.data.json :as data.json]
             [clojure.java.jdbc :as jdbc]
             [clojure.repl :refer :all]
-            [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
-            [clojure.tools.logging :as log]
-            [surfer.app-context :as app-context]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
-            [surfer.storage :as storage]
-            [starfish.alpha :as sfa])
-  (:import (sg.dex.starfish.util Utils)
-           (sg.dex.starfish.impl.remote RemoteAccount RemoteAgent)
-           (java.util HashMap)))
+            [com.stuartsierra.component.repl :refer [set-init reset start stop system]])
+  (:import (sg.dex.starfish.impl.memory LocalResolverImpl)))
 
 (set-init (system/init-fn))
 
@@ -52,27 +49,36 @@
         storage-path (storage/storage-path (env/storage-config (env)))]
     (asset/import-datasets! database storage-path "datasets.edn"))
 
-  (def default-resolver
-    (let [{:starfish/keys [resolvers]} (system/starfish system)]
-      (first resolvers)))
-
   (def did
     (agent/did (env/agent-config (system/env system))))
 
   (def ddo
     (agent/ddo (env/agent-config (system/env system))))
 
-  (sfa/register! default-resolver did ddo)
+  ;; -- Resolver API
+  (.getDDOString sfa/*resolver* did)
+  (.getDDO sfa/*resolver* did)
 
   (def aladdin
-    (let [^java.util.Map credentials (doto (new HashMap)
-                                       (.put "username" "Aladdin")
-                                       (.put "password" "OpenSesame"))
+    (sfa/did->agent did))
 
-          account (RemoteAccount/create (Utils/createRandomHexString 32) credentials)]
 
-      (RemoteAgent/create default-resolver did account)))
+  ;; -- Dynamic *resolver*
 
+  (binding [sfa/*resolver* (LocalResolverImpl.)]
+    (.getDDOString sfa/*resolver* did))
+
+  (binding [sfa/*resolver* (LocalResolverImpl.)]
+    (sfa/did->agent did))
+
+  ;; ---
+
+
+  ;; -- Agent API
+  (.getDID aladdin)
+  (.getDDO aladdin)
+  (.getEndpoint aladdin "Ocean.Meta.v1")
+  (.getMetaEndpoint aladdin)
 
   (def n-asset
     ;; Data must be a JSON-encoded string
@@ -82,24 +88,6 @@
     (sf/did n-asset))
 
   (sf/asset-id n-asset-did)
-
-  (-> (sf/asset n-asset)
-      (sf/content)
-      (sf/to-string)
-      (sf/read-json-string))
-
-
-  ;; -- Resolver API
-  (.getDDOString default-resolver did)
-  (.getDDO default-resolver did)
-
-
-  ;; -- Agent API
-  (.getDID aladdin)
-  (.getDDO aladdin)
-  (.getEndpoint aladdin "Ocean.Meta.v1")
-  (.getMetaEndpoint aladdin)
-
 
 
   ;; -- Invoke

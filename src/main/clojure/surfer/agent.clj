@@ -13,6 +13,9 @@
 (defn ddo [config]
   {(keyword "@context") "https://www.w3.org/2019/did/v1"
    :id (:did config)
+   :credentials
+   {:username "Aladdin"
+    :password "OpenSesame"}
    :service
    [{:type "Ocean.Invoke.v1"
      :serviceEndpoint (str (:remote-url config) "/api/v1/invoke")}
