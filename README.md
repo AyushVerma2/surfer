@@ -4,7 +4,7 @@
 
 Surfer provides a standalone reference implementation of an Data Ecosystem Agent with the following capabilities:
 
-- Storage API for asset data according to DEP7
+- Storage API for storing asset data according to DEP7
 - Meta API for serving Asset Metadata according to DEP15
 - Market API for serving as an Data Marketplace backend
 
