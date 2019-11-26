@@ -6,20 +6,16 @@
             [surfer.invoke :as invoke]
             [surfer.agent :as agent]
             [surfer.asset :as asset]
+            [surfer.storage :as storage]
+            [surfer.app-context :as app-context]
             [starfish.core :as sf]
+            [starfish.alpha :as sfa]
             [clojure.data.json :as data.json]
             [clojure.java.jdbc :as jdbc]
             [clojure.repl :refer :all]
-            [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
-            [clojure.tools.logging :as log]
-            [surfer.app-context :as app-context]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
-            [surfer.storage :as storage]
-            [starfish.alpha :as sfa])
-  (:import (sg.dex.starfish.util Utils)
-           (sg.dex.starfish.impl.remote RemoteAccount RemoteAgent)
-           (java.util HashMap)))
+            [com.stuartsierra.component.repl :refer [set-init reset start stop system]]))
 
 (set-init (system/init-fn))
 
@@ -58,8 +54,18 @@
   (def ddo
     (agent/ddo (env/agent-config (system/env system))))
 
+  ;; -- Resolver API
+  (.getDDOString sfa/*default-resolver* did)
+  (.getDDO sfa/*default-resolver* did)
+
   (def aladdin
     (sfa/did->agent did))
+
+  ;; -- Agent API
+  (.getDID aladdin)
+  (.getDDO aladdin)
+  (.getEndpoint aladdin "Ocean.Meta.v1")
+  (.getMetaEndpoint aladdin)
 
   (def n-asset
     ;; Data must be a JSON-encoded string
@@ -69,16 +75,6 @@
     (sf/did n-asset))
 
   (sf/asset-id n-asset-did)
-
-  ;; -- Resolver API
-  (.getDDOString sfa/*default-resolver* did)
-  (.getDDO sfa/*default-resolver* did)
-
-  ;; -- Agent API
-  (.getDID aladdin)
-  (.getDDO aladdin)
-  (.getEndpoint aladdin "Ocean.Meta.v1")
-  (.getMetaEndpoint aladdin)
 
 
   ;; -- Invoke
