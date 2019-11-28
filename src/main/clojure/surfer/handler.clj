@@ -341,9 +341,10 @@
             (if-let [tempfile (:tempfile file)]
               (try
                 (when-let [content-hash (:contentHash meta)]
-                  (when (not= content-hash (sf/digest tempfile))
-                    (throw (ex-info "Content hash doesn't match." {:metadata-content-hash content-hash
-                                                                   :file-content-hash (sf/digest tempfile)}))))
+                  (let [file-content-hash (sf/digest (byte-streams/to-byte-array tempfile))]
+                    (when (not= content-hash file-content-hash)
+                      (throw (ex-info "Content hash doesn't match." {:metadata-content-hash content-hash
+                                                                     :file-content-hash file-content-hash})))))
 
                 (storage/save (storage/storage-path (env/storage-config env)) id tempfile)
 
