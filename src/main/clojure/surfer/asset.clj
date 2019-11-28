@@ -1,12 +1,13 @@
 (ns surfer.asset
   (:require [surfer.storage :as storage]
             [surfer.store :as store]
+            [surfer.database :as database]
             [clojure.java.jdbc :as jdbc]
             [starfish.core :as sf]
             [clojure.data.json :as data.json]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
-            [surfer.database :as database]))
+            [byte-streams]))
 
 (defn import!
   "Import, register and persist on disk, the asset file.
@@ -18,7 +19,7 @@
     (let [dataset (io/file dataset-path)
 
           metadata (merge metadata {:size (str (.length dataset))
-                                    :contentHash (sf/digest (slurp dataset))})
+                                    :contentHash (sf/digest (byte-streams/to-byte-array dataset))})
 
           metadata-str (data.json/write-str metadata)
 

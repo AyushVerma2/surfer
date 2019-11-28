@@ -33,9 +33,11 @@
     [clojure.tools.logging :as log]
     [hiccup.core :as hiccup]
     [hiccup.page :as hiccup.page]
-    [surfer.agent :as agent])
+    [surfer.agent :as agent]
+    [byte-streams]
+    [clojure.string :as str])
   (:import [java.io InputStream StringWriter PrintWriter]
-           [org.apache.commons.codec.binary Base64]))
+           (clojure.lang ExceptionInfo)))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -251,7 +253,6 @@
           (response/response (invoke/job-response app-context jobid))
           (response/not-found (str "Job not found: " jobid)))))))
 
-
 (defn storage-api [app-context]
   (let [database (app-context/database app-context)
         env (app-context/env app-context)
@@ -285,48 +286,79 @@
 
       (PUT "/:id" {{:keys [id]} :params :as request}
         :coercion nil
-        ;:body [uploaded nil]
         :summary "Stores asset data for a given asset ID"
-        ;; (println (:body request))
         (let [^InputStream body (:body request)
               _ (.reset body)
               userid (get-current-userid app-context request)
-              meta (store/lookup-json db id)]
+              meta (store/lookup-json db id {:key-fn keyword})]
           (cond
-            (nil? userid) (response/status
-                            (response/response "User not authenticated")
-                            401)
-            ;;(not (map? uploaded)) (response/bad-request
-            ;;                        (str "Expected file upload, got body: " uploaded))
-            (nil? meta) (response/not-found (str "Attempting to store unregistered asset [" id "]")))
-          :else (if-let [file body]                         ;; we have a body
-                  (do
-                    (storage/save (storage/storage-path (env/storage-config env)) id file)
-                    (response/created (str "/api/v1/assets/" id)))
-                  (response/bad-request
-                    (str "No uploaded data?: " body)))))
+            (nil? userid)
+            (response/status
+              (response/response "User not authenticated")
+              401)
+
+            (nil? meta)
+            (response/not-found (str "Attempting to store unregistered asset [" id "]"))
+
+            :else
+            (if-let [file body]
+              (try
+                (when (env/storage-config env [:enforce-content-hashes?])
+                  (let [content-hash (:contentHash meta)
+                        [valid? m] (storage/hash-check file content-hash)]
+                    (cond
+                      (str/blank? content-hash)
+                      (throw (ex-info "Enforce Content Hashes - Metadata w/o content hash." {}))
+
+                      (not valid?)
+                      (throw (ex-info "Enforce Content Hashes - Hashes don't match." m)))))
+
+                (storage/save (storage/storage-path (env/storage-config env)) id file)
+
+                (response/created (str "/api/v1/assets/" id))
+
+                (catch ExceptionInfo e
+                  (response/bad-request (ex-message e))))
+              (response/bad-request
+                (str "No uploaded data?: " body))))))
 
       (POST "/:id" request
         :multipart-params [file :- upload/TempFileUpload]
         :middleware [wrap-multipart-params]
         :path-params [id :- schema/AssetID]
         :return s/Str
-        :summary "upload an asset"
-        (let [userid (get-current-userid app-context request)
-              meta (store/lookup-json db id)]
+        :summary "Upload Asset"
+        (let [meta (store/lookup-json db id {:key-fn keyword})]
           (cond
-            (nil? userid) (response/status
-                            (response/response "User not authenticated")
-                            401)
-            (nil? meta) (response/not-found (str "Attempting to store unregistered asset [" id "]")))
-          (not (map? file)) (response/bad-request
-                              (str "Expected file upload, got param: " file))
-          :else (if-let [tempfile (:tempfile file)]         ;; we have a body
-                  (do
-                    (storage/save (storage/storage-path (env/storage-config env)) id tempfile)
-                    (response/created (str "/api/v1/assets/" id)))
-                  (response/bad-request
-                    (str "Expected map with :tempfile, got param: " file))))))))
+            (nil? (get-current-userid app-context request))
+            (response/status (response/response "User not authenticated") 401)
+
+            (nil? meta)
+            (response/not-found (str "Attempting to store unregistered asset [" id "]"))
+
+            (not (map? file))
+            (response/bad-request (str "Expected file upload, got param: " file))
+
+            :else
+            (if-let [tempfile (:tempfile file)]
+              (try
+                (when (env/storage-config env [:enforce-content-hashes?])
+                  (let [content-hash (:contentHash meta)
+                        [valid? m] (storage/hash-check tempfile content-hash)]
+                    (cond
+                      (str/blank? content-hash)
+                      (throw (ex-info "Enforce Content Hashes - Metadata w/o content hash." {}))
+
+                      (not valid?)
+                      (throw (ex-info "Enforce Content Hashes - Hashes don't match." m)))))
+
+                (storage/save (storage/storage-path (env/storage-config env)) id tempfile)
+
+                (response/created (str "/api/v1/assets/" id))
+
+                (catch ExceptionInfo e
+                  (response/bad-request (ex-message e))))
+              (response/bad-request (str "Expected map with :tempfile, got param: " file)))))))))
 
 (defn trust-api [app-context]
   (routes
@@ -603,9 +635,9 @@
       (POST "/reset-db" []
         :summary "Clear & migrate database"
         (friend/authorize #{:admin}
-          (store/clear-db db)
-          (store/migrate-db! db)
-          (response/response "Successful")))
+                          (store/clear-db db)
+                          (store/migrate-db! db)
+                          (response/response "Successful")))
 
       (POST "/create-db-test-data" []
         :summary "Creates test data for the current database. DANGER."
@@ -616,11 +648,11 @@
       (POST "/import-datasets" []
         :summary "Import datasets"
         (friend/authorize #{:admin}
-          (let [database (app-context/database app-context)
-                storage-path (-> (app-context/env app-context)
-                                 (env/storage-config)
-                                 (storage/storage-path))]
-            (response/response (asset/import-datasets! database storage-path "datasets.edn"))))))))
+                          (let [database (app-context/database app-context)
+                                storage-path (-> (app-context/env app-context)
+                                                 (env/storage-config)
+                                                 (storage/storage-path))]
+                            (response/response (asset/import-datasets! database storage-path "datasets.edn"))))))))
 
 ;; ==========================================
 ;; Authentication API

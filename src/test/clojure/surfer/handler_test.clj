@@ -8,7 +8,11 @@
     [slingshot.slingshot :refer [try+ throw+]]
     [clojure.test :refer :all]
     [surfer.env :as env]
-    [surfer.test.fixture :as fixture]))
+    [surfer.test.fixture :as fixture]
+    [starfish.core :as sf]
+    [byte-streams]
+    [clojure.tools.logging :as log])
+  (:import (clojure.lang ExceptionInfo)))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -18,73 +22,87 @@
 
 (use-fixtures :once (fixture/system-fixture #'test-system))
 
-(def AUTH_HEADERS
+(def auth-headers
   {:headers {"Authorization", "Basic QWxhZGRpbjpPcGVuU2VzYW1l"}})
 
 (defn base-url []
   (str "http://localhost:" (env/web-server-config (system/env test-system) [:port]) "/"))
 
 (deftest ^:integration test-welcome
-  (is (= 200 (:status (client/get (base-url) AUTH_HEADERS)))))
+  (is (= 200 (:status (client/get (base-url) auth-headers)))))
 
 (deftest ^:integration test-register-upload
-  (let [adata (json/write-str {"name" "test asset 1"})
-        r1 (client/post (str (base-url) "api/v1/meta/data")
-                        (merge AUTH_HEADERS
-                               {:body adata}))
-        id (json/read-str (:body r1))]
-    (is (= 200 (:status r1)))
-    (is (utils/valid-asset-id? id))
-    (is (= (utils/sha256 adata) id))
+  (let [metadata-str (json/write-str {"name" "test asset 1"
+                                      "contentHash" (-> (io/resource "testfile.txt")
+                                                        (io/input-stream)
+                                                        (byte-streams/to-byte-array)
+                                                        (sf/digest))})
 
-    ;; test we can get the asset metadata
-    (let [r2 (client/get (str (base-url) "api/v1/meta/data/" id) AUTH_HEADERS)]
-      (is (= 200 (:status r2))))
+        meta-data-response (client/post (str (base-url) "api/v1/meta/data")
+                                        (merge auth-headers {:body metadata-str}))
 
-    ;; (println (str "Registered: " id))
+        generated-id (json/read-str (:body meta-data-response))]
 
-    ;; test re-upload of identical metadata
-    (let [r2a (client/put (str (base-url) "api/v1/meta/data/" id)
-                          (merge AUTH_HEADERS
-                                 {:body adata}))]
-      (is (= 200 (:status r2a))))
+    (testing "Successful Asset Metadata Upload"
+      (is (= 200 (:status meta-data-response))))
 
-    ;; check validation failure with erroneous metadata
-    (is (try+
-          (client/put (str (base-url) "api/v1/meta/data/" id)
-                      (merge AUTH_HEADERS
-                             {:body (str adata " some extra stuff")}))
-          (catch [:status 400] {:keys [request-time headers body]}
-            ;; OK, should expect validation failue here
-            true)))
+    (testing "Valid Generated Asset ID"
+      (is (utils/valid-asset-id? generated-id)))
 
-    ;; test upload
-    (try+
+    (testing "SHA256 of Metadata = Generated Asset ID"
+      (is (= (utils/sha256 metadata-str) generated-id)))
+
+    (testing "Get Asset Metadata"
+      (let [response (client/get (str (base-url) "api/v1/meta/data/" generated-id) auth-headers)]
+        (is (= 200 (:status response)))))
+
+    (testing "Re-upload Asset Metadata"
+      (let [response (client/put (str (base-url) "api/v1/meta/data/" generated-id)
+                                 (merge auth-headers {:body metadata-str}))]
+        (is (= 200 (:status response)))))
+
+    (testing "Bad Asset Metadata Request"
+      (let [status-code (try
+                          (client/put (str (base-url) "api/v1/meta/data/" generated-id)
+                                      (merge auth-headers {:body (str metadata-str " some extra stuff")}))
+                          (catch ExceptionInfo ex
+                            (:status (ex-data ex))))]
+        (is (= 400 status-code))))
+
+    (testing "Good Upload: Metadata with Content Hash"
       (let [content (io/input-stream (io/resource "testfile.txt"))
-            r3 (client/post (str (base-url) "api/v1/assets/" id)
-                            (merge AUTH_HEADERS
-                                   {:multipart [{:name "file"
-                                                 :content content}]}))]
-        (is (= 201 (:status r3))))
-      (catch [:status 400] ex
-        (binding [*out* *err*] (println ex))
-        (is false)))
+            response (client/post (str (base-url) "api/v1/assets/" generated-id)
+                                  (merge auth-headers
+                                         {:multipart [{:name "file"
+                                                       :content content}]}))]
+        (is (= 201 (:status response)))))
 
-    ;; test download
-    (let [r4 (client/get (str (base-url) "api/v1/assets/" id) AUTH_HEADERS)]
-      (is (= 200 (:status r4)))
-      (is (= "This is a test file" (:body r4))))
+    (testing "Bad Upload: Metadata Missing Content Hash"
+      (let [meta-data-response (client/post (str (base-url) "api/v1/meta/data")
+                                            (merge auth-headers {:body (json/write-str {:name "Bla"})}))
 
-    ;; test POST listing
-    (let [ldata (json/write-str {:assetid id})
-          r5 (client/post (str (base-url) "api/v1/market/listings")
-                          (merge AUTH_HEADERS
-                                 {:body ldata
-                                  :info {:title "Blah blah"}}))])))
+            generated-id (json/read-str (:body meta-data-response))
+
+            content (io/input-stream (io/resource "testfile.txt"))
+
+            status-code (try
+                          (client/post (str (base-url) "api/v1/assets/" generated-id)
+                                       (merge auth-headers
+                                              {:multipart [{:name "file"
+                                                            :content content}]}))
+                          (catch ExceptionInfo ex
+                            (:status (ex-data ex))))]
+
+        (is (= 400 status-code))))
+
+    (testing "Get Asset Data"
+      (let [response (client/get (str (base-url) "api/v1/assets/" generated-id) auth-headers)]
+        (is (= 200 (:status response)))
+        (is (= "This is a test file" (:body response)))))))
 
 (deftest ^:integration test-get-purchases
   (let [r1 (client/get (str (base-url) "api/v1/market/purchases")
-                       (merge AUTH_HEADERS
+                       (merge auth-headers
                               {:body nil}))
         result (json/read-str (:body r1))]
     (is (= 200 (:status r1)))))
@@ -92,14 +110,14 @@
 (deftest ^:integration test-no-asset
   (is (try+
         (client/get (str (base-url) "api/v1/meta/data/"
-                         "000011112222333344445556666777788889999aaaabbbbccccddddeeeeffff") AUTH_HEADERS)
+                         "000011112222333344445556666777788889999aaaabbbbccccddddeeeeffff") auth-headers)
         (catch [:status 404] {:keys [request-time headers body]}
           ;; OK, not found expected
           true)))
 
   (is (try+
         (client/get (str (base-url) "api/v1/meta/data/"
-                         "0000") AUTH_HEADERS)
+                         "0000") auth-headers)
         (catch [:status 404] {:keys [request-time headers body]}
           ;; OK, not found expected
           true))))
