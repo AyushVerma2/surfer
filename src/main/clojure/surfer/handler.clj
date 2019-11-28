@@ -252,6 +252,11 @@
           (response/response (invoke/job-response app-context jobid))
           (response/not-found (str "Job not found: " jobid)))))))
 
+(defn- check-content-hash! [x hash]
+  (let [hash' (sf/digest (byte-streams/to-byte-array x))]
+    (when (not= hash hash')
+      (throw (ex-info "Content hash doesn't match." {:expected hash
+                                                     :actual hash'})))))
 
 (defn storage-api [app-context]
   (let [database (app-context/database app-context)
@@ -304,10 +309,7 @@
             (if-let [file body]
               (try
                 (when-let [content-hash (:contentHash meta)]
-                  (let [file-content-hash (sf/digest (byte-streams/to-byte-array file))]
-                    (when (not= content-hash file-content-hash)
-                      (throw (ex-info "Content hash doesn't match." {:metadata-content-hash content-hash
-                                                                     :file-content-hash file-content-hash})))))
+                  (check-content-hash! file content-hash))
 
                 (storage/save (storage/storage-path (env/storage-config env)) id file)
 
@@ -341,10 +343,7 @@
             (if-let [tempfile (:tempfile file)]
               (try
                 (when-let [content-hash (:contentHash meta)]
-                  (let [file-content-hash (sf/digest (byte-streams/to-byte-array tempfile))]
-                    (when (not= content-hash file-content-hash)
-                      (throw (ex-info "Content hash doesn't match." {:metadata-content-hash content-hash
-                                                                     :file-content-hash file-content-hash})))))
+                  (check-content-hash! tempfile content-hash))
 
                 (storage/save (storage/storage-path (env/storage-config env)) id tempfile)
 
