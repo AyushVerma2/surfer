@@ -71,12 +71,32 @@
         (is (= 400 status-code))))
 
     (testing "Upload Asset Data"
-      (let [content (io/input-stream (io/resource "testfile.txt"))
-            response (client/post (str (base-url) "api/v1/assets/" generated-id)
-                                  (merge auth-headers
-                                         {:multipart [{:name "file"
-                                                       :content content}]}))]
-        (is (= 201 (:status response)))))
+      (testing "Good Upload - Metadata with Content Hash"
+        (let [content (io/input-stream (io/resource "testfile.txt"))
+              response (client/post (str (base-url) "api/v1/assets/" generated-id)
+                                    (merge auth-headers
+                                           {:multipart [{:name "file"
+                                                         :content content}]}))]
+          (is (= 201 (:status response)))))
+
+      (testing "Bad Upload - Metadata missing Content Hash"
+        (let [meta-data-response (client/post (str (base-url) "api/v1/meta/data")
+                                              (merge auth-headers {:body (json/write-str {:name "Bla"})}))
+
+              generated-id (json/read-str (:body meta-data-response))
+
+              content (io/input-stream (io/resource "testfile.txt"))
+
+              status-code (try
+                            (client/post (str (base-url) "api/v1/assets/" generated-id)
+                                         (merge auth-headers
+                                                {:multipart [{:name "file"
+                                                              :content content}]}))
+                            (catch ExceptionInfo ex
+                              (log/debug ex (:body (ex-data ex)))
+                              (:status (ex-data ex))))]
+
+          (is (= 400 status-code)))))
 
     (testing "Get Asset Data"
       (let [response (client/get (str (base-url) "api/v1/assets/" generated-id) auth-headers)]

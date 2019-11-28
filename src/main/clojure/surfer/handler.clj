@@ -308,7 +308,7 @@
                         [valid? m] (storage/hash-check file content-hash)]
                     (cond
                       (str/blank? content-hash)
-                      (throw (ex-info "Enforce Content Hashes - Missing metadata's content hash." {}))
+                      (throw (ex-info "Enforce Content Hashes - Metadata w/o content hash." {}))
 
                       (not valid?)
                       (throw (ex-info "Enforce Content Hashes - Hashes don't match." m)))))
@@ -349,7 +349,7 @@
                         [valid? m] (storage/hash-check tempfile content-hash)]
                     (cond
                       (str/blank? content-hash)
-                      (throw (ex-info "Enforce Content Hashes - Missing metadata's content hash." {}))
+                      (throw (ex-info "Enforce Content Hashes - Metadata w/o content hash." {}))
 
                       (not valid?)
                       (throw (ex-info "Enforce Content Hashes - Hashes don't match." m)))))
@@ -361,7 +361,7 @@
                 (catch ExceptionInfo e
                   (log/error e (ex-message e) (ex-data e))
 
-                  (response/bad-request "Metadata's content hash doesn't match file content.")))
+                  (response/bad-request (ex-message e))))
               (response/bad-request (str "Expected map with :tempfile, got param: " file)))))))))
 
 (defn trust-api [app-context]

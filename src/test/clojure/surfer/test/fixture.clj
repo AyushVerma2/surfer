@@ -12,7 +12,12 @@
 
                                                   :h2
                                                   {:dbtype "h2:mem"
-                                                   :dbname "~/.surfer/surfer"}})))]
+                                                   :dbname "~/.surfer/surfer"}
+
+                                                  :storage
+                                                  {:type :filesystem
+                                                   :path "~/.surfer/storage"
+                                                   :enforce-content-hashes? true}})))]
 
       (alter-var-root system-var (constantly system))
 
