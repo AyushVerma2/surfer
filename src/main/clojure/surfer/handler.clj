@@ -34,7 +34,8 @@
     [hiccup.core :as hiccup]
     [hiccup.page :as hiccup.page]
     [surfer.agent :as agent]
-    [byte-streams])
+    [byte-streams]
+    [clojure.string :as str])
   (:import [java.io InputStream StringWriter PrintWriter]
            (clojure.lang ExceptionInfo)))
 
@@ -252,12 +253,6 @@
           (response/response (invoke/job-response app-context jobid))
           (response/not-found (str "Job not found: " jobid)))))))
 
-(defn- check-content-hash! [x hash]
-  (let [hash' (sf/digest (byte-streams/to-byte-array x))]
-    (when (not= hash hash')
-      (throw (ex-info "Content hash doesn't match." {:expected hash
-                                                     :actual hash'})))))
-
 (defn storage-api [app-context]
   (let [database (app-context/database app-context)
         env (app-context/env app-context)
@@ -309,15 +304,21 @@
             (if-let [file body]
               (try
                 (when (env/storage-config env [:enforce-content-hashes?])
-                  (when-let [content-hash (:contentHash meta)]
-                    (check-content-hash! file content-hash)))
+                  (let [content-hash (:contentHash meta)
+                        [valid? m] (storage/hash-check file content-hash)]
+                    (cond
+                      (str/blank? content-hash)
+                      (throw (ex-info "Missing metadata's content hash." {}))
+
+                      (not valid?)
+                      (throw (ex-info "Hashes don't match." m)))))
 
                 (storage/save (storage/storage-path (env/storage-config env)) id file)
 
                 (response/created (str "/api/v1/assets/" id))
 
                 (catch ExceptionInfo e
-                  (log/error e "Can't upload file." (ex-data e))
+                  (log/error e (ex-message e) (ex-data e))
 
                   (response/bad-request "Metadata's content hash doesn't match file content.")))
               (response/bad-request
@@ -344,15 +345,21 @@
             (if-let [tempfile (:tempfile file)]
               (try
                 (when (env/storage-config env [:enforce-content-hashes?])
-                  (when-let [content-hash (:contentHash meta)]
-                    (check-content-hash! tempfile content-hash)))
+                  (let [content-hash (:contentHash meta)
+                        [valid? m] (storage/hash-check tempfile content-hash)]
+                    (cond
+                      (str/blank? content-hash)
+                      (throw (ex-info "Missing metadata's content hash." {}))
+
+                      (not valid?)
+                      (throw (ex-info "Hashes don't match." m)))))
 
                 (storage/save (storage/storage-path (env/storage-config env)) id tempfile)
 
                 (response/created (str "/api/v1/assets/" id))
 
                 (catch ExceptionInfo e
-                  (log/error e "Can't upload file.")
+                  (log/error e (ex-message e) (ex-data e))
 
                   (response/bad-request "Metadata's content hash doesn't match file content.")))
               (response/bad-request (str "Expected map with :tempfile, got param: " file)))))))))
