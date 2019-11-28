@@ -8,7 +8,9 @@
     [slingshot.slingshot :refer [try+ throw+]]
     [clojure.test :refer :all]
     [surfer.env :as env]
-    [surfer.test.fixture :as fixture]))
+    [surfer.test.fixture :as fixture]
+    [starfish.core :as sf]
+    [byte-streams]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -28,7 +30,11 @@
   (is (= 200 (:status (client/get (base-url) AUTH_HEADERS)))))
 
 (deftest ^:integration test-register-upload
-  (let [adata (json/write-str {"name" "test asset 1"})
+  (let [adata (json/write-str {"name" "test asset 1"
+                               "contentHash" (-> (io/resource "testfile.txt")
+                                                 (io/input-stream)
+                                                 (byte-streams/to-byte-array)
+                                                 (sf/digest))})
         r1 (client/post (str (base-url) "api/v1/meta/data")
                         (merge AUTH_HEADERS
                                {:body adata}))
