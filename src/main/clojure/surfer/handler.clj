@@ -318,9 +318,7 @@
                 (response/created (str "/api/v1/assets/" id))
 
                 (catch ExceptionInfo e
-                  (log/error e (ex-message e) (ex-data e))
-
-                  (response/bad-request "Metadata's content hash doesn't match file content.")))
+                  (response/bad-request (ex-message e))))
               (response/bad-request
                 (str "No uploaded data?: " body))))))
 
@@ -359,8 +357,6 @@
                 (response/created (str "/api/v1/assets/" id))
 
                 (catch ExceptionInfo e
-                  (log/error e (ex-message e) (ex-data e))
-
                   (response/bad-request (ex-message e))))
               (response/bad-request (str "Expected map with :tempfile, got param: " file)))))))))
 
