@@ -308,8 +308,9 @@
             :else
             (if-let [file body]
               (try
-                (when-let [content-hash (:contentHash meta)]
-                  (check-content-hash! file content-hash))
+                (when (env/storage-config env [:enforce-content-hashes?])
+                  (when-let [content-hash (:contentHash meta)]
+                    (check-content-hash! file content-hash)))
 
                 (storage/save (storage/storage-path (env/storage-config env)) id file)
 
@@ -342,8 +343,9 @@
             :else
             (if-let [tempfile (:tempfile file)]
               (try
-                (when-let [content-hash (:contentHash meta)]
-                  (check-content-hash! tempfile content-hash))
+                (when (env/storage-config env [:enforce-content-hashes?])
+                  (when-let [content-hash (:contentHash meta)]
+                    (check-content-hash! tempfile content-hash)))
 
                 (storage/save (storage/storage-path (env/storage-config env)) id tempfile)
 
