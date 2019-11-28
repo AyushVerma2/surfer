@@ -308,10 +308,10 @@
                         [valid? m] (storage/hash-check file content-hash)]
                     (cond
                       (str/blank? content-hash)
-                      (throw (ex-info "Missing metadata's content hash." {}))
+                      (throw (ex-info "Enforce Content Hashes - Missing metadata's content hash." {}))
 
                       (not valid?)
-                      (throw (ex-info "Hashes don't match." m)))))
+                      (throw (ex-info "Enforce Content Hashes - Hashes don't match." m)))))
 
                 (storage/save (storage/storage-path (env/storage-config env)) id file)
 
@@ -349,10 +349,10 @@
                         [valid? m] (storage/hash-check tempfile content-hash)]
                     (cond
                       (str/blank? content-hash)
-                      (throw (ex-info "Missing metadata's content hash." {}))
+                      (throw (ex-info "Enforce Content Hashes - Missing metadata's content hash." {}))
 
                       (not valid?)
-                      (throw (ex-info "Hashes don't match." m)))))
+                      (throw (ex-info "Enforce Content Hashes - Hashes don't match." m)))))
 
                 (storage/save (storage/storage-path (env/storage-config env)) id tempfile)
 
