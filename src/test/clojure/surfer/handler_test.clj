@@ -66,7 +66,6 @@
                           (client/put (str (base-url) "api/v1/meta/data/" generated-id)
                                       (merge auth-headers {:body (str metadata-str " some extra stuff")}))
                           (catch ExceptionInfo ex
-                            (log/debug ex (ex-message ex) (ex-data ex))
                             (:status (ex-data ex))))]
         (is (= 400 status-code))))
 
@@ -92,7 +91,6 @@
                                               {:multipart [{:name "file"
                                                             :content content}]}))
                           (catch ExceptionInfo ex
-                            (log/debug ex (:body (ex-data ex)))
                             (:status (ex-data ex))))]
 
         (is (= 400 status-code))))
