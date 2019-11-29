@@ -108,7 +108,8 @@
 ;; Meta API
 
 (defn meta-api [app-context]
-  (let [db (database/db (app-context/database app-context))]
+  (let [env (app-context/env app-context)
+        db (database/db (app-context/database app-context))]
     (routes
       {:swagger
        {:data {:info {:title "Meta API"
@@ -136,25 +137,29 @@
           (response/not-found "Metadata for this Asset ID is not available.")))
 
       (POST "/data" request
-        :coercion nil                                       ;; prevents coercion so we get the original input stream
-        :body [metadata schema/Asset]
-        :return schema/AssetID
-        :summary "Stores metadata, creating a new Asset ID"
+        {:coercion nil
+         :body [metadata schema/Asset]
+         :return schema/AssetID
+         :summary "Stores metadata, creating a new Asset ID"}
         (let [^InputStream body-stream (:body request)
               _ (.reset body-stream)
               ^String body (slurp body-stream)
-              hash (utils/sha256 body)]
+              body-decoded (json/read-str body :key-fn keyword)]
+          (if (str/blank? body)
+            (response/bad-request "Missing body.")
+            (try
+              (when (env/enforce-content-hashes? env)
+                (let [;; If no type is specified, it is assumed to be "dataset".
+                      dataset? (contains? #{"dataset" nil} (:type body-decoded))
+                      missing-content-hash? (not (:contentHash body-decoded))]
+                  (when (and dataset? missing-content-hash?)
+                    (throw (ex-info "Missing content hash." body-decoded)))))
 
-          ;; (println (str (class body) ":" body ))
-          ;; (println (str (class metadata) ":" metadata ))
-          (if (empty? body)
-            (response/bad-request "No metadata body!")
-            (let [id (store/register-asset db body)]
-              ;; (println "Created: " id)
               (response/response
-                ;; (str "/api/v1/meta/data/" id)
-                (str "\"" id "\"")
-                )))))
+                (str "\"" (store/register-asset db body) "\""))
+
+              (catch ExceptionInfo ex
+                (response/bad-request (ex-message ex)))))))
 
       (PUT "/data/:id" {{:keys [id]} :params :as request}
         {:coercion nil

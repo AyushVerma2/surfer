@@ -21,3 +21,6 @@
 (defn storage-config [env & [ks]]
   (let [config (get-in env [:config :storage])]
     (select-config-key config ks)))
+
+(defn enforce-content-hashes? [env]
+  (storage-config env [:enforce-content-hashes?]))

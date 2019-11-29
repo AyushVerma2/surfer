@@ -46,6 +46,15 @@
     (testing "Successful Asset Metadata Upload"
       (is (= 200 (:status meta-data-response))))
 
+    (testing "Bad Asset Metadata Upload - Missing Content Hash"
+      (let [ex (try
+                 (client/post (str (base-url) "api/v1/meta/data")
+                              (merge auth-headers {:body (json/write-str {:name "Foo"})}))
+                 (catch ExceptionInfo ex
+                   ex))]
+        (is (= 400 (-> ex ex-data :status)))
+        (is (= "Missing content hash." (-> ex ex-data :body)))))
+
     (testing "Valid Generated Asset ID"
       (is (utils/valid-asset-id? generated-id)))
 
@@ -76,24 +85,6 @@
                                          {:multipart [{:name "file"
                                                        :content content}]}))]
         (is (= 201 (:status response)))))
-
-    (testing "Bad Upload: Metadata Missing Content Hash"
-      (let [meta-data-response (client/post (str (base-url) "api/v1/meta/data")
-                                            (merge auth-headers {:body (json/write-str {:name "Bla"})}))
-
-            generated-id (json/read-str (:body meta-data-response))
-
-            content (io/input-stream (io/resource "testfile.txt"))
-
-            status-code (try
-                          (client/post (str (base-url) "api/v1/assets/" generated-id)
-                                       (merge auth-headers
-                                              {:multipart [{:name "file"
-                                                            :content content}]}))
-                          (catch ExceptionInfo ex
-                            (:status (ex-data ex))))]
-
-        (is (= 400 status-code))))
 
     (testing "Get Asset Data"
       (let [response (client/get (str (base-url) "api/v1/assets/" generated-id) auth-headers)]
