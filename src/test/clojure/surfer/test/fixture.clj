@@ -12,7 +12,7 @@
 
                                                   :h2
                                                   {:dbtype "h2:mem"
-                                                   :dbname "~/.surfer/surfer"}
+                                                   :dbname "surfer"}
 
                                                   :storage
                                                   {:type :filesystem
