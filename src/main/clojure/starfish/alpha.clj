@@ -24,6 +24,6 @@
   ([did]
    (did->agent *resolver* did))
   ([resolver did]
-   (when-let [s (.getDDOString resolver did)]
-     (let [ddo (data.json/read-str s :key-fn str)]
+   (when-let [ddo-str (.getDDOString resolver did)]
+     (let [ddo (data.json/read-str ddo-str :key-fn str)]
        (resolve-agent resolver did ddo)))))
