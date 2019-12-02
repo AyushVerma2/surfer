@@ -129,7 +129,7 @@
         :summary "Gets metadata for a specified asset"
         :coercion nil
         :return schema/Asset
-        (if-let [meta (store/lookup db id)]
+        (if-let [meta (store/get-metadata-str db id)]
           {:status 200
            :headers {"Content-Type" "application/json"}
            :body meta}
@@ -195,7 +195,7 @@
         :coercion nil
         :body [body schema/InvokeRequest]
         (let [op-id (get-in request [:params :op-id])
-              op-meta (store/lookup-json db op-id {:key-fn keyword})]
+              op-meta (store/get-metadata db op-id {:key-fn keyword})]
 
           (log/debug (str "Invoke Sync - " op-id " - " op-meta))
 
@@ -233,7 +233,7 @@
         :coercion nil                                       ;; prevents coercion so we get the original input stream
         :body [body schema/InvokeRequest]
         ;; (println (:body request))
-        (if-let [op-meta (store/lookup db op-id)]
+        (if-let [op-meta (store/get-metadata-str db op-id)]
           (let [md (sf/read-json-string op-meta)
                 ^InputStream body-stream (:body request)
                 _ (.reset body-stream)
@@ -271,7 +271,7 @@
 
       (GET "/:id" [id]
         :summary "Gets data for a specified Asset ID"
-        (if-let [meta (store/lookup-json db id)]            ;; NOTE meta is JSON (not EDN)!
+        (if-let [meta (store/get-metadata db id)]            ;; NOTE meta is JSON (not EDN)!
           (if-let [body (storage/load-stream (env/storage-path env) id)]
 
             (let [ctype (get meta "contentType" "application/octet-stream")
@@ -294,7 +294,7 @@
         (let [^InputStream body (:body request)
               _ (.reset body)
               userid (get-current-userid app-context request)
-              meta (store/lookup-json db id {:key-fn keyword})]
+              meta (store/get-metadata db id {:key-fn keyword})]
           (cond
             (nil? userid)
             (response/status
@@ -334,7 +334,7 @@
         :path-params [id :- schema/AssetID]
         :multipart-params [file :- upload/TempFileUpload]
         :return s/Str
-        (let [meta (store/lookup-json db id {:key-fn keyword})]
+        (let [meta (store/get-metadata db id {:key-fn keyword})]
           (cond
             (nil? (get-current-userid app-context request))
             (response/status (response/response {:error
@@ -455,7 +455,7 @@
               userid (get-current-userid app-context request)]
           ;; (println listing)
           (if userid
-            (if-let [asset (store/lookup db (:assetid listing))]
+            (if-let [asset (store/get-metadata-str db (:assetid listing))]
               (let [listing (assoc listing :userid userid)
                     ;; _ (println userid)
                     result (store/create-listing db listing)]
@@ -841,7 +841,7 @@
                  (mapv
                    (fn [id]
                      (try
-                       (let [j (json/read-str (store/lookup db id))
+                       (let [j (json/read-str (store/get-metadata-str db id))
                              title (j "title")]
                          (str "<a href=\"api/v1/meta/data/" id "\">" id " - " title "<br/>\n"))
                        (catch Throwable t
