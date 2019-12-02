@@ -322,7 +322,9 @@
                 (response/created (str "/api/v1/assets/" id))
 
                 (catch ExceptionInfo e
-                  (response/bad-request {:error {:message (ex-message e) :data (ex-data e)}})))
+                  (response/bad-request {:error
+                                         {:message (ex-message e)
+                                          :data (ex-data e)}})))
               (response/bad-request
                 (str "No uploaded data?: " body))))))
 
@@ -361,7 +363,9 @@
                 (response/created (str "/api/v1/assets/" id))
 
                 (catch ExceptionInfo e
-                  (response/bad-request {:error {:message (ex-message e) :data (ex-data e)}})))
+                  (response/bad-request {:error
+                                         {:message (ex-message e)
+                                          :data (ex-data e)}})))
               (response/bad-request (str "Expected map with :tempfile, got param: " file)))))))))
 
 (defn trust-api [app-context]
