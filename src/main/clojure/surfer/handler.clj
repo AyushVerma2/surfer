@@ -288,36 +288,44 @@
             (response/not-found "Asset data not available."))
           (response/not-found "Asset metadata not available.")))
 
-      (PUT "/:id" {{:keys [id]} :params :as request}
+      (PUT "/:id" {{:keys [id]} :params body :body :as request}
         :coercion nil
         :summary "Stores data for a given Asset ID."
-        (let [^InputStream body (:body request)
-              _ (.reset body)
-              userid (get-current-userid app-context request)
+        (let [userid (get-current-userid app-context request)
               meta (store/get-metadata db id {:key-fn keyword})]
+
+          (when body
+            (.reset ^InputStream body))
+
           (cond
             (nil? userid)
             (response/status
-              (response/response "User not authenticated")
+              (response/response {:error
+                                  {:message "User not authenticated."
+                                   :data {:path-params id}}})
               401)
 
             (nil? meta)
-            (response/not-found (str "Attempting to store unregistered asset [" id "]"))
+            (response/not-found {:error
+                                 {:message "Unregistered asset."
+                                  :data {:path-params id}}})
 
             :else
-            (if-let [file body]
+            (if body
               (try
                 (when (env/storage-config env [:enforce-content-hashes?])
-                  (let [content-hash (:contentHash meta)
-                        [valid? m] (storage/hash-check file content-hash)]
+                  (let [meta-content-hash (:contentHash meta)
+                        [valid? m] (storage/hash-check body meta-content-hash)]
                     (cond
-                      (str/blank? content-hash)
-                      (throw (ex-info "Enforce Content Hashes - Metadata w/o content hash." {}))
+                      (str/blank? meta-content-hash)
+                      (throw (ex-info "Metadata missing content hash." {:path-params id
+                                                                        :enforce-content-hashes? true}))
 
                       (not valid?)
-                      (throw (ex-info "Enforce Content Hashes - Hashes don't match." m)))))
+                      (throw (ex-info "Hashes don't match." (merge m {:path-params id
+                                                                      :enforce-content-hashes? true}))))))
 
-                (storage/save (env/storage-path env) id file)
+                (storage/save (env/storage-path env) id body)
 
                 (response/created (str "/api/v1/assets/" id))
 
@@ -325,8 +333,10 @@
                   (response/bad-request {:error
                                          {:message (ex-message e)
                                           :data (ex-data e)}})))
-              (response/bad-request
-                (str "No uploaded data?: " body))))))
+              (response/bad-request {:error
+                                     {:message "Missing body."
+                                      :data {:path-params id
+                                             :body body}}})))))
 
       (POST "/:id" request
         :summary "Stores data for a given Asset ID."
@@ -360,10 +370,12 @@
                         [valid? m] (storage/hash-check tempfile content-hash)]
                     (cond
                       (str/blank? content-hash)
-                      (throw (ex-info "Enforce Content Hashes - Metadata w/o content hash." {}))
+                      (throw (ex-info "Metadata missing content hash." {:path-params id
+                                                                        :enforce-content-hashes? true}))
 
                       (not valid?)
-                      (throw (ex-info "Enforce Content Hashes - Hashes don't match." m)))))
+                      (throw (ex-info "Hashes don't match." (merge m {:path-params id
+                                                                      :enforce-content-hashes? true}))))))
 
                 (storage/save (env/storage-path env) id tempfile)
 
