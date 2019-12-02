@@ -257,6 +257,15 @@
           (response/response (invoke/job-response app-context jobid))
           (response/not-found (str "Job not found: " jobid)))))))
 
+(defn hash-check! [file metadata]
+  (let [{:keys [matches?] :as check} (storage/hash-check file (:contentHash metadata))]
+    (cond
+      (str/blank? (:contentHash metadata))
+      (throw (ex-info "Metadata missing content hash." {:metadata metadata}))
+
+      (not matches?)
+      (throw (ex-info "Hashes don't match." (merge check {:metadata metadata}))))))
+
 (defn storage-api [app-context]
   (let [database (app-context/database app-context)
         env (app-context/env app-context)
@@ -313,17 +322,8 @@
             :else
             (if body
               (try
-                (when (env/storage-config env [:enforce-content-hashes?])
-                  (let [meta-content-hash (:contentHash meta)
-                        [valid? m] (storage/hash-check body meta-content-hash)]
-                    (cond
-                      (str/blank? meta-content-hash)
-                      (throw (ex-info "Metadata missing content hash." {:path-params id
-                                                                        :enforce-content-hashes? true}))
-
-                      (not valid?)
-                      (throw (ex-info "Hashes don't match." (merge m {:path-params id
-                                                                      :enforce-content-hashes? true}))))))
+                (when (env/enforce-content-hashes? env)
+                  (hash-check! body meta))
 
                 (storage/save (env/storage-path env) id body)
 
@@ -365,17 +365,8 @@
             :else
             (if-let [tempfile (:tempfile file)]
               (try
-                (when (env/storage-config env [:enforce-content-hashes?])
-                  (let [content-hash (:contentHash meta)
-                        [valid? m] (storage/hash-check tempfile content-hash)]
-                    (cond
-                      (str/blank? content-hash)
-                      (throw (ex-info "Metadata missing content hash." {:path-params id
-                                                                        :enforce-content-hashes? true}))
-
-                      (not valid?)
-                      (throw (ex-info "Hashes don't match." (merge m {:path-params id
-                                                                      :enforce-content-hashes? true}))))))
+                (when (env/enforce-content-hashes? env)
+                  (hash-check! tempfile meta))
 
                 (storage/save (env/storage-path env) id tempfile)
 
