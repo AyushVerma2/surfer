@@ -1,7 +1,6 @@
 (ns surfer.storage
   (:require [clojure.java.io :as io]
             [surfer.utils :as utils]
-            [surfer.env :as env]
             [clojure.string :as str]
             [starfish.core :as sf]
             [byte-streams])
@@ -67,8 +66,8 @@
       (io/input-stream file))))
 
 (defn hash-check
-  "Returns a tuple with the result of the check (true or false) and a map with
-   the keys `:actual` and `:expected`.
+  "Returns a tuple with the result of the check (true or false),
+   and a map with the keys `:actual` and `:expected`.
 
   * `object` is anything which can be converted to byte-array (e.g., File, InputStream).
   * `expected-hash` is the expected hash for `object`."
