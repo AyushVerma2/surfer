@@ -4,8 +4,7 @@
             [surfer.system :as system]
             [starfish.core :as sf]
             [clojure.string :as str]
-            [surfer.test.fixture :as fixture]
-            [surfer.agent :as agent]))
+            [surfer.test.fixture :as fixture]))
 
 (def test-system
   nil)
@@ -28,9 +27,8 @@
   (update params :text str/upper-case))
 
 (deftest ^:integration agent-integration
-  (let [agent-config (env/agent-config (system/env test-system))
-        local-did (agent/did agent-config)
-        local-ddo (agent/ddo agent-config)
+  (let [local-did (env/agent-did (system/env test-system))
+        local-ddo (env/agent-ddo (system/env test-system))
         local-ddo-string (sf/json-string-pprint local-ddo)
 
         username "Aladdin"

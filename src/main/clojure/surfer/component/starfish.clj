@@ -1,16 +1,15 @@
 (ns surfer.component.starfish
   (:require [starfish.alpha :as sfa]
             [surfer.env :as env]
-            [com.stuartsierra.component :as component]
-            [surfer.agent :as agent])
+            [com.stuartsierra.component :as component])
   (:import (sg.dex.starfish.impl.remote RemoteAgent)))
 
 (defrecord Starfish [env]
   component/Lifecycle
 
   (start [component]
-    (let [did (agent/did (env/agent-config env))
-          ddo (agent/ddo (env/agent-config env))]
+    (let [did (env/agent-did env)
+          ddo (env/agent-ddo env)]
       (sfa/register! did ddo))
 
     component)

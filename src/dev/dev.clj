@@ -4,7 +4,6 @@
             [surfer.env :as env]
             [surfer.system :as system]
             [surfer.invoke :as invoke]
-            [surfer.agent :as agent]
             [surfer.asset :as asset]
             [surfer.storage :as storage]
             [surfer.app-context :as app-context]
@@ -50,10 +49,10 @@
     (asset/import-datasets! database storage-path "datasets.edn"))
 
   (def did
-    (agent/did (env/agent-config (system/env system))))
+    (env/agent-did (system/env system)))
 
   (def ddo
-    (agent/ddo (env/agent-config (system/env system))))
+    (env/agent-ddo (system/env system)))
 
   ;; -- Resolver API
   (.getDDOString sfa/*resolver* did)
