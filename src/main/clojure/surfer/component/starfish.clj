@@ -3,9 +3,7 @@
             [surfer.env :as env]
             [com.stuartsierra.component :as component]
             [surfer.agent :as agent])
-  (:import (sg.dex.starfish.impl.remote RemoteAgent RemoteAccount)
-           (sg.dex.starfish.util Utils)
-           (java.util HashMap Map)))
+  (:import (sg.dex.starfish.impl.remote RemoteAgent)))
 
 (defrecord Starfish [env]
   component/Lifecycle
