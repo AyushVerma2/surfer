@@ -290,7 +290,7 @@
 
       (PUT "/:id" {{:keys [id]} :params :as request}
         :coercion nil
-        :summary "Stores asset data for a given asset ID"
+        :summary "Stores data for a given Asset ID."
         (let [^InputStream body (:body request)
               _ (.reset body)
               userid (get-current-userid app-context request)
@@ -329,21 +329,28 @@
                 (str "No uploaded data?: " body))))))
 
       (POST "/:id" request
-        :multipart-params [file :- upload/TempFileUpload]
+        :summary "Stores data for a given Asset ID."
         :middleware [wrap-multipart-params]
         :path-params [id :- schema/AssetID]
+        :multipart-params [file :- upload/TempFileUpload]
         :return s/Str
-        :summary "Upload Asset"
         (let [meta (store/lookup-json db id {:key-fn keyword})]
           (cond
             (nil? (get-current-userid app-context request))
-            (response/status (response/response "User not authenticated") 401)
+            (response/status (response/response {:error
+                                                 {:message "User not authenticated."
+                                                  :data {:path-params id}}}) 401)
 
             (nil? meta)
-            (response/not-found (str "Attempting to store unregistered asset [" id "]"))
+            (response/not-found {:error
+                                 {:message "Unregistered asset."
+                                  :data {:path-params id}}})
 
             (not (map? file))
-            (response/bad-request (str "Expected file upload, got param: " file))
+            (response/bad-request {:error
+                                   {:message "Invalid multipart params; it should be an object."
+                                    :data {:path-params id
+                                           :multipart-params file}}})
 
             :else
             (if-let [tempfile (:tempfile file)]
@@ -366,7 +373,10 @@
                   (response/bad-request {:error
                                          {:message (ex-message e)
                                           :data (ex-data e)}})))
-              (response/bad-request (str "Expected map with :tempfile, got param: " file)))))))))
+              (response/bad-request {:error
+                                     {:message "Missing 'tempfile'."
+                                      :data {:path-params id
+                                             :multipart-params file}}}))))))))
 
 (defn trust-api [app-context]
   (routes
