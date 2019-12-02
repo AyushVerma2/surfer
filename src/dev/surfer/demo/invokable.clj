@@ -36,8 +36,7 @@
      :is_odd (odd? n)}))
 
 (defn ^{:params {"n" "asset"}} invokable-asset-odd? [app-context params]
-  (let [config (app-context->storage-config app-context)
-        storage-path (storage/storage-path config)
+  (let [storage-path (env/storage-path (app-context/env app-context))
         asset-id (sf/asset-id (get-in params [:n "did"]))]
     (with-open [input-stream (storage/load-stream storage-path asset-id)]
       (let [{:keys [n]} (data.json/read (io/reader input-stream) :key-fn keyword)]

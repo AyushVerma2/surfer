@@ -46,7 +46,7 @@
 
   ;; -- Import Datasets
   (let [database (system/h2 system)
-        storage-path (storage/storage-path (env/storage-config (env)))]
+        storage-path (env/storage-path (env))]
     (asset/import-datasets! database storage-path "datasets.edn"))
 
   (def did

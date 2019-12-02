@@ -273,7 +273,7 @@
       (GET "/:id" [id]
         :summary "Gets data for a specified Asset ID"
         (if-let [meta (store/lookup-json db id)]            ;; NOTE meta is JSON (not EDN)!
-          (if-let [body (storage/load-stream (storage/storage-path (env/storage-config env)) id)]
+          (if-let [body (storage/load-stream (env/storage-path env) id)]
 
             (let [ctype (get meta "contentType" "application/octet-stream")
                   ext (utils/ext-for-content-type ctype)
@@ -318,7 +318,7 @@
                       (not valid?)
                       (throw (ex-info "Enforce Content Hashes - Hashes don't match." m)))))
 
-                (storage/save (storage/storage-path (env/storage-config env)) id file)
+                (storage/save (env/storage-path env) id file)
 
                 (response/created (str "/api/v1/assets/" id))
 
@@ -357,7 +357,7 @@
                       (not valid?)
                       (throw (ex-info "Enforce Content Hashes - Hashes don't match." m)))))
 
-                (storage/save (storage/storage-path (env/storage-config env)) id tempfile)
+                (storage/save (env/storage-path env) id tempfile)
 
                 (response/created (str "/api/v1/assets/" id))
 
@@ -655,8 +655,7 @@
         (friend/authorize #{:admin}
                           (let [database (app-context/database app-context)
                                 storage-path (-> (app-context/env app-context)
-                                                 (env/storage-config)
-                                                 (storage/storage-path))]
+                                                 (env/storage-path))]
                             (response/response (asset/import-datasets! database storage-path "datasets.edn"))))))))
 
 ;; ==========================================
