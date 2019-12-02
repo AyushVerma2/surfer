@@ -129,7 +129,7 @@
         :summary "Gets metadata for a specified asset"
         :coercion nil
         :return schema/Asset
-        (if-let [meta (store/lookup db id)]
+        (if-let [meta (store/get-metadata-str db id)]
           {:status 200
            :headers {"Content-Type" "application/json"}
            :body meta}
@@ -195,7 +195,7 @@
         :coercion nil
         :body [body schema/InvokeRequest]
         (let [op-id (get-in request [:params :op-id])
-              op-meta (store/lookup-json db op-id {:key-fn keyword})]
+              op-meta (store/get-metadata db op-id {:key-fn keyword})]
 
           (log/debug (str "Invoke Sync - " op-id " - " op-meta))
 
@@ -233,7 +233,7 @@
         :coercion nil                                       ;; prevents coercion so we get the original input stream
         :body [body schema/InvokeRequest]
         ;; (println (:body request))
-        (if-let [op-meta (store/lookup db op-id)]
+        (if-let [op-meta (store/get-metadata-str db op-id)]
           (let [md (sf/read-json-string op-meta)
                 ^InputStream body-stream (:body request)
                 _ (.reset body-stream)
@@ -257,6 +257,15 @@
           (response/response (invoke/job-response app-context jobid))
           (response/not-found (str "Job not found: " jobid)))))))
 
+(defn hash-check! [file metadata]
+  (let [{:keys [matches?] :as check} (storage/hash-check file (:contentHash metadata))]
+    (cond
+      (str/blank? (:contentHash metadata))
+      (throw (ex-info "Metadata missing content hash." {:metadata metadata}))
+
+      (not matches?)
+      (throw (ex-info "Hashes don't match." (merge check {:metadata metadata}))))))
+
 (defn storage-api [app-context]
   (let [database (app-context/database app-context)
         env (app-context/env app-context)
@@ -271,7 +280,7 @@
 
       (GET "/:id" [id]
         :summary "Gets data for a specified Asset ID"
-        (if-let [meta (store/lookup-json db id)]            ;; NOTE meta is JSON (not EDN)!
+        (if-let [meta (store/get-metadata db id)]            ;; NOTE meta is JSON (not EDN)!
           (if-let [body (storage/load-stream (env/storage-path env) id)]
 
             (let [ctype (get meta "contentType" "application/octet-stream")
@@ -288,36 +297,35 @@
             (response/not-found "Asset data not available."))
           (response/not-found "Asset metadata not available.")))
 
-      (PUT "/:id" {{:keys [id]} :params :as request}
+      (PUT "/:id" {{:keys [id]} :params body :body :as request}
         :coercion nil
-        :summary "Stores asset data for a given asset ID"
-        (let [^InputStream body (:body request)
-              _ (.reset body)
-              userid (get-current-userid app-context request)
-              meta (store/lookup-json db id {:key-fn keyword})]
+        :summary "Stores data for a given Asset ID."
+        (let [userid (get-current-userid app-context request)
+              meta (store/get-metadata db id {:key-fn keyword})]
+
+          (when body
+            (.reset ^InputStream body))
+
           (cond
             (nil? userid)
             (response/status
-              (response/response "User not authenticated")
+              (response/response {:error
+                                  {:message "User not authenticated."
+                                   :data {:path-params id}}})
               401)
 
             (nil? meta)
-            (response/not-found (str "Attempting to store unregistered asset [" id "]"))
+            (response/not-found {:error
+                                 {:message "Unregistered asset."
+                                  :data {:path-params id}}})
 
             :else
-            (if-let [file body]
+            (if body
               (try
-                (when (env/storage-config env [:enforce-content-hashes?])
-                  (let [content-hash (:contentHash meta)
-                        [valid? m] (storage/hash-check file content-hash)]
-                    (cond
-                      (str/blank? content-hash)
-                      (throw (ex-info "Enforce Content Hashes - Metadata w/o content hash." {}))
+                (when (env/enforce-content-hashes? env)
+                  (hash-check! body meta))
 
-                      (not valid?)
-                      (throw (ex-info "Enforce Content Hashes - Hashes don't match." m)))))
-
-                (storage/save (env/storage-path env) id file)
+                (storage/save (env/storage-path env) id body)
 
                 (response/created (str "/api/v1/assets/" id))
 
@@ -325,38 +333,40 @@
                   (response/bad-request {:error
                                          {:message (ex-message e)
                                           :data (ex-data e)}})))
-              (response/bad-request
-                (str "No uploaded data?: " body))))))
+              (response/bad-request {:error
+                                     {:message "Missing body."
+                                      :data {:path-params id
+                                             :body body}}})))))
 
       (POST "/:id" request
-        :multipart-params [file :- upload/TempFileUpload]
+        :summary "Stores data for a given Asset ID."
         :middleware [wrap-multipart-params]
         :path-params [id :- schema/AssetID]
+        :multipart-params [file :- upload/TempFileUpload]
         :return s/Str
-        :summary "Upload Asset"
-        (let [meta (store/lookup-json db id {:key-fn keyword})]
+        (let [meta (store/get-metadata db id {:key-fn keyword})]
           (cond
             (nil? (get-current-userid app-context request))
-            (response/status (response/response "User not authenticated") 401)
+            (response/status (response/response {:error
+                                                 {:message "User not authenticated."
+                                                  :data {:path-params id}}}) 401)
 
             (nil? meta)
-            (response/not-found (str "Attempting to store unregistered asset [" id "]"))
+            (response/not-found {:error
+                                 {:message "Unregistered asset."
+                                  :data {:path-params id}}})
 
             (not (map? file))
-            (response/bad-request (str "Expected file upload, got param: " file))
+            (response/bad-request {:error
+                                   {:message "Invalid multipart params; it should be an object."
+                                    :data {:path-params id
+                                           :multipart-params file}}})
 
             :else
             (if-let [tempfile (:tempfile file)]
               (try
-                (when (env/storage-config env [:enforce-content-hashes?])
-                  (let [content-hash (:contentHash meta)
-                        [valid? m] (storage/hash-check tempfile content-hash)]
-                    (cond
-                      (str/blank? content-hash)
-                      (throw (ex-info "Enforce Content Hashes - Metadata w/o content hash." {}))
-
-                      (not valid?)
-                      (throw (ex-info "Enforce Content Hashes - Hashes don't match." m)))))
+                (when (env/enforce-content-hashes? env)
+                  (hash-check! tempfile meta))
 
                 (storage/save (env/storage-path env) id tempfile)
 
@@ -366,7 +376,10 @@
                   (response/bad-request {:error
                                          {:message (ex-message e)
                                           :data (ex-data e)}})))
-              (response/bad-request (str "Expected map with :tempfile, got param: " file)))))))))
+              (response/bad-request {:error
+                                     {:message "Missing 'tempfile'."
+                                      :data {:path-params id
+                                             :multipart-params file}}}))))))))
 
 (defn trust-api [app-context]
   (routes
@@ -445,7 +458,7 @@
               userid (get-current-userid app-context request)]
           ;; (println listing)
           (if userid
-            (if-let [asset (store/lookup db (:assetid listing))]
+            (if-let [asset (store/get-metadata-str db (:assetid listing))]
               (let [listing (assoc listing :userid userid)
                     ;; _ (println userid)
                     result (store/create-listing db listing)]
@@ -831,7 +844,7 @@
                  (mapv
                    (fn [id]
                      (try
-                       (let [j (json/read-str (store/lookup db id))
+                       (let [j (json/read-str (store/get-metadata-str db id))
                              title (j "title")]
                          (str "<a href=\"api/v1/meta/data/" id "\">" id " - " title "<br/>\n"))
                        (catch Throwable t

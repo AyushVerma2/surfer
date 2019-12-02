@@ -66,12 +66,10 @@
       (io/input-stream file))))
 
 (defn hash-check
-  "Returns a tuple with the result of the check (true or false),
-   and a map with the keys `:actual` and `:expected`.
-
-  * `object` is anything which can be converted to byte-array (e.g., File, InputStream).
-  * `expected-hash` is the expected hash for `object`."
+  "`object` is anything which can be converted to byte-array (e.g., File, InputStream).
+   `expected-hash` is the expected hash for `object`."
   [object expected-hash]
   (let [actual-hash (sf/digest (byte-streams/to-byte-array object))]
-    [(= expected-hash actual-hash) {:expected expected-hash
-                                    :actual actual-hash}]))
+    {:matches? (= expected-hash actual-hash)
+     :expected expected-hash
+     :actual actual-hash}))

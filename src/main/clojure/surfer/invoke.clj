@@ -16,7 +16,7 @@
 (defn get-operation
   "Gets an in-memory operation for the given operation id"
   [db op-id]
-  (let [op-meta (store/lookup db op-id)
+  (let [op-meta (store/get-metadata-str db op-id)
         md (sf/read-json-string op-meta)
         op-function (:function (:additionalInfo md))
         params (keys (:params (:operation md)))

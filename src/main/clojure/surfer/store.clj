@@ -282,18 +282,20 @@
                        :utime (Instant/now)}))
       hash)))
 
-(defn lookup
+(defn get-metadata-str
   "Returns metadata as a JSON-encoded-string for the given Asset ID, or nil if not available."
   (^String [db ^String id]
    (let [rs (jdbc/query db ["select * from Metadata where id = ?" id])]
      (when (seq rs)
        (str (:metadata (first rs)))))))
 
-(defn lookup-json
-  "Gets the JSON data structure for the metadata of a given asset ID.
-   Returns nil if the metadata is not available."
+(defn get-metadata
+  "Returns metadata for the given Asset ID, or nil if not available.
+
+   Metadata is stored as a JSON-encoded-string, so this function
+   uses *clojure.data.json* to decode it."
   [db ^String id-str & [{:keys [key-fn]}]]
-  (when-let [meta (lookup db id-str)]
+  (when-let [meta (get-metadata-str db id-str)]
     (json/read-str meta :key-fn (or key-fn identity))))
 
 (defn all-keys
