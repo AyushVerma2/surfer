@@ -27,10 +27,7 @@
         (binding [sfa/*resolver* local-resolver]
           (sfa/register! did {:name "Surfer"})
           (is (= {"name" "Surfer"} (.getDDO ^Resolver sfa/*resolver* did)))
-          (is (= {"name" "Surfer"} (.getDDO ^Resolver local-resolver did)))))
-
-      (testing "Unable to get DDO"
-        (is (= nil (.getDDO ^Resolver sfa/*resolver* did)))))))
+          (is (= {"name" "Surfer"} (.getDDO ^Resolver local-resolver did))))))))
 
 (deftest did->agent-test
   (testing "Resolve Agent"
