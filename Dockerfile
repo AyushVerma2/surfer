@@ -8,27 +8,19 @@
 
 FROM alpine:3.9.2
 
-RUN apk update && apk add openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
-RUN apk add maven
+RUN apk update
+RUN apk add bash
+RUN apk add curl
+RUN apk add openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 
-ARG USER_HOME_DIR="/root"
+RUN curl -O https://download.clojure.org/install/linux-install-1.10.1.492.sh
+RUN chmod +x linux-install-1.10.1.492.sh
+RUN ./linux-install-1.10.1.492.sh
 
-RUN mkdir -p $USER_HOME_DIR
-WORKDIR $USER_HOME_DIR
+WORKDIR /usr/src/app
 
-COPY . $USER_HOME_DIR
-RUN rm -rf $USER_HOME_DIR/target
+COPY . .
 
-ENV HOME $USER_HOME_DIR
-ENV MAVEN_CONFIG "$USER_HOME_DIR/.m2"
-ENV SURFER_CREATE_DB 1
-ENV HTTP_PORT 8080
+EXPOSE 3030
 
-RUN free
-RUN java -version
-RUN mvn -v
-RUN mvn clean -Dmaven.test.skip=true  install
-
-EXPOSE 8080
-
-ENTRYPOINT ["mvn", "exec:java"]
+ENTRYPOINT ["clojure", "-M:main"]
