@@ -1,7 +1,6 @@
 (ns surfer.asset
   (:require [surfer.storage :as storage]
             [surfer.store :as store]
-            [surfer.database :as database]
             [clojure.java.jdbc :as jdbc]
             [starfish.core :as sf]
             [clojure.data.json :as data.json]
