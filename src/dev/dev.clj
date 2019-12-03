@@ -46,7 +46,7 @@
   ;; -- Import Datasets
   (let [database (system/h2 system)
         storage-path (env/storage-path (env))]
-    (asset/import-datasets! database storage-path "datasets.edn"))
+    (asset/import-edn! (db) storage-path "datasets.edn"))
 
   (def did
     (env/agent-did (system/env system)))

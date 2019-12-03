@@ -672,7 +672,7 @@
                           (let [database (app-context/database app-context)
                                 storage-path (-> (app-context/env app-context)
                                                  (env/storage-path))]
-                            (response/response (asset/import-datasets! database storage-path "datasets.edn"))))))))
+                            (response/response (asset/import-edn! db storage-path "datasets.edn"))))))))
 
 ;; ==========================================
 ;; Authentication API
