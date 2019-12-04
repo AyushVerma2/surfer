@@ -2,21 +2,11 @@
   (:require [clojure.test :refer :all]
             [starfish.alpha :as sfa]
             [starfish.core :as sf])
-  (:import (sg.dex.starfish.impl.remote RemoteAccount)
-           (sg.dex.starfish.impl.memory MemoryAgent LocalResolverImpl)
+  (:import (sg.dex.starfish.impl.memory MemoryAgent LocalResolverImpl)
            (sg.dex.starfish Resolver)))
 
 (defmethod sfa/resolve-agent "1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457d" [resolver did ddo]
   (MemoryAgent/create resolver did))
-
-(deftest remote-account-test
-  (testing "Username & Password"
-    (let [credentials (.getCredentials ^RemoteAccount (sfa/remote-account "foo" "bar"))]
-      (is (= #{"username" "password"} (set (keys credentials))))))
-
-  (testing "Token"
-    (let [credentials (.getCredentials ^RemoteAccount (sfa/remote-account "x"))]
-      (is (= #{"token"} (set (keys credentials)))))))
 
 (deftest register!-test
   (testing "Register DID & DDO"
