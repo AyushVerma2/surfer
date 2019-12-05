@@ -60,7 +60,7 @@
   (.getDDO sf/*resolver* did)
 
   (def aladdin
-    (sf/resolve-agent did))
+    (sf/get-agent did))
 
   ;; ---
 
@@ -76,7 +76,7 @@
     (sf/upload aladdin (sf/memory-asset (data.json/write-str {:n 2}))))
 
   (def n-asset-did
-    (sf/did n-asset))
+    (sf/dido n-asset))
 
   (sf/asset-id n-asset-did)
 

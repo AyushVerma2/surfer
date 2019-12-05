@@ -11,7 +11,7 @@
 (deftest register!-test
   (testing "Register DID & DDO"
     (let [local-resolver (LocalResolverImpl.)
-          did (sf/did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457d")]
+          did (sf/dido "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457d")]
 
       (testing "Able to get DDO"
         (binding [sfa/*resolver* local-resolver]
@@ -21,7 +21,7 @@
 
 (deftest did->agent-test
   (testing "Resolve Agent"
-    (let [did (sf/did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457d")]
+    (let [did (sf/dido "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457d")]
 
       (testing "Able to resolve"
         (let [local-resolver (LocalResolverImpl.)]

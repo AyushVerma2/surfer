@@ -42,8 +42,9 @@
          :is_odd (odd? n)}))))
 
 (defn ^{:params {"n" "asset"}} invokable-asset-odd?2 [app-context params]
-  (let [did-str (sf/did (get-in params [:n "did"]))
-        asset (sf/asset did-str)]
+  (let [did-str (get-in params [:n "did"])
+        asset (-> (sf/get-agent did-str)
+                  (sf/get-asset did-str))]
     (with-open [input-stream (sf/asset-content-stream asset)]
       (let [{:keys [n]} (data.json/read (io/reader input-stream) :key-fn keyword)]
         {:n n

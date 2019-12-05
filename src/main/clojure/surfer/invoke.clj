@@ -24,11 +24,6 @@
         f (resolve op-sym)]
     (when f (sf/create-operation params f))))
 
-(defn get-asset 
-  "Gets an asset in the context of this surfer instance."
-  ([did]
-    (sf/asset did)))
-
 (defn coerce-input-params 
   "Coerces the input request to a map of keywords to assets / objects"
   ([md req]
@@ -38,7 +33,8 @@
           (if-let [pspec (get pspecs (keyword k))]
             (let [type (:type pspec)]
               (if (= "asset" type)
-                (assoc m (keyword k) (get-asset (:did v)))
+                (assoc m (keyword k) (-> (sf/get-agent (:did v))
+                                         (sf/get-asset (:did v))))
                 (assoc m (keyword k) v)))
             m))
         req
