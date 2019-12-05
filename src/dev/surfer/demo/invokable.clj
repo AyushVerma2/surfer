@@ -47,7 +47,7 @@
   (let [did (sf/did (get-in params [:n "did"]))
         agent (sfa/did->agent did)
         asset (sf/get-asset agent did)]
-    (with-open [input-stream (sf/content-stream asset)]
+    (with-open [input-stream (sf/asset-content-stream asset)]
       (let [{:keys [n]} (data.json/read (io/reader input-stream) :key-fn keyword)]
         {:n n
          :is_odd (odd? n)}))))

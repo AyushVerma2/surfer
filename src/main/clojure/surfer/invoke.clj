@@ -52,7 +52,7 @@
   (let [op (get-operation db op-id)]
     (when op
       (let [jobid (sf/random-hex-string 32)
-            md (sf/metadata op)
+            md (sf/asset-metadata op)
             job (sf/invoke op (coerce-input-params md invoke-req))] 
         (swap! JOBS assoc jobid job)
         (log/debug (str "Job started with ID [" jobid "]"))

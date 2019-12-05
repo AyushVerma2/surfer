@@ -9,7 +9,6 @@
             [surfer.app-context :as app-context]
             [surfer.migration :as migration]
             [starfish.core :as sf]
-            [starfish.alpha :as sfa]
             [clojure.data.json :as data.json]
             [clojure.java.jdbc :as jdbc]
             [clojure.repl :refer :all]
@@ -57,20 +56,11 @@
     (env/agent-ddo (system/env system)))
 
   ;; -- Resolver API
-  (.getDDOString sfa/*resolver* did)
-  (.getDDO sfa/*resolver* did)
+  (.getDDOString sf/*resolver* did)
+  (.getDDO sf/*resolver* did)
 
   (def aladdin
-    (sfa/did->agent did))
-
-
-  ;; -- Dynamic *resolver*
-
-  (binding [sfa/*resolver* (LocalResolverImpl.)]
-    (.getDDOString sfa/*resolver* did))
-
-  (binding [sfa/*resolver* (LocalResolverImpl.)]
-    (sfa/did->agent did))
+    (sf/resolve-agent did))
 
   ;; ---
 

@@ -39,12 +39,12 @@
     (let [foo-memory-asset (sf/memory-asset "Foo")
           foo-remote-data-asset (sf/upload agent foo-memory-asset)]
       (testing "Asset Content"
-        (is (= (sf/to-string (sf/content foo-memory-asset))
-               (sf/to-string (sf/content foo-remote-data-asset)))))
+        (is (= (sf/to-string (sf/asset-content foo-memory-asset))
+               (sf/to-string (sf/asset-content foo-remote-data-asset)))))
 
       (testing "Asset Metadata"
-        (is (= (sf/metadata-string foo-memory-asset)
-               (sf/metadata-string foo-remote-data-asset)))))
+        (is (= (sf/asset-metadata-string foo-memory-asset)
+               (sf/asset-metadata-string foo-remote-data-asset)))))
 
     (let [invokable-metadata (sf/invokable-metadata #'upper-case-text)]
       (testing "Invokable Operation Metadata"
