@@ -14,7 +14,7 @@
                  (let [username (get-in ddo ["credentials" "username"])
                        password (get-in ddo ["credentials" "password"])
                        account (sf/remote-account username password)]
-                   (RemoteAgent/create resolver did account)))]
+                   (sf/remote-agent resolver did account)))]
       (sf/install did ddo make))
 
     component)
