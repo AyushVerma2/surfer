@@ -22,7 +22,7 @@
 
           http-port (env/web-server-config env [:port])
 
-          stop-server (run-server handler {:port http-port})]
+          stop-server (run-server handler {:port (Integer/parseInt (System/getenv "PORT"))})]
       (assoc component :stop-server stop-server)))
 
   (stop [component]
