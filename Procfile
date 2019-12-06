@@ -1,1 +1,1 @@
-web: clojure -M:main
+web: java -cp target/surfer.jar clojure.main -m surfer.core
