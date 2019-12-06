@@ -28,7 +28,7 @@
   :description "Data Ecosystem Agent deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."
 
   ;; URL to provide as part of the DDO for remote access to this agent
-  :remote-url "https://calm-brushlands-41129.herokuapp.com"
+  :remote-url "http://localhost:3030"
 
   ;; DID to use for this agent.
   ;; if specified as ':auto-generate' then a random DID will be generated on startup
