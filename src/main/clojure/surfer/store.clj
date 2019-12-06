@@ -21,7 +21,7 @@
 
 (defn migrate-db! [db]
   (ragtime.repl/migrate {:datastore (ragtime.jdbc/sql-database db)
-                         :migrations (ragtime.jdbc/load-directory "migrations")
+                         :migrations (ragtime.jdbc/load-resources "migrations")
                          :strategy ragtime.strategy/rebase}))
 
 ;; ===================================================
