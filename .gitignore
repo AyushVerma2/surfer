@@ -13,3 +13,4 @@ surfer.iml
 .factorypath
 .DS_Store
 trace.edn
+.lein-repl-history
