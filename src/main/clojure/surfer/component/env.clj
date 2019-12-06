@@ -24,6 +24,9 @@
 
           ;; Merge configs - config (disk), overrides
           config (merge (edn/read-string (slurp config-path)) config)
+
+          web-server-port (get-in config [:web-server :port])
+
           config (-> config
                      (update :storage (fn [{:keys [path] :as storage-config}]
                                         (if path
@@ -32,8 +35,9 @@
                                           storage-config)))
                      (update :web-server (fn [{:keys [port] :as web-server-config}]
                                            (assoc web-server-config :port (or (some-> (System/getenv "PORT") (Integer/parseInt)) port))))
-                     (update :agent (fn [{:keys [remote-url] :as agent-config}]
-                                      (assoc agent-config :remote-url (or (System/getenv "REMOTE_URL") remote-url)))))
+                     (update :agent (fn [agent-config]
+                                      (assoc agent-config :remote-url (or (System/getenv "REMOTE_URL")
+                                                                          (str "http://localhost:" web-server-port))))))
 
           user-config-path (get-in config [:security :user-config])
 
