@@ -6,6 +6,7 @@
   (:require [surfer.utils :as u]
             [clojure.data.json :as json]
             [clojure.java.jdbc :as jdbc]
+            [clojure.java.io :as io]
             [clojure.tools.logging :as log]
             [ragtime.jdbc]
             [ragtime.repl]
@@ -21,7 +22,11 @@
 
 (defn migrate-db! [db]
   (ragtime.repl/migrate {:datastore (ragtime.jdbc/sql-database db)
-                         :migrations (ragtime.jdbc/load-resources "migrations")
+                         :migrations (#'ragtime.jdbc/load-all-files [(io/resource "migrations/001-users.edn")
+                                                                     (io/resource "migrations/002-metadata.edn")
+                                                                     (io/resource "migrations/003-listings.edn")
+                                                                     (io/resource "migrations/004-purchases.edn")
+                                                                     (io/resource "migrations/005-tokens.edn")])
                          :strategy ragtime.strategy/rebase}))
 
 ;; ===================================================
