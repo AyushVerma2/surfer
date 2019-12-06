@@ -1,3 +1,3 @@
 #!/bin/sh
 
-clojure -Sdeps '{:deps {uberdeps {:mvn/version "0.1.6"}}}' -m uberdeps.uberjar --target target/surfer.jar
+clojure -Sdeps '{:deps {uberdeps {:mvn/version "0.1.6"}}}' -m uberdeps.uberjar --target target/surfer.jar --level info
