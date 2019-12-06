@@ -34,7 +34,7 @@
 
           ;; Update Agent's remote url to use web server's port
           config (update config :agent (fn [{:keys [remote-url] :as agent-config}]
-                                         (assoc agent-config :remote-url "https://calm-brushlands-41129.herokuapp.com/")))
+                                         (assoc agent-config :remote-url "https://calm-brushlands-41129.herokuapp.com")))
 
           user-config-path (get-in config [:security :user-config])
 
