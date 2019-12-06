@@ -30,11 +30,8 @@
                                              (assoc storage-config :path (str/replace path #"^~" (System/getProperty "user.home")))
                                              storage-config)))
 
-          web-server-port (get-in config [:web-server :port])
-
-          ;; Update Agent's remote url to use web server's port
-          config (update config :agent (fn [{:keys [remote-url] :as agent-config}]
-                                         (assoc agent-config :remote-url "https://calm-brushlands-41129.herokuapp.com")))
+          config (update config :web-server (fn [{:keys [port] :as web-server-config}]
+                                              (assoc web-server-config :port (or (some-> (System/getenv "PORT") (Integer/parseInt)) port))))
 
           user-config-path (get-in config [:security :user-config])
 
