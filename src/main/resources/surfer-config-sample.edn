@@ -27,9 +27,6 @@
   ;; Provide a descriptive paragraph explaing the role/purpose of the Agent
   :description "Data Ecosystem Agent deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."
 
-  ;; URL (without port) to provide as part of the DDO for remote access to this agent
-  :remote-url "http://localhost"
-
   ;; DID to use for this agent.
   ;; if specified as ':auto-generate' then a random DID will be generated on startup
   :did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"}

@@ -24,17 +24,22 @@
 
           ;; Merge configs - config (disk), overrides
           config (merge (edn/read-string (slurp config-path)) config)
-          ;; Resolve storage path; e.g ~/.surfer => /home/user/.surfer
-          config (update config :storage (fn [{:keys [path] :as storage-config}]
-                                           (if path
-                                             (assoc storage-config :path (str/replace path #"^~" (System/getProperty "user.home")))
-                                             storage-config)))
 
           web-server-port (get-in config [:web-server :port])
 
-          ;; Update Agent's remote url to use web server's port
-          config (update config :agent (fn [{:keys [remote-url] :as agent-config}]
-                                         (assoc agent-config :remote-url (str remote-url ":" web-server-port))))
+          config (-> config
+                     (update :storage (fn [{:keys [path] :as storage-config}]
+                                        (if path
+                                          ;; Resolve storage path; e.g ~/.surfer => /home/user/.surfer
+                                          (assoc storage-config :path (str/replace path #"^~" (System/getProperty "user.home")))
+                                          storage-config)))
+                     (update :web-server (fn [{:keys [port] :as web-server-config}]
+                                           ;; $PORT environment variable takes precedence over the configuration setting
+                                           (assoc web-server-config :port (or (some-> (System/getenv "PORT") (Integer/parseInt)) port))))
+                     (update :agent (fn [agent-config]
+                                      ;; If $REMOTE_URL environment variable is not set then localhost:<port> will be used.
+                                      (assoc agent-config :remote-url (or (System/getenv "REMOTE_URL")
+                                                                          (str "http://localhost:" web-server-port))))))
 
           user-config-path (get-in config [:security :user-config])
 
