@@ -34,8 +34,10 @@
                                           (assoc storage-config :path (str/replace path #"^~" (System/getProperty "user.home")))
                                           storage-config)))
                      (update :web-server (fn [{:keys [port] :as web-server-config}]
+                                           ;; $PORT environment variable takes precedence over the configuration setting
                                            (assoc web-server-config :port (or (some-> (System/getenv "PORT") (Integer/parseInt)) port))))
                      (update :agent (fn [agent-config]
+                                      ;; If $REMOTE_URL environment variable is not set then localhost:<port> will be used.
                                       (assoc agent-config :remote-url (or (System/getenv "REMOTE_URL")
                                                                           (str "http://localhost:" web-server-port))))))
 
