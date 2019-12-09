@@ -1,3 +1,5 @@
 #!/bin/sh
 
-clojure -Sdeps '{:deps {uberdeps {:mvn/version "0.1.6"}}}' -m uberdeps.uberjar --target target/surfer.jar --level warn
+clojure -Sdeps '{:deps {uberdeps {:mvn/version "0.1.6"}}}' -m uberdeps.uberjar --target target/surfer.jar --level error
+
+echo "target/surfer.jar"
