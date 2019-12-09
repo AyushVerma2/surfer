@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-clojure -A:test:kaocha -m kaocha.runner "$@"
+clojure -A:test:kaocha -J-Dremote_url=http://localhost:3030 -m kaocha.runner "$@"
