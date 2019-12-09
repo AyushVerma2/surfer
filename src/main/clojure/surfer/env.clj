@@ -53,13 +53,13 @@
     :password "OpenSesame"}
    :service
    [{:type "Ocean.Invoke.v1"
-     :serviceEndpoint "/api/v1/invoke"}
+     :serviceEndpoint (str (agent-config env [:remote-url]) "/api/v1/invoke")}
 
     {:type "Ocean.Meta.v1"
-     :serviceEndpoint "/api/v1/meta"}
+     :serviceEndpoint (str (agent-config env [:remote-url]) "/api/v1/meta")}
 
     {:type "Ocean.Auth.v1"
-     :serviceEndpoint "/api/v1/auth"}
+     :serviceEndpoint (str (agent-config env [:remote-url]) "/api/v1/auth")}
 
     {:type "Ocean.Storage.v1"
-     :serviceEndpoint "/api/v1/assets"}]})
+     :serviceEndpoint (str (agent-config env [:remote-url]) "/api/v1/assets")}]})
