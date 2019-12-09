@@ -1,6 +1,8 @@
 (ns surfer.env
-  (:require [starfish.core :as sf])
-  (:import (java.net InetAddress)))
+  (:require [starfish.core :as sf]))
+
+(def ^:dynamic *agent-remote-url*
+  nil)
 
 (defn- select-config-key [config ks]
   (if (seq ks)
@@ -37,7 +39,7 @@
   (web-server-config env [:port]))
 
 (defn agent-remote-url [env]
-  (agent-config env [:remote-url]))
+  (or *agent-remote-url* (agent-config env [:remote-url])))
 
 (defn agent-did
   "Surfer's DID."

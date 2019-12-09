@@ -38,10 +38,7 @@
                                            ;; $PORT environment variable takes precedence over the configuration setting
                                            (assoc web-server-config :port (or (some-> (System/getenv "PORT") (Integer/parseInt)) port))))
                      (update :agent (fn [agent-config]
-                                      (let [remote-url (or (env :remote-url)
-                                                           (let [{ip :body} (http/get "https://api.ipify.org")
-                                                                 remote-address (str ip ":" web-server-port)]
-                                                             (str "http://" remote-address)))]
+                                      (let [remote-url (or (env :remote-url) (str "http://localhost:" web-server-port))]
                                         (assoc agent-config :remote-url remote-url)))))
 
           user-config-path (get-in config [:security :user-config])
