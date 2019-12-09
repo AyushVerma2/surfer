@@ -612,10 +612,7 @@
       {:swagger
        {:data {:info {:title "Market Admin API"
                       :description "Administration API for Ocean Marketplace"}
-               :tags [{:name "Admin API", :description "Administration API for Ocean Marketplace"}]
-               ;;:consumes ["application/json"]
-               ;;:produces ["application/json"]
-               }}}
+               :tags [{:name "Admin API", :description "Administration API for Ocean Marketplace"}]}}}
 
       ;; ===========================================
       ;; Admin tools
@@ -673,7 +670,16 @@
                           (let [database (app-context/database app-context)
                                 storage-path (-> (app-context/env app-context)
                                                  (env/storage-path))]
-                            (response/response (asset/import-edn! db storage-path "datasets.edn"))))))))
+                            (response/response (asset/import-edn! db storage-path "datasets.edn")))))
+
+      (POST "/agent-remote-url" []
+        :summary "Set Surfer's remote url"
+        :coercion nil
+        :query-params [remote-url :- s/Str]
+        (friend/authorize #{:admin}
+                          (do
+                            (alter-var-root #'env/*agent-remote-url* (constantly remote-url))
+                            (response/response {:remote-url remote-url})))))))
 
 ;; ==========================================
 ;; Authentication API
