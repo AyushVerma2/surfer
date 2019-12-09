@@ -9,8 +9,8 @@
             [clojure.pprint :as pprint]
             [cemerick.friend.credentials :as creds]
             [clojure.tools.logging :as log]
-            [clojure.string :as str])
-  (:import (java.net InetAddress)))
+            [clojure.string :as str]
+            [clj-http.client :as http]))
 
 (defrecord Env [config-path config user-config-path user-config]
   component/Lifecycle
@@ -38,10 +38,11 @@
                                            ;; $PORT environment variable takes precedence over the configuration setting
                                            (assoc web-server-config :port (or (some-> (System/getenv "PORT") (Integer/parseInt)) port))))
                      (update :agent (fn [agent-config]
-                                      ;; If $REMOTE_URL environment variable is not set then the host address will be used
-                                      (let [host-address (.getHostAddress (InetAddress/getLocalHost))
-                                            remote-address (str host-address ":" web-server-port)]
-                                        (assoc agent-config :remote-url (or (System/getenv "REMOTE_URL") (str "http://" remote-address)))))))
+                                      (let [remote-url (or (env :remote-url)
+                                                           (let [{ip :body} (http/get "https://api.ipify.org")
+                                                                 remote-address (str ip ":" web-server-port)]
+                                                             (str "http://" remote-address)))]
+                                        (assoc agent-config :remote-url remote-url)))))
 
           user-config-path (get-in config [:security :user-config])
 

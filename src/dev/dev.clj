@@ -14,7 +14,8 @@
             [clojure.repl :refer :all]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
-            [com.stuartsierra.component.repl :refer [set-init reset start stop system]])
+            [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
+            [clj-http.client :as http])
   (:import (sg.dex.starfish.impl.memory LocalResolverImpl)))
 
 (set-init (system/init-fn))
@@ -131,6 +132,8 @@
   (sf/poll-result job)
 
   (sf/job-status job)
+
+  (http/get "https://api.ipify.org")
 
   )
 
