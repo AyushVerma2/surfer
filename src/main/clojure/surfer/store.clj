@@ -11,23 +11,12 @@
             [ragtime.jdbc]
             [ragtime.repl]
             [ragtime.strategy]
-            [cemerick.friend.credentials :as creds])
+            [cemerick.friend.credentials :as creds]
+            [clojure.string :as str])
   (:import [java.time Instant]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
-
-;; ====================================================
-;; Database migration
-
-(defn migrate-db! [db]
-  (ragtime.repl/migrate {:datastore (ragtime.jdbc/sql-database db)
-                         :migrations (#'ragtime.jdbc/load-all-files [(io/resource "migrations/001-users.edn")
-                                                                     (io/resource "migrations/002-metadata.edn")
-                                                                     (io/resource "migrations/003-listings.edn")
-                                                                     (io/resource "migrations/004-purchases.edn")
-                                                                     (io/resource "migrations/005-tokens.edn")])
-                         :strategy ragtime.strategy/rebase}))
 
 ;; ===================================================
 ;; Listing management
@@ -471,3 +460,33 @@
         success (= (first rs) 1)]
     (log/debug "delete-token" userid "TOKEN:" token "RS:" rs)
     success))
+
+;; ====================================================
+;; Database migration
+
+(defn migrate-db! [db & [users]]
+  (ragtime.repl/migrate {:datastore (ragtime.jdbc/sql-database db)
+                         :migrations (#'ragtime.jdbc/load-all-files [(io/resource "migrations/001-users.edn")
+                                                                     (io/resource "migrations/002-metadata.edn")
+                                                                     (io/resource "migrations/003-listings.edn")
+                                                                     (io/resource "migrations/004-purchases.edn")
+                                                                     (io/resource "migrations/005-tokens.edn")])
+                         :strategy ragtime.strategy/rebase})
+
+  (doseq [{:keys [id username] :as user} users]
+    (try
+      (cond
+        (str/blank? username)
+        (log/warn "Invalid map. Missing `:username` key.")
+
+        (get-user-by-name db username)
+        nil
+
+        (get-user db id)
+        nil
+
+        :else
+        (do (register-user db user)
+            (log/info (str "Auto-registered default user:" username))))
+      (catch Throwable t
+        (log/error (str "Problem auto-registering default users: " t))))))

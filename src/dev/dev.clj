@@ -21,16 +21,6 @@
 
 ;; ---
 
-(defn db []
-  (:db-spec (system/h2 system)))
-
-(defn reset-db []
-  (store/clear-db (db))
-  (store/migrate-db! (db)))
-
-(defn query [& sql-params]
-  (jdbc/query (db) sql-params))
-
 (defn env []
   (system/env system))
 
@@ -38,6 +28,16 @@
   (app-context/new-context (system/env system)
                            (system/h2 system)
                            (system/starfish system)))
+
+(defn db []
+  (:db-spec (system/h2 system)))
+
+(defn reset-db []
+  (store/clear-db (db))
+  (store/migrate-db! (db) (env/user-config (env))))
+
+(defn query [& sql-params]
+  (jdbc/query (db) sql-params))
 
 (comment
 

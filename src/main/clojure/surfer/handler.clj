@@ -606,6 +606,7 @@
 
 (defn admin-api [app-context]
   (let [database (app-context/database app-context)
+        env (app-context/env app-context)
         db (database/db database)]
     (routes
       {:swagger
@@ -650,14 +651,14 @@
       (POST "/migrate-db" []
         :summary "Performs database migration. DANGER."
         (friend/authorize #{:admin}
-                          (let [r (store/migrate-db! db)]
+                          (let [r (store/migrate-db! db (env/user-config env))]
                             (response/response (str "Successful: " r)))))
 
       (POST "/reset-db" []
         :summary "Clear & migrate database"
         (friend/authorize #{:admin}
                           (store/clear-db db)
-                          (store/migrate-db! db)
+                          (store/migrate-db! db (env/user-config env))
                           (response/response "Successful")))
 
       (POST "/create-db-test-data" []
