@@ -9,7 +9,8 @@
             [clojure.pprint :as pprint]
             [cemerick.friend.credentials :as creds]
             [clojure.tools.logging :as log]
-            [clojure.string :as str]))
+            [clojure.string :as str])
+  (:import (java.net InetAddress)))
 
 (defrecord Env [config-path config user-config-path user-config]
   component/Lifecycle
@@ -37,9 +38,10 @@
                                            ;; $PORT environment variable takes precedence over the configuration setting
                                            (assoc web-server-config :port (or (some-> (System/getenv "PORT") (Integer/parseInt)) port))))
                      (update :agent (fn [agent-config]
-                                      ;; If $REMOTE_URL environment variable is not set then localhost:<port> will be used.
-                                      (assoc agent-config :remote-url (or (System/getenv "REMOTE_URL")
-                                                                          (str "http://localhost:" web-server-port))))))
+                                      ;; If $REMOTE_URL environment variable is not set then the host address will be used
+                                      (let [host-address (.getHostAddress (InetAddress/getLocalHost))
+                                            remote-address (str host-address ":" web-server-port)]
+                                        (assoc agent-config :remote-url (or (System/getenv "REMOTE_URL") (str "http://" remote-address)))))))
 
           user-config-path (get-in config [:security :user-config])
 

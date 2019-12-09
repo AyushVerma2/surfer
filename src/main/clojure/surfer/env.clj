@@ -1,5 +1,6 @@
 (ns surfer.env
-  (:require [starfish.core :as sf]))
+  (:require [starfish.core :as sf])
+  (:import (java.net InetAddress)))
 
 (defn- select-config-key [config ks]
   (if (seq ks)
@@ -32,6 +33,12 @@
 (defn enforce-content-hashes? [env]
   (storage-config env [:enforce-content-hashes?]))
 
+(defn web-server-port [env]
+  (web-server-config env [:port]))
+
+(defn agent-remote-url [env]
+  (agent-config env [:remote-url]))
+
 (defn agent-did
   "Surfer's DID."
   [env]
@@ -46,20 +53,21 @@
 (defn agent-ddo
   "Surfer's DDO."
   [env]
-  {(keyword "@context") "https://www.w3.org/2019/did/v1"
-   :id (agent-config env [:did])
-   :credentials
-   {:username "Aladdin"
-    :password "OpenSesame"}
-   :service
-   [{:type "Ocean.Invoke.v1"
-     :serviceEndpoint (str (agent-config env [:remote-url]) "/api/v1/invoke")}
+  (let [endpoint #(str (agent-remote-url env) %)]
+    {(keyword "@context") "https://www.w3.org/2019/did/v1"
+     :id (agent-config env [:did])
+     :credentials
+     {:username "Aladdin"
+      :password "OpenSesame"}
+     :service
+     [{:type "Ocean.Invoke.v1"
+       :serviceEndpoint (endpoint "/api/v1/invoke")}
 
-    {:type "Ocean.Meta.v1"
-     :serviceEndpoint (str (agent-config env [:remote-url]) "/api/v1/meta")}
+      {:type "Ocean.Meta.v1"
+       :serviceEndpoint (endpoint "/api/v1/meta")}
 
-    {:type "Ocean.Auth.v1"
-     :serviceEndpoint (str (agent-config env [:remote-url]) "/api/v1/auth")}
+      {:type "Ocean.Auth.v1"
+       :serviceEndpoint (endpoint "/api/v1/auth")}
 
-    {:type "Ocean.Storage.v1"
-     :serviceEndpoint (str (agent-config env [:remote-url]) "/api/v1/assets")}]})
+      {:type "Ocean.Storage.v1"
+       :serviceEndpoint (endpoint "/api/v1/assets")}]}))
