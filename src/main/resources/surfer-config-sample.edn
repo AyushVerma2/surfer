@@ -9,9 +9,11 @@
  ;; Postgres
  ;;{:dbtype "postgresql"
  ;; :dbname "surfer"
- ;; :host "localhost"
- ;; :user "user"
- ;; :password "password"}
+ ;; :host "surfer.postgres.database.azure.com"
+ ;; :user "surfer@surfer"
+ ;; :password ""
+ ;; :ssl "true"
+ ;; :sslfactory "org.postgresql.ssl.NonValidatingFactory"}
 
  ;; H2
  ;;{:dbtype "h2"
