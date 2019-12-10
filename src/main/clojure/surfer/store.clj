@@ -13,7 +13,7 @@
             [ragtime.strategy]
             [cemerick.friend.credentials :as creds]
             [clojure.string :as str])
-  (:import [java.time Instant]))
+  (:import [java.time LocalDateTime]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -67,7 +67,7 @@
           userid (:userid listing)
           info (:info listing)
           info (when info (json/write-str info))
-          instant-now (Instant/now)
+          instant-now (LocalDateTime/now)
           insert-data {:id id
                        :userid userid
                        :assetid (:assetid listing)
@@ -99,7 +99,7 @@
                            :agreement (:agreement listing)
                            :trust_level (:trust_level listing)
                            ;; :ctime deliberately excluded
-                           :utime (Instant/now) ;; utime = current time
+                           :utime (LocalDateTime/now) ;; utime = current time
                          }]
       (jdbc/update! db "Listings" update-data ["id = ?" id])
       (get-listing db id) ;; return the updated listing
@@ -149,7 +149,7 @@
         userid (:userid purchase)
         info (:info purchase)
         info (when info (json/write-str info))
-        instant-now (Instant/now)
+        instant-now (LocalDateTime/now)
         insert-data (u/remove-nil-values {:id id
                                           :userid userid
                                           :listingid (:listingid purchase)
@@ -177,7 +177,7 @@
                      :info info
                      :agreement (:agreement purchase)
                      ;; :ctime deliberately excluded
-                     :utime (Instant/now)                   ;; utime = current time
+                     :utime (LocalDateTime/now)                   ;; utime = current time
                      }]
     (jdbc/update! db "Purchases" update-data ["id = ?" id])
     (get-purchase db id)))
@@ -253,7 +253,7 @@
                      :password password
                      :status status
                      :metadata (json/write-str metadata)
-                     :ctime (Instant/now)})
+                     :ctime (LocalDateTime/now)})
       id)))
 
 (defn clear-db [db]
@@ -273,7 +273,7 @@
         (jdbc/insert! db "Metadata"
                       {:id hash
                        :metadata asset-metadata-str
-                       :utime (Instant/now)}))
+                       :utime (LocalDateTime/now)}))
       hash)))
 
 (defn get-metadata-str
@@ -349,7 +349,7 @@
         userid (:userid purchase)
         info (:info purchase)
         info (when info (json/write-str info))
-        instant-now (Instant/now)
+        instant-now (LocalDateTime/now)
         insert-data (u/remove-nil-values {:id id
                                           :userid userid
                                           :listingid (:listingid purchase)
@@ -377,7 +377,7 @@
                            :info info
                            :agreement (:agreement purchase)
                            ;; :ctime deliberately excluded
-                           :utime (Instant/now) ;; utime = current time
+                           :utime (LocalDateTime/now) ;; utime = current time
                          }]
       (jdbc/update! db "Purchases" update-data ["id = ?" id])
       (get-purchase db id)))
