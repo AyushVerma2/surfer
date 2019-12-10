@@ -1,13 +1,13 @@
-name: Deploy Dev
+name: CI - master
 on:
   push:
     branches:
-      - develop
+      - master
     paths-ignore:
       - '**.md'
         
 env:
-  CONTAINER_NAME: dexcontainerregistry.azurecr.io/surfer:develop
+  CONTAINER_NAME: dexcontainerregistry.azurecr.io/surfer:master
   CONTAINER_LOGIN_SERVER: dexcontainerregistry.azurecr.io
   
 jobs:
