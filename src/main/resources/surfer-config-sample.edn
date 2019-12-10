@@ -6,9 +6,24 @@
 
  :web-server {:port 3030}
 
- :h2
- {:dbtype "h2"
-  :dbname "~/.surfer/h2/surfer"}
+ ;; Postgres
+ ;;{:dbtype "postgresql"
+ ;; :dbname "surfer"
+ ;; :host "localhost"
+ ;; :user "user"
+ ;; :password "password"}
+
+ ;; H2
+ ;;{:dbtype "h2"
+ ;; :dbname "~/.surfer/h2/surfer"}
+
+ ;; H2 in-memory
+ ;;{:dbtype "h2:mem"
+ ;; :dbname "surfer"}
+
+ :database
+ {:dbtype "h2:mem"
+  :dbname "surfer"}
 
  :storage
  {:type :filesystem

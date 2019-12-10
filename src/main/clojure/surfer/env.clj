@@ -21,8 +21,8 @@
   (let [config (get-in env [:config :agent])]
     (select-config-key config ks)))
 
-(defn h2-config [env & [ks]]
-  (let [config (get-in env [:config :h2])]
+(defn database-config [env & [ks]]
+  (let [config (get-in env [:config :database])]
     (select-config-key config ks)))
 
 (defn storage-config [env & [ks]]
@@ -37,6 +37,11 @@
 
 (defn web-server-port [env]
   (web-server-config env [:port]))
+
+(defn dbtype
+  "Database type. e.g., postgresql, h2, h2:mem."
+  [env]
+  (database-config env [:dbtype]))
 
 (defn agent-remote-url [env]
   (or *agent-remote-url* (agent-config env [:remote-url])))

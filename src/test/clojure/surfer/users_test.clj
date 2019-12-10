@@ -17,7 +17,7 @@
   (let [user {:username (str "bob" (System/currentTimeMillis))
               :password (creds/hash-bcrypt "OpenSesame")}
 
-        db (database/db (system/h2 test-system))
+        db (database/db (system/database test-system))
 
         id (store/register-user db user)]
     (is (u/valid-user-id? id))

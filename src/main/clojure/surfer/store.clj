@@ -12,7 +12,8 @@
             [ragtime.repl]
             [ragtime.strategy]
             [cemerick.friend.credentials :as creds]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [surfer.database :as database])
   (:import [java.time LocalDateTime]))
 
 (set! *warn-on-reflection* true)
@@ -256,7 +257,25 @@
                      :ctime (LocalDateTime/now)})
       id)))
 
-(defn clear-db [db]
+(defmulti clear-db
+  "Clear database.
+
+   Dispatches by `dbtype`.
+
+   Clear is done differently in different databases.
+   In H2 for example, there's a special SQL statement to
+   drop all objects."
+  (fn [db dbtype]
+    dbtype))
+
+(defmethod clear-db "postgresql" [db _]
+  (let [[{:keys [current_user]}] (jdbc/query db ["select current_user"])]
+    (jdbc/execute! db (str "drop owned by " current_user))))
+
+(defmethod clear-db "h2" [db _]
+  (jdbc/execute! db "DROP ALL OBJECTS"))
+
+(defmethod clear-db "h2:mem" [db _]
   (jdbc/execute! db "DROP ALL OBJECTS"))
 
 ;; =========================================================

@@ -13,7 +13,7 @@
 
 (deftest test-metadata-index
   (testing "Metadata Index Keys"
-    (let [db (database/db (system/h2 test-system))]
+    (let [db (database/db (system/database test-system))]
       (is (= (into #{} (store/all-keys db))
              (into #{} (keys (store/metadata-index db))))))))
 

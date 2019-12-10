@@ -27,6 +27,7 @@
   com.cemerick/friend {:mvn/version "0.2.3"}
   org.apache.tika/tika-core {:mvn/version "1.22"}
   com.h2database/h2 {:mvn/version "1.4.200"}
+  org.postgresql/postgresql {:mvn/version "42.2.8"}
   org.bouncycastle/bcprov-jdk15on {:mvn/version "1.64"}
   ragtime {:mvn/version "0.8.0"}
   prismatic/schema-generators {:mvn/version "0.1.3"}
