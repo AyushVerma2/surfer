@@ -1,6 +1,7 @@
 # Surfer
 
 [![Actions Status](https://github.com/DEX-Company/surfer/workflows/CI/badge.svg)](https://github.com/DEX-Company/surfer/actions)
+ [![Actions Status](https://github.com/DEX-Company/surfer/workflows/CI%20-%20master/badge.svg)](https://github.com/DEX-Company/surfer/actions) [![Actions Status](https://github.com/DEX-Company/surfer/workflows/CI%20-%20develop/badge.svg)](https://github.com/DEX-Company/surfer/actions)
 
 Surfer provides a standalone reference implementation of an Data Ecosystem Agent with the following capabilities:
 
