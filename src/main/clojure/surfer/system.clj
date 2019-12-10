@@ -1,7 +1,7 @@
 (ns surfer.system
   (:require [com.stuartsierra.component :as component]
+            [surfer.database :as database]
             [surfer.component.env :as component.env]
-            [surfer.component.h2 :as component.h2]
             [surfer.component.starfish :as component.starfish]
             [surfer.component.migration :as component.migration]
             [surfer.component.web-server :as component.web-server]))
@@ -14,7 +14,7 @@
     :env (component.env/map->Env {:config config})
 
     :database (component/using
-                (component.h2/map->H2 {}) [:env])
+                (database/map->Database {}) [:env])
 
     :starfish (component/using
                 (component.starfish/map->Starfish {}) [:env])
