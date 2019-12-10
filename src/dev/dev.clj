@@ -34,7 +34,7 @@
   (:db-spec (system/h2 system)))
 
 (defn reset-db []
-  (store/clear-db (db))
+  (store/clear-db (db) (env/dbtype (env)))
   (store/migrate-db! (db) (env/user-config (env))))
 
 (defn query [& sql-params]

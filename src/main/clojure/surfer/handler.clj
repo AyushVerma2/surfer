@@ -642,7 +642,7 @@
       (POST "/clear-db" []
         :summary "Clears the current database. DANGER."
         (friend/authorize #{:admin}
-                          (store/clear-db db)
+                          (store/clear-db db (env/dbtype env))
                           (response/response "Successful")))
 
       (POST "/migrate-db" []
@@ -654,7 +654,7 @@
       (POST "/reset-db" []
         :summary "Clear & migrate database"
         (friend/authorize #{:admin}
-                          (store/clear-db db)
+                          (store/clear-db db (env/dbtype env))
                           (store/migrate-db! db (env/user-config env))
                           (response/response "Successful")))
 

@@ -38,6 +38,9 @@
 (defn web-server-port [env]
   (web-server-config env [:port]))
 
+(defn dbtype [env]
+  (h2-config env [:dbtype]))
+
 (defn agent-remote-url [env]
   (or *agent-remote-url* (agent-config env [:remote-url])))
 
