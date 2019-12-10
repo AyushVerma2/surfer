@@ -6,8 +6,7 @@
 
  :web-server {:port 3030}
 
-
- ;; Postgre
+ ;; Postgres
  ;;{:dbtype "postgresql"
  ;; :dbname "surfer"
  ;; :host "localhost"
@@ -22,7 +21,7 @@
  ;;{:dbtype "h2:mem"
  ;; :dbname "surfer"}
 
- :h2
+ :database
  {:dbtype "h2:mem"
   :dbname "surfer"}
 

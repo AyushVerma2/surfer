@@ -9,7 +9,7 @@
   component/Lifecycle
 
   (start [component]
-    (assoc component :db-spec (env/h2-config env)))
+    (assoc component :db-spec (env/database-config env)))
 
   (stop [component]
     component))

@@ -27,11 +27,11 @@
 
 (defn app-context []
   (app-context/new-context (system/env system)
-                           (system/h2 system)
+                           (system/database system)
                            (system/starfish system)))
 
 (defn db []
-  (:db-spec (system/h2 system)))
+  (:db-spec (system/database system)))
 
 (defn reset-db []
   (store/clear-db (db) (env/dbtype (env)))
@@ -45,7 +45,7 @@
   (reset-db)
 
   ;; -- Import Datasets
-  (let [database (system/h2 system)
+  (let [database (system/database system)
         storage-path (env/storage-path (env))]
     (asset/import-edn! (db) storage-path "datasets.edn"))
 

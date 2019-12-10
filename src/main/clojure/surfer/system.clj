@@ -13,25 +13,17 @@
   (component/system-map
     :env (component.env/map->Env {:config config})
 
-    :h2 (component/using
-          (component.h2/map->H2 {}) [:env])
+    :database (component/using
+                (component.h2/map->H2 {}) [:env])
 
     :starfish (component/using
                 (component.starfish/map->Starfish {}) [:env])
 
-    ;; -- DATABASE KEY
-    ;; *Migration* and *WebServer* use a generic database key
-    ;; so it's possible to replace the (relational) database implementation
-    ;; without changing other parts of the system.
-
     :migration (component/using
-                 (component.migration/map->Migration {}) {:env :env
-                                                          :database :h2})
+                 (component.migration/map->Migration {}) [:env :database])
 
     :web-server (component/using
-                  (component.web-server/map->WebServer {}) {:env :env
-                                                            :database :h2
-                                                            :starfish :starfish})))
+                  (component.web-server/map->WebServer {}) [:env :database :starfish])))
 
 (defn init-fn [& [config]]
   (fn [system]
@@ -40,8 +32,8 @@
 (defn env [system]
   (:env system))
 
-(defn h2 [system]
-  (:h2 system))
+(defn database [system]
+  (:database system))
 
 (defn starfish [system]
   (:starfish system))
