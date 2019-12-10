@@ -38,7 +38,9 @@
 (defn web-server-port [env]
   (web-server-config env [:port]))
 
-(defn dbtype [env]
+(defn dbtype
+  "Database type. e.g., postgresql, h2, h2:mem."
+  [env]
   (h2-config env [:dbtype]))
 
 (defn agent-remote-url [env]
