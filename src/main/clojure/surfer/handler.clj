@@ -119,13 +119,6 @@
 
                }}}
 
-      (GET "/data/" request
-        :summary "Gets a list of assets where metadata is available"
-        :return [schema/AssetID]
-        {:status 200
-         :headers {"Content-Type" "application/json"}
-         :body (store/all-keys db)})
-
       (GET "/data/:id" [id]
         :summary "Gets metadata for a specified asset"
         :coercion nil
@@ -135,6 +128,13 @@
            :headers {"Content-Type" "application/json"}
            :body meta}
           (response/not-found "Metadata for this Asset ID is not available.")))
+
+      (GET "/data" request
+        :summary "Gets a list of assets where metadata is available"
+        :return [schema/AssetID]
+        {:status 200
+         :headers {"Content-Type" "application/json"}
+         :body (store/all-keys db)})
 
       (POST "/data" request
         {:coercion nil
