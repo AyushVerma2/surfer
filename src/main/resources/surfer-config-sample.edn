@@ -17,7 +17,7 @@
   ;; If enabled, the asset's content hash will be verified
   ;; against its metadata content hash whenever a client
   ;; uploads data to `/api/v1/assets/<id>`.
-  :enforce-content-hashes? true}
+  :enforce-content-hashes? false}
 
  ;; Define key metadata about the Agent deployment 
  :agent
