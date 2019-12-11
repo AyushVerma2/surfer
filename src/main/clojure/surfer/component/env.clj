@@ -19,11 +19,11 @@
     (let [config-path (or (env :config-path) "surfer-config.edn")
 
           config-file (io/file config-path)
-          config-sample-file (io/file (io/resource "surfer-config-sample.edn"))
 
           ;; -- surfer-config.edn - create if it doesn't exist
           _ (when-not (.exists config-file)
-              (io/copy config-sample-file config-file))
+              (with-open [sample (io/input-stream (io/resource "surfer-config-sample.edn"))]
+                (io/copy sample config-file)))
 
           ;; Merge configs - config (disk), overrides
           config (merge (aero/read-config config-path {:profile profile}) config)
