@@ -34,7 +34,8 @@
     [hiccup.core :as hiccup]
     [hiccup.page :as hiccup.page]
     [byte-streams]
-    [clojure.string :as str])
+    [clojure.string :as str]
+    [surfer.migration :as migration])
   (:import [java.io InputStream StringWriter PrintWriter]
            (clojure.lang ExceptionInfo)))
 
@@ -648,14 +649,14 @@
       (POST "/migrate-db" []
         :summary "Performs database migration. DANGER."
         (friend/authorize #{:admin}
-                          (let [r (store/migrate-db! db (env/user-config env))]
+                          (let [r (migration/migrate db (env/user-config env))]
                             (response/response (str "Successful: " r)))))
 
       (POST "/reset-db" []
         :summary "Clear & migrate database"
         (friend/authorize #{:admin}
                           (store/clear-db db (env/dbtype env))
-                          (store/migrate-db! db (env/user-config env))
+                          (migration/migrate db (env/user-config env))
                           (response/response "Successful")))
 
       (POST "/create-db-test-data" []
