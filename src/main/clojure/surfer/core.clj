@@ -6,4 +6,4 @@
 (defn -main
   "Start Surfer"
   [& _]
-  (component/start (system/new-system)))
+  (component/start (system/new-system :prod)))

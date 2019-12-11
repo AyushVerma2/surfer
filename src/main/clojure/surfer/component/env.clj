@@ -10,36 +10,29 @@
             [cemerick.friend.credentials :as creds]
             [clojure.tools.logging :as log]
             [clojure.string :as str]
-            [clj-http.client :as http]))
+            [aero.core :as aero]))
 
-(defrecord Env [config-path config user-config-path user-config]
+(defrecord Env [config-path config user-config-path user-config profile]
   component/Lifecycle
 
   (start [component]
     (let [config-path (or (env :config-path) "surfer-config.edn")
 
+          config-file (io/file config-path)
+
           ;; -- surfer-config.edn - create if it doesn't exist
-          _ (when-not (.exists (io/file config-path))
-              (let [config (edn/read-string (slurp (io/resource "surfer-config-sample.edn")))]
-                (spit config-path (with-out-str (pprint/pprint config)))))
+          _ (when-not (.exists config-file)
+              (with-open [sample (io/input-stream (io/resource "surfer-config-sample.edn"))]
+                (io/copy sample config-file)))
 
           ;; Merge configs - config (disk), overrides
-          config (merge (edn/read-string (slurp config-path)) config)
+          config (merge (aero/read-config config-path {:profile profile}) config)
 
           web-server-port (get-in config [:web-server :port])
 
-          config (-> config
-                     (update :storage (fn [{:keys [path] :as storage-config}]
-                                        (if path
-                                          ;; Resolve storage path; e.g ~/.surfer => /home/user/.surfer
-                                          (assoc storage-config :path (str/replace path #"^~" (System/getProperty "user.home")))
-                                          storage-config)))
-                     (update :web-server (fn [{:keys [port] :as web-server-config}]
-                                           ;; $PORT environment variable takes precedence over the configuration setting
-                                           (assoc web-server-config :port (or (some-> (System/getenv "PORT") (Integer/parseInt)) port))))
-                     (update :agent (fn [agent-config]
-                                      (let [remote-url (or (env :remote-url) (str "http://localhost:" web-server-port))]
-                                        (assoc agent-config :remote-url remote-url)))))
+          config (update config :agent (fn [{:keys [remote-url] :as agent-config}]
+                                         (let [remote-url (or remote-url (str "http://localhost:" web-server-port))]
+                                           (assoc agent-config :remote-url remote-url))))
 
           user-config-path (get-in config [:security :user-config])
 
@@ -56,7 +49,7 @@
                              (mapv (fn [{:keys [password] :as user}]
                                      (assoc user :password (creds/hash-bcrypt password))))))]
 
-      (log/debug (str "Config\n" (with-out-str (pprint/pprint config))))
+      (log/debug (str config-path "\n" (with-out-str (pprint/pprint config))))
 
       (assoc component :config-path config-path
                        :config config

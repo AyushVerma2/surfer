@@ -18,7 +18,7 @@
             [clj-http.client :as http])
   (:import (sg.dex.starfish.impl.memory LocalResolverImpl)))
 
-(set-init (system/init-fn))
+(set-init (constantly (system/new-system :dev)))
 
 ;; ---
 
