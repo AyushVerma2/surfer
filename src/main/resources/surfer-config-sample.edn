@@ -30,8 +30,7 @@
            :test {:dbtype "h2:mem"
                   :dbname "surfer-test"}
 
-           :prod {:dbtype "postgresql"
-                  :connection-uri #env DATABASE_URL}}
+           :prod #env DATABASE_URL}
 
  :storage
  #profile {:dev {:type :filesystem
