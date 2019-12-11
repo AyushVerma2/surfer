@@ -9,13 +9,10 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(defn new-system [& [profile config]]
+(defn new-system [profile & [config]]
   (component/system-map
-    :env (let [m {:config config}
-               m (if profile
-                   (merge m {:profile profile})
-                   m)]
-           (component.env/map->Env m))
+    :env (component.env/map->Env {:config config
+                                  :profile profile})
 
     :database (component/using
                 (database/map->Database {}) [:env])
