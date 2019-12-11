@@ -10,7 +10,7 @@
             [cemerick.friend.credentials :as creds]
             [clojure.tools.logging :as log]
             [clojure.string :as str]
-            [clj-http.client :as http]))
+            [aero.core :as aero]))
 
 (defrecord Env [config-path config user-config-path user-config]
   component/Lifecycle
@@ -18,13 +18,15 @@
   (start [component]
     (let [config-path (or (env :config-path) "surfer-config.edn")
 
+          config-file (io/file config-path)
+          config-sample-file (io/file (io/resource "surfer-config-sample.edn"))
+
           ;; -- surfer-config.edn - create if it doesn't exist
-          _ (when-not (.exists (io/file config-path))
-              (let [config (edn/read-string (slurp (io/resource "surfer-config-sample.edn")))]
-                (spit config-path (with-out-str (pprint/pprint config)))))
+          _ (when-not (.exists config-file)
+              (io/copy config-sample-file config-file))
 
           ;; Merge configs - config (disk), overrides
-          config (merge (edn/read-string (slurp config-path)) config)
+          config (merge (aero/read-config config-path) config)
 
           web-server-port (get-in config [:web-server :port])
 
