@@ -4,7 +4,7 @@
             [surfer.env :as env]
             [surfer.component.starfish :as component.starfish]
             [surfer.migration :as migration]
-            [surfer.component.web-server :as component.web-server]))
+            [surfer.web-server :as web-server]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -24,7 +24,7 @@
                  (migration/map->Migration {}) [:env :database])
 
     :web-server (component/using
-                  (component.web-server/map->WebServer {}) [:env :database :starfish])))
+                  (web-server/map->WebServer {}) [:env :database :starfish])))
 
 (defn env [system]
   (:env system))
