@@ -1,7 +1,7 @@
 (ns surfer.system
   (:require [com.stuartsierra.component :as component]
             [surfer.database :as database]
-            [surfer.component.env :as component.env]
+            [surfer.env :as env]
             [surfer.component.starfish :as component.starfish]
             [surfer.component.migration :as component.migration]
             [surfer.component.web-server :as component.web-server]))
@@ -11,8 +11,8 @@
 
 (defn new-system [profile & [config]]
   (component/system-map
-    :env (component.env/map->Env {:config config
-                                  :profile profile})
+    :env (env/map->Env {:config config
+                        :profile profile})
 
     :database (component/using
                 (database/map->Database {}) [:env])
