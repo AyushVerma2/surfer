@@ -31,16 +31,8 @@
           web-server-port (get-in config [:web-server :port])
 
           config (-> config
-                     (update :storage (fn [{:keys [path] :as storage-config}]
-                                        (if path
-                                          ;; Resolve storage path; e.g ~/.surfer => /home/user/.surfer
-                                          (assoc storage-config :path (str/replace path #"^~" (System/getProperty "user.home")))
-                                          storage-config)))
-                     (update :web-server (fn [{:keys [port] :as web-server-config}]
-                                           ;; $PORT environment variable takes precedence over the configuration setting
-                                           (assoc web-server-config :port (or (some-> (System/getenv "PORT") (Integer/parseInt)) port))))
-                     (update :agent (fn [agent-config]
-                                      (let [remote-url (or (env :remote-url) (str "http://localhost:" web-server-port))]
+                     (update :agent (fn [{:keys [remote-url] :as agent-config}]
+                                      (let [remote-url (or remote-url (str "http://localhost:" web-server-port))]
                                         (assoc agent-config :remote-url remote-url)))))
 
           user-config-path (get-in config [:security :user-config])

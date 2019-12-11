@@ -4,7 +4,7 @@
  ;; 1. The file specified in the CONFIG_PATH environment variable
  ;; 2. The "surfer-config.edn" file in the current directory
 
- :web-server {:port 3030}
+ :web-server {:port #long #or [#env PORT 3030]}
 
  ;; Postgres
  ;;{:dbtype "postgresql"
@@ -29,7 +29,7 @@
 
  :storage
  {:type :filesystem
-  :path "~/.surfer/storage"
+  :path #envf ["%s/.surfer/storage" HOME]
 
   ;; If enabled, the asset's content hash will be verified
   ;; against its metadata content hash whenever a client
@@ -47,6 +47,8 @@
   ;; DID to use for this agent.
   ;; if specified as ':auto-generate' then a random DID will be generated on startup
   :did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"}
+
+ :remote-url #env REMOTE_URL
 
  ;; Define the identity of the marketplace operator
  :operator {:name "DEX"
