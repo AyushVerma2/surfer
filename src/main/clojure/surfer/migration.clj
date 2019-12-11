@@ -1,4 +1,4 @@
-(ns surfer.component.migration
+(ns surfer.migration
   "Migration Component namespace
 
    This namespace should only be required by `surfer.system`."

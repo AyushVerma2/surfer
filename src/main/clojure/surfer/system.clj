@@ -3,7 +3,7 @@
             [surfer.database :as database]
             [surfer.env :as env]
             [surfer.component.starfish :as component.starfish]
-            [surfer.component.migration :as component.migration]
+            [surfer.migration :as migration]
             [surfer.component.web-server :as component.web-server]))
 
 (set! *warn-on-reflection* true)
@@ -21,7 +21,7 @@
                 (component.starfish/map->Starfish {}) [:env])
 
     :migration (component/using
-                 (component.migration/map->Migration {}) [:env :database])
+                 (migration/map->Migration {}) [:env :database])
 
     :web-server (component/using
                   (component.web-server/map->WebServer {}) [:env :database :starfish])))
