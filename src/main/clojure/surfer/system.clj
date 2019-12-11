@@ -9,9 +9,13 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(defn new-system [& [config]]
+(defn new-system [& [profile config]]
   (component/system-map
-    :env (component.env/map->Env {:config config})
+    :env (let [m {:config config}
+               m (if profile
+                   (merge m {:profile profile})
+                   m)]
+           (component.env/map->Env m))
 
     :database (component/using
                 (database/map->Database {}) [:env])
@@ -24,10 +28,6 @@
 
     :web-server (component/using
                   (component.web-server/map->WebServer {}) [:env :database :starfish])))
-
-(defn init-fn [& [config]]
-  (fn [system]
-    (new-system config)))
 
 (defn env [system]
   (:env system))

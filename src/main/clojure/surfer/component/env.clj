@@ -12,7 +12,7 @@
             [clojure.string :as str]
             [aero.core :as aero]))
 
-(defrecord Env [config-path config user-config-path user-config]
+(defrecord Env [config-path config user-config-path user-config profile]
   component/Lifecycle
 
   (start [component]
@@ -26,14 +26,13 @@
               (io/copy config-sample-file config-file))
 
           ;; Merge configs - config (disk), overrides
-          config (merge (aero/read-config config-path) config)
+          config (merge (aero/read-config config-path {:profile profile}) config)
 
           web-server-port (get-in config [:web-server :port])
 
-          config (-> config
-                     (update :agent (fn [{:keys [remote-url] :as agent-config}]
-                                      (let [remote-url (or remote-url (str "http://localhost:" web-server-port))]
-                                        (assoc agent-config :remote-url remote-url)))))
+          config (update config :agent (fn [{:keys [remote-url] :as agent-config}]
+                                         (let [remote-url (or remote-url (str "http://localhost:" web-server-port))]
+                                           (assoc agent-config :remote-url remote-url))))
 
           user-config-path (get-in config [:security :user-config])
 
@@ -50,7 +49,7 @@
                              (mapv (fn [{:keys [password] :as user}]
                                      (assoc user :password (creds/hash-bcrypt password))))))]
 
-      (log/debug (str "Config\n" (with-out-str (pprint/pprint config))))
+      (log/debug (str config-path "\n" (with-out-str (pprint/pprint config))))
 
       (assoc component :config-path config-path
                        :config config

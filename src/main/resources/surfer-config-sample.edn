@@ -24,17 +24,30 @@
  ;; :dbname "surfer"}
 
  :database
- {:dbtype "h2:mem"
-  :dbname "surfer"}
+ #profile {:dev {:dbtype "h2:mem"
+                 :dbname "surfer-dev"}
+
+           :test {:dbtype "h2:mem"
+                  :dbname "surfer-test"}
+
+           :prod {:connection-uri #env DATABASE_URL}}
 
  :storage
- {:type :filesystem
-  :path #envf ["%s/.surfer/storage" HOME]
+ #profile {:dev {:type :filesystem
+                 :path #envf ["%s/.surfer/dev/storage" HOME]
 
-  ;; If enabled, the asset's content hash will be verified
-  ;; against its metadata content hash whenever a client
-  ;; uploads data to `/api/v1/assets/<id>`.
-  :enforce-content-hashes? false}
+                 ;; If enabled, the asset's content hash will be verified
+                 ;; against its metadata content hash whenever a client
+                 ;; uploads data to `/api/v1/assets/<id>`.
+                 :enforce-content-hashes? true}
+
+           :test {:type :filesystem
+                  :path #envf ["%s/.surfer/test/storage" HOME]
+                  :enforce-content-hashes? true}
+
+           :prod {:type :filesystem
+                  :path #envf ["%s/.surfer/storage" HOME]
+                  :enforce-content-hashes? false}}
 
  ;; Define key metadata about the Agent deployment 
  :agent
@@ -46,9 +59,9 @@
 
   ;; DID to use for this agent.
   ;; if specified as ':auto-generate' then a random DID will be generated on startup
-  :did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"}
+  :did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"
 
- :remote-url #env REMOTE_URL
+  :remote-url #env REMOTE_URL}
 
  ;; Define the identity of the marketplace operator
  :operator {:name "DEX"
@@ -73,7 +86,4 @@
   ;;    future behaviour to state 1., and is recommended for initial marketplace setup.
   ;; 3. If the :user-config is nil, the marketplace will run without creating or modifying users.
   ;;    This configuration is recommended for a public, operational marketplace.
-  :user-config "surfer-users.edn"}
-
- ;; Define logging configuration
- :logging {}}
+  :user-config "surfer-users.edn"}}
