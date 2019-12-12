@@ -656,6 +656,10 @@
                                                    (env/storage-path))]
                               (response/response (asset/import-edn! db storage-path "datasets.edn")))))
 
+        (GET "/print-config" []
+          :summary "Print config."
+          (friend/authorize #{:admin} (response/response (env/config env))))
+
         (POST "/config-agent-remote-url" []
           :summary "Config - Set `[:agent :remote-url]`."
           :coercion nil
