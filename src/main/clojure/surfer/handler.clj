@@ -1,6 +1,7 @@
 (ns surfer.handler
   (:require
     [clojure.walk :refer [stringify-keys]]
+    [compojure.route :as route]
     [compojure.api.sweet :refer :all]
     [ring.middleware.format :refer [wrap-restful-format]]
     [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
@@ -896,7 +897,9 @@
 
       (context "/api" []
         :tags ["Status API"]
-        (status-api app-context)))))
+        (status-api app-context))
+
+      (route/not-found "Not found."))))
 
 (def web-routes
   (api
@@ -1012,18 +1015,18 @@
 (defn make-handler [app-context]
   (let [db (database/db (app-context/database app-context))
         config (auth-config db)
-        wrap-auth (wrap-auth config)]
+        wrap-auth (wrap-auth config)
+        middleware (comp
+                     (fn [handler]
+                       (wrap-cors handler
+                                  :access-control-allow-origin #".*"
+                                  :access-control-allow-credentials true
+                                  :access-control-allow-methods [:get :put :post :delete :options]))
+                     wrap-log-response
+                     wrap-params
+                     wrap-cache-buster
+                     wrap-auth)
+        api-routes (add-middleware (routes (api-routes app-context)) middleware)]
     (routes
       web-routes
-      (add-middleware
-        (routes (api-routes app-context))
-        (comp
-          (fn [handler]
-            (wrap-cors handler
-                       :access-control-allow-origin #".*"
-                       :access-control-allow-credentials true
-                       :access-control-allow-methods [:get :put :post :delete :options]))
-          wrap-log-response
-          wrap-params
-          wrap-cache-buster
-          wrap-auth)))))
+      api-routes)))
