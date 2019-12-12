@@ -1,7 +1,4 @@
-(ns surfer.component.web-server
-  "WebServer Component namespace
-
-   This namespace should only be required by `surfer.system`."
+(ns surfer.web-server
   (:require [com.stuartsierra.component :as component]
             [org.httpkit.server :refer [run-server]]
             [surfer.handler :as handler]

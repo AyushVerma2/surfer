@@ -7,6 +7,7 @@
             [surfer.asset :as asset]
             [surfer.storage :as storage]
             [surfer.app-context :as app-context]
+            [surfer.migration :as migration]
             [starfish.core :as sf]
             [starfish.alpha :as sfa]
             [clojure.data.json :as data.json]
@@ -35,7 +36,7 @@
 
 (defn reset-db []
   (store/clear-db (db) (env/dbtype (env)))
-  (store/migrate-db! (db) (env/user-config (env))))
+  (migration/migrate (db) (env/user-config (env))))
 
 (defn query [& sql-params]
   (jdbc/query (db) sql-params))

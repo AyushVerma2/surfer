@@ -1,6 +1,7 @@
 (ns surfer.handler
   (:require
     [clojure.walk :refer [stringify-keys]]
+    [compojure.route :as route]
     [compojure.api.sweet :refer :all]
     [ring.middleware.format :refer [wrap-restful-format]]
     [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
@@ -34,7 +35,8 @@
     [hiccup.core :as hiccup]
     [hiccup.page :as hiccup.page]
     [byte-streams]
-    [clojure.string :as str])
+    [clojure.string :as str]
+    [surfer.migration :as migration])
   (:import [java.io InputStream StringWriter PrintWriter]
            (clojure.lang ExceptionInfo)))
 
@@ -118,13 +120,6 @@
 
                }}}
 
-      (GET "/data/" request
-        :summary "Gets a list of assets where metadata is available"
-        :return [schema/AssetID]
-        {:status 200
-         :headers {"Content-Type" "application/json"}
-         :body (store/all-keys db)})
-
       (GET "/data/:id" [id]
         :summary "Gets metadata for a specified asset"
         :coercion nil
@@ -134,6 +129,13 @@
            :headers {"Content-Type" "application/json"}
            :body meta}
           (response/not-found "Metadata for this Asset ID is not available.")))
+
+      (GET "/data" request
+        :summary "Gets a list of assets where metadata is available"
+        :return [schema/AssetID]
+        {:status 200
+         :headers {"Content-Type" "application/json"}
+         :body (store/all-keys db)})
 
       (POST "/data" request
         {:coercion nil
@@ -648,14 +650,14 @@
       (POST "/migrate-db" []
         :summary "Performs database migration. DANGER."
         (friend/authorize #{:admin}
-                          (let [r (store/migrate-db! db (env/user-config env))]
+                          (let [r (migration/migrate db (env/user-config env))]
                             (response/response (str "Successful: " r)))))
 
       (POST "/reset-db" []
         :summary "Clear & migrate database"
         (friend/authorize #{:admin}
                           (store/clear-db db (env/dbtype env))
-                          (store/migrate-db! db (env/user-config env))
+                          (migration/migrate db (env/user-config env))
                           (response/response "Successful")))
 
       (POST "/create-db-test-data" []
@@ -895,7 +897,9 @@
 
       (context "/api" []
         :tags ["Status API"]
-        (status-api app-context)))))
+        (status-api app-context))
+
+      (route/not-found "Not found."))))
 
 (def web-routes
   (api
@@ -1011,18 +1015,18 @@
 (defn make-handler [app-context]
   (let [db (database/db (app-context/database app-context))
         config (auth-config db)
-        wrap-auth (wrap-auth config)]
+        wrap-auth (wrap-auth config)
+        middleware (comp
+                     (fn [handler]
+                       (wrap-cors handler
+                                  :access-control-allow-origin #".*"
+                                  :access-control-allow-credentials true
+                                  :access-control-allow-methods [:get :put :post :delete :options]))
+                     wrap-log-response
+                     wrap-params
+                     wrap-cache-buster
+                     wrap-auth)
+        api-routes (add-middleware (routes (api-routes app-context)) middleware)]
     (routes
       web-routes
-      (add-middleware
-        (routes (api-routes app-context))
-        (comp
-          (fn [handler]
-            (wrap-cors handler
-                       :access-control-allow-origin #".*"
-                       :access-control-allow-credentials true
-                       :access-control-allow-methods [:get :put :post :delete :options]))
-          wrap-log-response
-          wrap-params
-          wrap-cache-buster
-          wrap-auth)))))
+      api-routes)))
