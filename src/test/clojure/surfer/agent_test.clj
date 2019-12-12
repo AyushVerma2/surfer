@@ -21,11 +21,6 @@
   [params]
   (update params :text (comp sf/memory-asset str/upper-case)))
 
-(defn upper-case-asset-text
-  "Convert asset's text content to upper case."
-  [params]
-  (update params :text str/upper-case))
-
 (deftest ^:integration agent-integration
   (let [agent-did (env/agent-did (system/env test-system))
         account (sf/remote-account "Aladdin" "OpenSesame")
