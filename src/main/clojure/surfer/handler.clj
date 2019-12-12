@@ -988,18 +988,20 @@
 (defn make-handler [app-context]
   (let [db (database/db (app-context/database app-context))
         config (auth-config db)
+
         wrap-auth (wrap-auth config)
+        wrap-cors (fn [handler]
+                    (wrap-cors handler
+                               :access-control-allow-origin #".*"
+                               :access-control-allow-credentials true
+                               :access-control-allow-methods [:get :put :post :delete :options]))
+
         middleware (comp
-                     (fn [handler]
-                       (wrap-cors handler
-                                  :access-control-allow-origin #".*"
-                                  :access-control-allow-credentials true
-                                  :access-control-allow-methods [:get :put :post :delete :options]))
+                     wrap-cors
                      wrap-log-response
                      wrap-params
                      wrap-cache-buster
                      wrap-auth)
+
         api-routes (add-middleware (routes (api-routes app-context)) middleware)]
-    (routes
-      web-routes
-      api-routes)))
+    (routes web-routes api-routes)))
