@@ -27,14 +27,9 @@
   (update params :text str/upper-case))
 
 (deftest ^:integration agent-integration
-  (let [local-did (env/agent-did (system/env test-system))
-        local-ddo (env/agent-ddo (system/env test-system))
-        local-ddo-string (sf/json-string-pprint local-ddo)
-
-        username "Aladdin"
-        password "OpenSesame"
-
-        agent (sf/remote-agent local-did local-ddo-string username password)]
+  (let [agent-did (env/agent-did (system/env test-system))
+        account (sf/remote-account "Aladdin" "OpenSesame")
+        agent (sf/remote-agent agent-did account)]
 
     (let [foo-memory-asset (sf/memory-asset "Foo")
           foo-remote-data-asset (sf/upload agent foo-memory-asset)]
