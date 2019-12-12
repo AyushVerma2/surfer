@@ -600,35 +600,22 @@
              :body "Can't modify purchase: only purchase owner can do so"})))
       )))
 
-(defn admin-api [app-context]
+(defn admin-api-v1 [app-context]
   (let [database (app-context/database app-context)
         env (app-context/env app-context)
         db (database/db database)]
     (context "/api/v1/admin" []
-      :tags ["Admin API"]
-      (routes
-        {:swagger
-         {:data
-          {:info {:title "Admin API"
-                  :description "Administration API"}
-           :tags [{:name "Admin API"
-                   :description "Administration API"}]}}}
-
-        ;; ===========================================
-        ;; Admin tools
-
+      :tags ["Admin API v1"]
+      (routes {:swagger {:data {:info {:title "Admin API"}}}}
         (GET "/auth" request
           :summary "Gets the authentication map for the current user. Useful for debugging."
           (response/response (friend/current-authentication request)))
-
-        ;; ===========================================
-        ;; CKAN Functionality
 
         (POST "/ckan-import" request
           :query-params [{userid :- schema/UserID nil},
                          repo :- String,
                          {count :- s/Int 10}]
-          :summary "Imports assets from a CKAN repository"
+          :summary "Imports assets from a CKAN repository."
           (friend/authorize #{:admin}
                             (let [userid (or userid (get-current-userid app-context request) (throw (IllegalArgumentException. "No valid userid")))]
                               (let [all-names (ckan/package-list repo)
@@ -636,38 +623,34 @@
                                 (binding [ckan/*import-userid* userid]
                                   (ckan/import-packages db repo names))))))
 
-        ;; ===========================================
-        ;; Marketplace database management
-
         (POST "/clear-db" []
-          :summary "Clears the current database. DANGER."
+          :summary "Clear database."
           (friend/authorize #{:admin}
                             (store/clear-db db (env/dbtype env))
-                            (response/response "Successful")))
+                            (response/response {:message "Success"})))
 
         (POST "/migrate-db" []
-          :summary "Performs database migration. DANGER."
+          :summary "Run database migrations."
           (friend/authorize #{:admin}
-                            (let [r (migration/migrate db (env/user-config env))]
-                              (response/response (str "Successful: " r)))))
+                            (migration/migrate db (env/user-config env))
+                            (response/response {:message "Success"})))
 
         (POST "/reset-db" []
-          :summary "Clear & migrate database"
+          :summary "Clear database & run migrations."
           (friend/authorize #{:admin}
                             (store/clear-db db (env/dbtype env))
                             (migration/migrate db (env/user-config env))
-                            (response/response "Successful")))
+                            (response/response {:message "Success"})))
 
-        (POST "/import-datasets" []
-          :summary "Import datasets"
+        (POST "/import-sample-datasets" []
+          :summary "Import sample datasets - datasets.edn."
           (friend/authorize #{:admin}
-                            (let [database (app-context/database app-context)
-                                  storage-path (-> (app-context/env app-context)
+                            (let [storage-path (-> (app-context/env app-context)
                                                    (env/storage-path))]
                               (response/response (asset/import-edn! db storage-path "datasets.edn")))))
 
-        (POST "/agent-remote-url" []
-          :summary "Set Surfer's remote url"
+        (POST "/config-agent-remote-url" []
+          :summary "Config - Set `[:agent :remote-url]`."
           :coercion nil
           :query-params [remote-url :- s/Str]
           (friend/authorize #{:admin}
@@ -884,7 +867,7 @@
         (invoke-api app-context))
 
       ;; "/api/v1/admin"
-      (admin-api app-context)
+      (admin-api-v1 app-context)
 
       ;; "/api"
       (status-api app-context)
