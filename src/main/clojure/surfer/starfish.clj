@@ -1,4 +1,4 @@
-(ns surfer.component.starfish
+(ns surfer.starfish
   (:require [starfish.core :as sf]
             [starfish.alpha :as sfa]
             [surfer.env :as env]

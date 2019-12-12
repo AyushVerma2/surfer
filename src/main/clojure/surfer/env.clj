@@ -67,6 +67,9 @@
     (get-in config ks)
     config))
 
+(defn config [env]
+  (:config env))
+
 (defn user-config [env & [ks]]
   (let [config (get-in env [:user-config])]
     (select-config-key config ks)))
