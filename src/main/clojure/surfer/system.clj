@@ -2,7 +2,7 @@
   (:require [com.stuartsierra.component :as component]
             [surfer.database :as database]
             [surfer.env :as env]
-            [surfer.component.starfish :as component.starfish]
+            [surfer.starfish :as starfish]
             [surfer.migration :as migration]
             [surfer.web-server :as web-server]))
 
@@ -18,7 +18,7 @@
                 (database/map->Database {}) [:env])
 
     :starfish (component/using
-                (component.starfish/map->Starfish {}) [:env])
+                (starfish/map->Starfish {}) [:env])
 
     :migration (component/using
                  (migration/map->Migration {}) [:env :database])
