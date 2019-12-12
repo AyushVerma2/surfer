@@ -77,32 +77,26 @@
 
 (defn status-api [app-context]
   (let [env (app-context/env app-context)]
-    (routes
-      {:swagger
-       {:data
-        {:info
-         {:title "Status API"
-          :description "Status API for DEP Agents"}
-         :tags [{:name "Status API",
-                 :description "Status API for DEP Agents"}]}}}
-
-      (GET "/ddo" request
-        :summary "Gets the ddo for this Agent"
-        :return schema/DDO
-        {:status 200
-         :headers {"Content-Type" "application/json"}
-         :body (env/agent-ddo env)})
-
-      (GET "/status" request
-        :summary "Gets the status for this Agent"
-        :return s/Any
-        (let [agent (env/agent-config env)]
+    (context "/api" []
+      :tags ["Status API"]
+      (routes {:swagger {:data {:info {:title "Status API"}}}}
+        (GET "/ddo" []
+          :summary "Gets the ddo for this Agent"
+          :return schema/DDO
           {:status 200
            :headers {"Content-Type" "application/json"}
-           :body {:name (or (:name agent) "Unnamed Agent")
-                  :description (or (:description agent) "No description")
-                  :api-versions ["v1"]
-                  :custom {:server-type "Surfer"}}})))))
+           :body (env/agent-ddo env)})
+
+        (GET "/status" []
+          :summary "Gets the status for this Agent"
+          :return s/Any
+          (let [agent (env/agent-config env)]
+            {:status 200
+             :headers {"Content-Type" "application/json"}
+             :body {:name (or (:name agent) "Unnamed Agent")
+                    :description (or (:description agent) "No description")
+                    :api-versions ["v1"]
+                    :custom {:server-type "Surfer"}}}))))))
 
 
 ;; ==========================================
@@ -892,9 +886,8 @@
       ;; "/api/v1/admin"
       (admin-api app-context)
 
-      (context "/api" []
-        :tags ["Status API"]
-        (status-api app-context))
+      ;; "/api"
+      (status-api app-context)
 
       (route/not-found "Not found."))))
 
