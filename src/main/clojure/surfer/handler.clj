@@ -102,7 +102,7 @@
 ;; ==========================================
 ;; Meta API
 
-(defn meta-api [app-context]
+(defn meta-api-v1 [app-context]
   (let [env (app-context/env app-context)
         db (database/db (app-context/database app-context))]
     (routes
@@ -175,7 +175,7 @@
          :headers {"Content-Type" "application/json"}
          :body (store/metadata-index db)}))))
 
-(defn invoke-api [app-context]
+(defn invoke-api-v1 [app-context]
   (let [database (app-context/database app-context)
         db (database/db database)]
     (routes
@@ -262,7 +262,7 @@
       (not matches?)
       (throw (ex-info "Hashes don't match." (merge check {:metadata metadata}))))))
 
-(defn storage-api [app-context]
+(defn storage-api-v1 [app-context]
   (let [database (app-context/database app-context)
         env (app-context/env app-context)
         db (database/db database)]
@@ -377,7 +377,7 @@
                                       :data {:path-params id
                                              :multipart-params file}}}))))))))
 
-(defn trust-api [app-context]
+(defn trust-api-v1 [app-context]
   (routes
     {:swagger
      {:data
@@ -391,7 +391,7 @@
       :summary "Gets the list of current groups"
       (throw (UnsupportedOperationException. "Not yet implemented!")))))
 
-(defn market-api [app-context]
+(defn market-api-v1 [app-context]
   (let [database (app-context/database app-context)
         db (database/db database)]
     (routes
@@ -694,7 +694,7 @@
                "authorized:" (boolean (:user rv)))
     rv))
 
-(defn auth-api [app-context]
+(defn auth-api-v1 [app-context]
   (let [database (app-context/database app-context)
         db (database/db database)]
     (routes
@@ -843,28 +843,28 @@
       (GET "/logout" [] logout-page)
 
       (context "/api/v1/meta" []
-        :tags ["Meta API"]
-        (meta-api app-context))
+        :tags ["Meta API v1"]
+        (meta-api-v1 app-context))
 
       (context "/api/v1/assets" []
-        :tags ["Storage API"]
-        (storage-api app-context))
+        :tags ["Storage API v1"]
+        (storage-api-v1 app-context))
 
       (context "/api/v1/market" []
-        :tags ["Market API"]
-        (market-api app-context))
+        :tags ["Market API v1"]
+        (market-api-v1 app-context))
 
       (context "/api/v1/trust" []
-        :tags ["Trust API"]
-        (trust-api app-context))
+        :tags ["Trust API v1"]
+        (trust-api-v1 app-context))
 
       (context "/api/v1/auth" []
-        :tags ["Authentication API"]
-        (auth-api app-context))
+        :tags ["Authentication API v1"]
+        (auth-api-v1 app-context))
 
       (context "/api/v1/invoke" []
-        :tags ["Invoke API"]
-        (invoke-api app-context))
+        :tags ["Invoke API v1"]
+        (invoke-api-v1 app-context))
 
       ;; "/api/v1/admin"
       (admin-api-v1 app-context)
