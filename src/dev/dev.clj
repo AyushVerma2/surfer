@@ -15,8 +15,7 @@
             [clojure.java.io :as io]
             [clojure.edn :as edn]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
-            [clj-http.client :as http])
-  (:import (sg.dex.starfish.impl.memory LocalResolverImpl)))
+            [clj-http.client :as http]))
 
 (set-init (constantly (system/new-system :dev)))
 
@@ -76,7 +75,7 @@
     (sf/upload aladdin (sf/memory-asset (data.json/write-str {:n 2}))))
 
   (def n-asset-did
-    (sf/dido n-asset))
+    (sf/did n-asset))
 
   (sf/asset-id n-asset-did)
 

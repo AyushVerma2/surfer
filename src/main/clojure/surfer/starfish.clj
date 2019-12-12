@@ -1,8 +1,7 @@
 (ns surfer.starfish
   (:require [starfish.core :as sf]
             [surfer.env :as env]
-            [com.stuartsierra.component :as component])
-  (:import (sg.dex.starfish.impl.remote RemoteAgent)))
+            [com.stuartsierra.component :as component]))
 
 (defrecord Starfish [env]
   component/Lifecycle

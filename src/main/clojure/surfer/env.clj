@@ -116,7 +116,7 @@
       (sf/random-did)
 
       (string? x)
-      (sf/dido x))))
+      (sf/did x))))
 
 (defn agent-ddo
   "Surfer's DDO."
