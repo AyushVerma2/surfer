@@ -610,78 +610,76 @@
   (let [database (app-context/database app-context)
         env (app-context/env app-context)
         db (database/db database)]
-    (routes
-      {:swagger
-       {:data {:info {:title "Market Admin API"
-                      :description "Administration API for Ocean Marketplace"}
-               :tags [{:name "Admin API", :description "Administration API for Ocean Marketplace"}]}}}
+    (context "/api/v1/admin" []
+      :tags ["Admin API"]
+      (routes
+        {:swagger
+         {:data
+          {:info {:title "Admin API"
+                  :description "Administration API"}
+           :tags [{:name "Admin API"
+                   :description "Administration API"}]}}}
 
-      ;; ===========================================
-      ;; Admin tools
+        ;; ===========================================
+        ;; Admin tools
 
-      (GET "/auth" request
-        :summary "Gets the authentication map for the current user. Useful for debugging."
-        (response/response (friend/current-authentication request)))
+        (GET "/auth" request
+          :summary "Gets the authentication map for the current user. Useful for debugging."
+          (response/response (friend/current-authentication request)))
 
-      ;; ===========================================
-      ;; CKAN Functionality
+        ;; ===========================================
+        ;; CKAN Functionality
 
-      (POST "/ckan-import" request
-        :query-params [{userid :- schema/UserID nil},
-                       repo :- String,
-                       {count :- s/Int 10}]
-        :summary "Imports assets from a CKAN repository"
-        (friend/authorize #{:admin}
-                          (let [userid (or userid (get-current-userid app-context request) (throw (IllegalArgumentException. "No valid userid")))]
-                            (let [all-names (ckan/package-list repo)
-                                  names (if count (take count (shuffle all-names)) all-names)]
-                              (binding [ckan/*import-userid* userid]
-                                (ckan/import-packages db repo names))))))
+        (POST "/ckan-import" request
+          :query-params [{userid :- schema/UserID nil},
+                         repo :- String,
+                         {count :- s/Int 10}]
+          :summary "Imports assets from a CKAN repository"
+          (friend/authorize #{:admin}
+                            (let [userid (or userid (get-current-userid app-context request) (throw (IllegalArgumentException. "No valid userid")))]
+                              (let [all-names (ckan/package-list repo)
+                                    names (if count (take count (shuffle all-names)) all-names)]
+                                (binding [ckan/*import-userid* userid]
+                                  (ckan/import-packages db repo names))))))
 
-      ;; ===========================================
-      ;; Marketplace database management
+        ;; ===========================================
+        ;; Marketplace database management
 
-      (POST "/clear-db" []
-        :summary "Clears the current database. DANGER."
-        (friend/authorize #{:admin}
-                          (store/clear-db db (env/dbtype env))
-                          (response/response "Successful")))
+        (POST "/clear-db" []
+          :summary "Clears the current database. DANGER."
+          (friend/authorize #{:admin}
+                            (store/clear-db db (env/dbtype env))
+                            (response/response "Successful")))
 
-      (POST "/migrate-db" []
-        :summary "Performs database migration. DANGER."
-        (friend/authorize #{:admin}
-                          (let [r (migration/migrate db (env/user-config env))]
-                            (response/response (str "Successful: " r)))))
+        (POST "/migrate-db" []
+          :summary "Performs database migration. DANGER."
+          (friend/authorize #{:admin}
+                            (let [r (migration/migrate db (env/user-config env))]
+                              (response/response (str "Successful: " r)))))
 
-      (POST "/reset-db" []
-        :summary "Clear & migrate database"
-        (friend/authorize #{:admin}
-                          (store/clear-db db (env/dbtype env))
-                          (migration/migrate db (env/user-config env))
-                          (response/response "Successful")))
+        (POST "/reset-db" []
+          :summary "Clear & migrate database"
+          (friend/authorize #{:admin}
+                            (store/clear-db db (env/dbtype env))
+                            (migration/migrate db (env/user-config env))
+                            (response/response "Successful")))
 
-      (POST "/create-db-test-data" []
-        :summary "Creates test data for the current database. DANGER."
-        (friend/authorize #{:admin}
-                          (store/generate-test-data! db)
-                          (response/response "Successful")))
+        (POST "/import-datasets" []
+          :summary "Import datasets"
+          (friend/authorize #{:admin}
+                            (let [database (app-context/database app-context)
+                                  storage-path (-> (app-context/env app-context)
+                                                   (env/storage-path))]
+                              (response/response (asset/import-edn! db storage-path "datasets.edn")))))
 
-      (POST "/import-datasets" []
-        :summary "Import datasets"
-        (friend/authorize #{:admin}
-                          (let [database (app-context/database app-context)
-                                storage-path (-> (app-context/env app-context)
-                                                 (env/storage-path))]
-                            (response/response (asset/import-edn! db storage-path "datasets.edn")))))
-
-      (POST "/agent-remote-url" []
-        :summary "Set Surfer's remote url"
-        :coercion nil
-        :query-params [remote-url :- s/Str]
-        (friend/authorize #{:admin}
-                          (do
-                            (alter-var-root #'env/*agent-remote-url* (constantly remote-url))
-                            (response/response {:remote-url remote-url})))))))
+        (POST "/agent-remote-url" []
+          :summary "Set Surfer's remote url"
+          :coercion nil
+          :query-params [remote-url :- s/Str]
+          (friend/authorize #{:admin}
+                            (do
+                              (alter-var-root #'env/*agent-remote-url* (constantly remote-url))
+                              (response/response {:remote-url remote-url}))))))))
 
 ;; ==========================================
 ;; Authentication API
@@ -883,10 +881,6 @@
         :tags ["Trust API"]
         (trust-api app-context))
 
-      (context "/api/v1/market-admin" []
-        :tags ["Market Admin API"]
-        (admin-api app-context))
-
       (context "/api/v1/auth" []
         :tags ["Authentication API"]
         (auth-api app-context))
@@ -894,6 +888,9 @@
       (context "/api/v1/invoke" []
         :tags ["Invoke API"]
         (invoke-api app-context))
+
+      ;; "/api/v1/admin"
+      (admin-api app-context)
 
       (context "/api" []
         :tags ["Status API"]
