@@ -45,17 +45,17 @@
                (select-keys invokable-metadata [:name :type :additionalInfo :operation]))))
 
       (testing "Operation Registration"
-        (is (sf/register agent (sf/in-memory-operation invokable-metadata))))
+        (is (sf/register agent (sf/memory-operation invokable-metadata))))
 
       (testing "Sync Invoke"
-        (is (= {:text "HELLO"} (sf/invoke-sync (sf/in-memory-operation invokable-metadata) {:text "hello"}))))
+        (is (= {:text "HELLO"} (sf/invoke-sync (sf/memory-operation invokable-metadata) {:text "hello"}))))
 
       (testing "Sync Invoke Result"
-        (is (= {:text "HELLO"} (sf/invoke-result (sf/in-memory-operation invokable-metadata) {:text "hello"}))))
+        (is (= {:text "HELLO"} (sf/invoke-result (sf/memory-operation invokable-metadata) {:text "hello"}))))
 
       (testing "Sync Invoke - Make Asset"
         (let [{text-upper-case-asset :text} (-> (sf/invokable-metadata #'upper-case-text-new-asset)
-                                                (sf/in-memory-operation)
+                                                (sf/memory-operation)
                                                 (sf/invoke-sync {:text "hello"}))]
           (is (= "HELLO" (sf/to-string text-upper-case-asset))))))))
 

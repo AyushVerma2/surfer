@@ -208,7 +208,7 @@
                 (let [^InputStream body-stream (:body request)
                       _ (.reset body-stream)
 
-                      operation (sf/in-memory-operation op-meta)
+                      operation (sf/memory-operation op-meta)
 
                       params (-> (slurp body-stream)
                                  (json/read-str :key-fn str))
