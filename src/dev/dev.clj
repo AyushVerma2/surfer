@@ -141,5 +141,33 @@
                      (dep/depend "B" "A")
                      (dep/depend "C" "B")))
 
+  (def orchestration
+    {:id "Root"
+     :children
+     [{:id "A"
+       :did (sf/random-did-string)}
+
+      {:id "B"
+       :did (sf/random-did-string)}
+
+      {:id "C"
+       :did (sf/random-did-string)}]
+
+     :edges
+     [{:source "A"
+       :target "C"}
+
+      {:source "B"
+       :target "C"}]})
+
+  (def g
+    (reduce
+      (fn [g {:keys [source target]}]
+        (dep/depend g target source))
+      (dep/graph)
+      (:edges orchestration)))
+
+  (dep/topo-sort g)
+
   )
 
