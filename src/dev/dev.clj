@@ -16,7 +16,8 @@
             [clojure.java.io :as io]
             [clojure.edn :as edn]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
-            [clj-http.client :as http])
+            [clj-http.client :as http]
+            [com.stuartsierra.dependency :as dep])
   (:import (sg.dex.starfish.impl.memory LocalResolverImpl)))
 
 (set-init (constantly (system/new-system :dev)))
@@ -135,6 +136,10 @@
   (sf/job-status job)
 
   (http/get "https://api.ipify.org")
+
+  (dep/topo-sort (-> (dep/graph)
+                     (dep/depend "B" "A")
+                     (dep/depend "C" "B")))
 
   )
 
