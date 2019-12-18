@@ -8,6 +8,7 @@
             [surfer.storage :as storage]
             [surfer.app-context :as app-context]
             [surfer.migration :as migration]
+            [surfer.orchestration :as orchestration]
             [starfish.core :as sf]
             [starfish.alpha :as sfa]
             [clojure.data.json :as data.json]
@@ -158,14 +159,13 @@
        :target "C"}
 
       {:source "B"
-       :target "C"}]})
+       :target "C"}
+
+      {:source "C"
+       :target "D"}]})
 
   (def g
-    (reduce
-      (fn [g {:keys [source target]}]
-        (dep/depend g target source))
-      (dep/graph)
-      (:edges orchestration)))
+    (orchestration/dependency-graph orchestration))
 
   (dep/topo-sort g)
 
