@@ -7,14 +7,20 @@
 (deftest dependency-graph-test
   (let [orchestration {:id "Root"
                        :edges
-                       [{:source "A"
+                       [{:source "Root"
+                         :target "A"}
+
+                        {:source "A"
                          :target "C"}
 
                         {:source "B"
                          :target "C"}
 
                         {:source "C"
-                         :target "D"}]}
+                         :target "D"}
+
+                        {:source "D"
+                         :target "Root"}]}
         graph (orchestration/dependency-graph orchestration)]
     (is (= {"C" #{"B" "A"}, "D" #{"C"}} (:dependencies graph)))
     (is (= {"A" #{"C"}, "B" #{"C"}, "C" #{"D"}} (:dependents graph)))

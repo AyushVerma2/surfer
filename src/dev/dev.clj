@@ -155,14 +155,20 @@
        :did (sf/random-did-string)}]
 
      :edges
-     [{:source "A"
+     [{:source "Root"
+       :target "A"}
+
+      {:source "A"
        :target "C"}
 
       {:source "B"
        :target "C"}
 
       {:source "C"
-       :target "D"}]})
+       :target "D"}
+
+      {:source "D"
+       :target "Root"}]})
 
   (def g
     (orchestration/dependency-graph orchestration))
