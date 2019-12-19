@@ -163,7 +163,7 @@
                        :edges
                        [{:source "make-range"
                          :target "filter-odds"
-                         :ports {:range :numbers}}]}
+                         :ports [:range :numbers]}]}
 
         orchestration {:children
                        {"make-range1" (sf/asset-id make-range)
@@ -173,11 +173,25 @@
                        :edges
                        [{:source "make-range1"
                          :target "concatenate"
-                         :ports {:range :coll1}}
+                         :ports [:range :coll1]}
 
                         {:source "make-range2"
                          :target "concatenate"
-                         :ports {:range :coll2}}]}]
+                         :ports [:range :coll2]}]}
+
+        orchestration {:children
+                       {"make-range" (sf/asset-id make-range)
+                        "concatenate" (sf/asset-id concatenate)}
+
+                       :edges
+                       [{:source "make-range"
+                         :target "concatenate"
+                         :ports [:range :coll1]}
+
+                        {:source "make-range"
+                         :target "concatenate"
+                         :ports [:range :coll2]}]}
+        ]
     (orchestration/execute (context) orchestration))
 
 
@@ -210,7 +224,17 @@
        :target "Root"}]})
 
   (def g
-    (orchestration/dependency-graph orchestration))
+    (orchestration/dependency-graph {:children
+                                     {}
+
+                                     :edges
+                                     [{:source "make-range1"
+                                       :target "concatenate"
+                                       :ports [:range :coll1]}
+
+                                      [:source "make-range2"
+                                       :target "concatenate"
+                                       :ports [:range :coll2]]]}))
 
   (dep/topo-sort g)
 

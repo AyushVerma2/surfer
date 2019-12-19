@@ -11,12 +11,12 @@
 (defn ^{:params {} :results {"range" "json"}} make-range
   "Make range 0-10"
   [_ _]
-  {:range (range 10)})
+  {:range (vec (range 10))})
 
 (defn ^{:params {"numbers" "json"} :results {"odds" "json"}} filter-odds
   "Filter odd numbers"
   [_ params]
-  {:odds (filter odd? (:numbers params))})
+  {:odds (vec (filter odd? (:numbers params)))})
 
 (defn ^{:params {"coll1" "json" "coll2" "json"} :results {"coll" "json"}} concatenate
   "Concatenate collections"

@@ -21,35 +21,37 @@
 (defn execute [context orchestration]
   (let [{:keys [dependencies] :as dependency-graph} (dependency-graph orchestration)
 
-        nodes (dep/topo-sort dependency-graph)]
-    [nodes (reduce
-             (fn [process nid]
-               (let [aid (get-in orchestration [:children nid])
+        nodes (dep/topo-sort dependency-graph)
 
-                     metadata (-> (system/context->db context)
-                                  (store/get-metadata aid {:key-fn keyword}))
+        process (reduce
+                  (fn [process nid]
+                    (let [aid (get-in orchestration [:children nid])
 
-                     invokable (invoke/invokable-operation context metadata)
+                          metadata (-> (system/context->db context)
+                                       (store/get-metadata aid {:key-fn keyword}))
 
-                     params (when (seq (get-in metadata [:operation :params]))
-                              (some->> (get dependencies nid)
-                                       (map
-                                         (fn [dependency-nid]
-                                           (let [;; Find ports where dependency-nid is source and nid is target.
-                                                 ports (->> (:edges orchestration)
-                                                            (some
-                                                              (fn [{:keys [source target ports]}]
-                                                                (when (and (= dependency-nid source)
-                                                                           (= nid target))
-                                                                  ports))))]
+                          invokable (invoke/invokable-operation context metadata)
 
-                                             ;; Mapping of nid in-port -> dependency-nid out-port value (result)
-                                             (->> ports
-                                                  (map
-                                                    (fn [[out in]]
-                                                      [in (get-in process [dependency-nid out])]))
-                                                  (into {})))))
-                                       (apply merge)))]
-                 (assoc process nid (sf/invoke-result invokable (or params {})))))
-             {}
-             nodes)]))
+                          params (when (seq (get-in metadata [:operation :params]))
+                                   (some->> (get dependencies nid)
+                                            (map
+                                              (fn [dependency-nid]
+                                                (let [;; Find ports where dependency-nid is source and nid is target.
+                                                      ports-coll (->> (:edges orchestration)
+                                                                      (filter
+                                                                        (fn [{:keys [source target]}]
+                                                                          (and (= dependency-nid source)
+                                                                               (= nid target))))
+                                                                      (map :ports))]
+                                                  (reduce
+                                                    (fn [params [port-out port-in]]
+                                                      (assoc params port-in (get-in process [dependency-nid port-out])))
+                                                    {}
+                                                    ports-coll))))
+                                            (apply merge)))]
+                      ;; Can't pass nil params; empty map is fine though.
+                      (assoc process nid (sf/invoke-result invokable (or params {})))))
+                  {}
+                  nodes)]
+    {:topo nodes
+     :process process}))
