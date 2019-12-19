@@ -6,29 +6,17 @@
             [surfer.env :as env]
             [surfer.app-context :as app-context]
             [clojure.data.json :as data.json]
-            [clojure.java.io :as io])
-  (:import (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation)))
+            [clojure.java.io :as io]))
 
-(def app-context->storage-config
-  (comp env/storage-config app-context/env))
+(defn ^{:params {} :results {"range" "json"}} invokable-range
+  "Numbers 0 to 99."
+  [_ _]
+  {:range (range 100)})
 
-(defn resolve-invokable [metadata]
-  (some-> (get-in metadata [:additionalInfo :function])
-          (symbol)
-          (resolve)))
-
-(defn invokable-metadata [invokable]
-  (let [params-results (select-keys (meta invokable) [:params :results])]
-    (sf/invokable-metadata invokable params-results)))
-
-(defn invokable-operation [app-context metadata]
-  (let [invokable (resolve-invokable metadata)
-
-        metadata-str (data.json/write-str metadata)
-
-        closure (fn [params]
-                  (invokable app-context params))]
-    (ClojureOperation/create metadata-str (MemoryAgent/create) closure)))
+(defn ^{:params {"range" "json"} :results {"odds" "json"}} invokable-range-odds
+  "Range odd numbers."
+  [_ params]
+  {:odds (filter odd? (:range params))})
 
 (defn ^{:params {"n" "json"}} invokable-odd? [_ params]
   (let [n (:n params)]

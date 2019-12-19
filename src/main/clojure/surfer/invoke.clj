@@ -8,10 +8,30 @@
     [schema.core :as s]
     [clojure.data.json :as json]
     [clojure.tools.logging :as log]
-    [surfer.app-context :as app-context])
-  (:import [sg.dex.starfish.util DID]))
+    [surfer.app-context :as app-context]
+    [clojure.data.json :as data.json])
+  (:import [sg.dex.starfish.util DID]
+           (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation)))
 
 (defonce JOBS (atom {}))
+
+(defn resolve-invokable [metadata]
+  (some-> (get-in metadata [:additionalInfo :function])
+          (symbol)
+          (resolve)))
+
+(defn invokable-metadata [invokable]
+  (let [params-results (select-keys (meta invokable) [:params :results])]
+    (sf/invokable-metadata invokable params-results)))
+
+(defn invokable-operation [context metadata]
+  (let [invokable (resolve-invokable metadata)
+
+        metadata-str (data.json/write-str metadata)
+
+        closure (fn [params]
+                  (invokable context params))]
+    (ClojureOperation/create metadata-str (MemoryAgent/create) closure)))
 
 (defn get-operation
   "Gets an in-memory operation for the given operation id"
@@ -24,27 +44,27 @@
         f (resolve op-sym)]
     (when f (sf/create-operation params f))))
 
-(defn get-asset 
+(defn get-asset
   "Gets an asset in the context of this surfer instance."
   ([did]
-    (sf/asset did)))
+   (sf/asset did)))
 
-(defn coerce-input-params 
+(defn coerce-input-params
   "Coerces the input request to a map of keywords to assets / objects"
   ([md req]
-    (let [pspecs (:params (:operation md))]
-      (reduce 
-        (fn [m [k v]]
-          (if-let [pspec (get pspecs (keyword k))]
-            (let [type (:type pspec)]
-              (if (= "asset" type)
-                (assoc m (keyword k) (get-asset (:did v)))
-                (assoc m (keyword k) v)))
-            m))
-        req
-        req))))
+   (let [pspecs (:params (:operation md))]
+     (reduce
+       (fn [m [k v]]
+         (if-let [pspec (get pspecs (keyword k))]
+           (let [type (:type pspec)]
+             (if (= "asset" type)
+               (assoc m (keyword k) (get-asset (:did v)))
+               (assoc m (keyword k) v)))
+           m))
+       req
+       req))))
 
-(defn launch-job 
+(defn launch-job
   "Launch a job using the given function. 
 
    Returns jobid if successful, null if operation cannot be found."
@@ -53,12 +73,12 @@
     (when op
       (let [jobid (sf/random-hex-string 32)
             md (sf/metadata op)
-            job (sf/invoke op (coerce-input-params md invoke-req))] 
+            job (sf/invoke op (coerce-input-params md invoke-req))]
         (swap! JOBS assoc jobid job)
         (log/debug (str "Job started with ID [" jobid "]"))
         jobid))))
 
-(defn get-job 
+(defn get-job
   "Gets the job for a given Job ID"
   [jobid]
   (@JOBS jobid))

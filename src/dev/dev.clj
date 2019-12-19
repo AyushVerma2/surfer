@@ -95,42 +95,55 @@
 
   ;; -- Invoke
 
-  (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-odd?)
-        operation (demo.invokable/invokable-operation (app-context) metadata)
+  (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
+        operation (invoke/invokable-operation (app-context) metadata)
         params {"n" 1}]
     (sf/invoke-result operation params))
 
-  (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-odd?)
-        operation (demo.invokable/invokable-operation (app-context) metadata)
+  (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
+        operation (invoke/invokable-operation (app-context) metadata)
         params {"n" 1}]
     (sf/invoke-sync operation params))
 
-  (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-asset-odd?)
-        operation (demo.invokable/invokable-operation (app-context) metadata)
+  (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-asset-odd?)
+        operation (invoke/invokable-operation (app-context) metadata)
         params {"n" {"did" (str n-asset-did)}}]
     (sf/invoke-result operation params))
 
-  (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-asset-odd?2)
-        operation (demo.invokable/invokable-operation (app-context) metadata)
+  (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-asset-odd?2)
+        operation (invoke/invokable-operation (app-context) metadata)
         params {"n" {"did" (str n-asset-did)}}]
     (sf/invoke-result operation params))
 
   (def operation-odd?
-    (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-asset-odd?)
-          operation (demo.invokable/invokable-operation (app-context) metadata)]
+    (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-asset-odd?)
+          operation (invoke/invokable-operation (app-context) metadata)]
       (sf/register aladdin operation)))
 
   ;; Param keys *must be* a string when calling the Java API directly.
   (def job
-    (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (demo.invokable/invokable-operation (app-context) metadata)]
+    (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
+          operation (invoke/invokable-operation (app-context) metadata)]
       (.invoke operation {"n" 1})))
 
   ;; Param keys can be a keyword because `starfish.core/invoke` uses `stringify-keys`.
   (def job
-    (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (demo.invokable/invokable-operation (app-context) metadata)]
+    (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
+          operation (invoke/invokable-operation (app-context) metadata)]
       (sf/invoke operation {:n 1})))
+
+
+
+  (def invokable-range
+    (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-range)
+          operation (invoke/invokable-operation (app-context) metadata)]
+      (sf/register aladdin operation)))
+
+  (def invokable-range-odds
+    (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-range-odds)
+          operation (invoke/invokable-operation (app-context) metadata)]
+      (sf/register aladdin operation)))
+
 
   (sf/poll-result job)
 

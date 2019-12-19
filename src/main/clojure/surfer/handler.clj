@@ -198,17 +198,17 @@
 
             (cond
               (nil? op-meta)
-              (response/not-found (str "Operation (" op-id ") metadata not found."))
+              (response/not-found {:error (str "Operation (" op-id ") metadata not found.")})
 
               (not= "operation" (:type op-meta))
-              (response/bad-request (str "Operation ( " op-id ") metadata type value is not 'operation': " op-meta))
+              (response/bad-request {:error (str "Operation ( " op-id ") metadata type value is not 'operation': " op-meta)})
 
               :else
               (try
                 (let [^InputStream body-stream (:body request)
                       _ (.reset body-stream)
 
-                      operation (sf/in-memory-operation op-meta)
+                      operation (invoke/invokable-operation app-context op-meta)
 
                       params (-> (slurp body-stream)
                                  (json/read-str :key-fn str))
