@@ -194,14 +194,14 @@
           (let [op-id (get-in request [:params :op-id])
                 op-meta (store/get-metadata db op-id {:key-fn keyword})]
 
-            (log/debug (str "Invoke Sync - " op-id " - " op-meta))
+            (log/debug (str "Invoke Sync - " op-id " - " (or op-meta "?")))
 
             (cond
               (nil? op-meta)
-              (response/not-found {:error (str "Operation (" op-id ") metadata not found.")})
+              (response/not-found {:error (str "Metadata not found. Did you forget to register Metadata for operation '" op-id "'?")})
 
               (not= "operation" (:type op-meta))
-              (response/bad-request {:error (str "Operation ( " op-id ") metadata type value is not 'operation': " op-meta)})
+              (response/bad-request {:error (str "Invalid Metadata. Operation " op-id " metadata type value should be 'operation'.")})
 
               :else
               (try
