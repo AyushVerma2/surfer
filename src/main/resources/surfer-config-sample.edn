@@ -52,14 +52,18 @@
  ;; Define key metadata about the Agent deployment 
  :agent
  {;; specify the name of the Agent
-  :name "Data Ecosystem Test Server"
+  :name #profile {:dev "Surfer - Dev"
+                  :test "Surfer - Test"
+                  :prod "Surfer - Prod"}
 
   ;; Provide a descriptive paragraph explaing the role/purpose of the Agent
   :description "Data Ecosystem Agent deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."
 
   ;; DID to use for this agent.
   ;; if specified as ':auto-generate' then a random DID will be generated on startup
-  :did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"
+  :did #profile {:dev "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"
+                 :test "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457d"
+                 :prod "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457e"}
 
   :remote-url #env REMOTE_URL}
 
