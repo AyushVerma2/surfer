@@ -9,9 +9,9 @@
             [clojure.java.io :as io]))
 
 (defn ^{:params {} :results {"range" "json"}} make-range
-  "Make range 0-99"
+  "Make range 0-10"
   [_ _]
-  {:range (range 100)})
+  {:range (range 10)})
 
 (defn ^{:params {"numbers" "json"} :results {"odds" "json"}} filter-odds
   "Filter odd numbers"

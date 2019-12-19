@@ -177,41 +177,8 @@
 
                         {:source "make-range2"
                          :target "concatenate"
-                         :ports {:range :coll2}}]}
-
-        {:keys [dependencies] :as dependency-graph} (orchestration/dependency-graph orchestration)
-
-        nodes (dep/topo-sort dependency-graph)]
-    (reduce
-      (fn [process nid]
-        (let [aid (get-in orchestration [:children nid])
-
-              metadata (store/get-metadata (db) aid {:key-fn keyword})
-
-              invokable (invoke/invokable-operation (context) metadata)
-
-              params (when (seq (get-in metadata [:operation :params]))
-                       (some->> (get dependencies nid)
-                                (map
-                                  (fn [dependency-nid]
-                                    (let [;; Find ports where dependency-nid is source and nid is target.
-                                          ports (->> (:edges orchestration)
-                                                     (some
-                                                       (fn [{:keys [source target ports]}]
-                                                         (when (and (= dependency-nid source)
-                                                                    (= nid target))
-                                                           ports))))]
-
-                                      ;; Mapping of nid in-port -> dependency-nid out-port value (result)
-                                      (->> ports
-                                           (map
-                                             (fn [[out in]]
-                                               [in (get-in process [dependency-nid out])]))
-                                           (into {})))))
-                                (apply merge)))]
-          (assoc process nid (sf/invoke-result invokable (or params {})))))
-      {}
-      nodes))
+                         :ports {:range :coll2}}]}]
+    (orchestration/execute (context) orchestration))
 
 
   (def orchestration

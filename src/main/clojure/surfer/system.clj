@@ -34,3 +34,6 @@
 
 (defn starfish [system]
   (:starfish system))
+
+(def context->db
+  (comp database/db :app-context/database))
