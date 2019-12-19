@@ -102,6 +102,7 @@
 (defn dbtype
   "Database type. e.g., postgresql, h2, h2:mem."
   [env]
+  ;; FIXME: Database config can be a string.
   (database-config env [:dbtype]))
 
 (defn agent-remote-url [env]
