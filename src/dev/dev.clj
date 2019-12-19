@@ -165,6 +165,20 @@
                          :target "filter-odds"
                          :ports {:range :numbers}}]}
 
+        orchestration {:children
+                       {"make-range1" (sf/asset-id make-range)
+                        "make-range2" (sf/asset-id make-range)
+                        "concatenate" (sf/asset-id concatenate)}
+
+                       :edges
+                       [{:source "make-range1"
+                         :target "concatenate"
+                         :ports {:range :coll1}}
+
+                        {:source "make-range2"
+                         :target "concatenate"
+                         :ports {:range :coll2}}]}
+
         {:keys [dependencies] :as dependency-graph} (orchestration/dependency-graph orchestration)
 
         nodes (dep/topo-sort dependency-graph)]
