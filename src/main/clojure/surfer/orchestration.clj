@@ -45,13 +45,14 @@
                                                                       (map :ports))]
                                                   (reduce
                                                     (fn [params [port-out port-in]]
-                                                      (assoc params port-in (get-in process [dependency-nid 1 port-out])))
+                                                      (assoc params port-in (get-in process [dependency-nid :output port-out])))
                                                     {}
                                                     ports-coll))))
                                             (apply merge)))
                           params (or params {})]
                       ;; Can't pass nil params; empty map is fine though.
-                      (assoc process nid [params (sf/invoke-result invokable params)])))
+                      (assoc process nid {:input params
+                                          :output (sf/invoke-result invokable params)})))
                   {}
                   nodes)]
     {:topo nodes
