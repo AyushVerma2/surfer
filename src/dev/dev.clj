@@ -28,7 +28,7 @@
 (defn env []
   (system/env system))
 
-(defn app-context []
+(defn context []
   (app-context/new-context (system/env system)
                            (system/database system)
                            (system/starfish system)))
@@ -95,41 +95,52 @@
   ;; -- Invoke
 
   (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
-        operation (invoke/invokable-operation (app-context) metadata)
+        operation (invoke/invokable-operation (context) metadata)
         params {"n" 1}]
     (sf/invoke-result operation params))
 
   (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
-        operation (invoke/invokable-operation (app-context) metadata)
+        operation (invoke/invokable-operation (context) metadata)
         params {"n" 1}]
     (sf/invoke-sync operation params))
 
   (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-asset-odd?)
-        operation (invoke/invokable-operation (app-context) metadata)
+        operation (invoke/invokable-operation (context) metadata)
         params {"n" {"did" (str n-asset-did)}}]
     (sf/invoke-result operation params))
 
   (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-asset-odd?2)
-        operation (invoke/invokable-operation (app-context) metadata)
+        operation (invoke/invokable-operation (context) metadata)
         params {"n" {"did" (str n-asset-did)}}]
     (sf/invoke-result operation params))
 
   (def operation-odd?
     (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-asset-odd?)
-          operation (invoke/invokable-operation (app-context) metadata)]
+          operation (invoke/invokable-operation (context) metadata)]
       (sf/register aladdin operation)))
 
   ;; Param keys *must be* a string when calling the Java API directly.
   (def job
     (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (invoke/invokable-operation (app-context) metadata)]
+          operation (invoke/invokable-operation (context) metadata)]
       (.invoke operation {"n" 1})))
 
   ;; Param keys can be a keyword because `starfish.core/invoke` uses `stringify-keys`.
   (def job
     (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (invoke/invokable-operation (app-context) metadata)]
+          operation (invoke/invokable-operation (context) metadata)]
       (sf/invoke operation {:n 1})))
+
+
+  (sf/poll-result job)
+
+  (sf/job-status job)
+
+  (http/get "https://api.ipify.org")
+
+  (dep/topo-sort (-> (dep/graph)
+                     (dep/depend "B" "A")
+                     (dep/depend "C" "B")))
 
 
 
@@ -145,16 +156,49 @@
     (let [metadata (invoke/invokable-metadata #'demo.invokable/concatenate)]
       (invoke/register-invokable aladdin metadata)))
 
+  (let [orchestration {:children
+                       {"make-range" (sf/asset-id make-range)
+                        "filter-odds" (sf/asset-id filter-odds)}
 
-  (sf/poll-result job)
+                       :edges
+                       [{:source "make-range"
+                         :target "filter-odds"
+                         :ports {:range :numbers}}]}
 
-  (sf/job-status job)
+        {:keys [dependencies] :as dependency-graph} (orchestration/dependency-graph orchestration)
 
-  (http/get "https://api.ipify.org")
+        nodes (dep/topo-sort dependency-graph)]
+    (reduce
+      (fn [process nid]
+        (let [aid (get-in orchestration [:children nid])
 
-  (dep/topo-sort (-> (dep/graph)
-                     (dep/depend "B" "A")
-                     (dep/depend "C" "B")))
+              metadata (store/get-metadata (db) aid {:key-fn keyword})
+
+              invokable (invoke/invokable-operation (context) metadata)
+
+              params (when (seq (get-in metadata [:operation :params]))
+                       (some->> (get dependencies nid)
+                                (map
+                                  (fn [dependency-nid]
+                                    (let [;; Find ports where dependency-nid is source and nid is target.
+                                          ports (->> (:edges orchestration)
+                                                     (some
+                                                       (fn [{:keys [source target ports]}]
+                                                         (when (and (= dependency-nid source)
+                                                                    (= nid target))
+                                                           ports))))]
+
+                                      ;; Mapping of nid in-port -> dependency-nid out-port value (result)
+                                      (->> ports
+                                           (map
+                                             (fn [[out in]]
+                                               [in (get-in process [dependency-nid out])]))
+                                           (into {})))))
+                                (apply merge)))]
+          (assoc process nid (sf/invoke-result invokable (or params {})))))
+      {}
+      nodes))
+
 
   (def orchestration
     {:id "Root"
