@@ -102,7 +102,7 @@
 (defn dbtype
   "Database type. e.g., postgresql, h2, h2:mem."
   [env]
-  (or (System/getenv "DB_TYPE") (database-config env [:dbtype])))
+  (database-config env [:dbtype]))
 
 (defn agent-remote-url [env]
   (or *agent-remote-url* (agent-config env [:remote-url])))
