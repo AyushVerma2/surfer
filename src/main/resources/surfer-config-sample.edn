@@ -52,7 +52,7 @@
  ;; Define key metadata about the Agent deployment 
  :agent
  {;; specify the name of the Agent
-  :name "Data Ecosystem Test Server"
+  :name #or [#env AGENT_NAME "Surfer"]
 
   ;; Provide a descriptive paragraph explaing the role/purpose of the Agent
   :description "Data Ecosystem Agent deployed for testing purposes. No guarantees or SLAs provided. The database may be periodically refreshed and cleared at any time."
