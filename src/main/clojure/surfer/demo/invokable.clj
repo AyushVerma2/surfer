@@ -8,15 +8,20 @@
             [clojure.data.json :as data.json]
             [clojure.java.io :as io]))
 
-(defn ^{:params {} :results {"range" "json"}} invokable-range
-  "Numbers 0 to 99."
+(defn ^{:params {} :results {"range" "json"}} make-range
+  "Make range 0-99"
   [_ _]
   {:range (range 100)})
 
-(defn ^{:params {"range" "json"} :results {"odds" "json"}} invokable-range-odds
-  "Range odd numbers."
+(defn ^{:params {"numbers" "json"} :results {"odds" "json"}} filter-odds
+  "Filter odd numbers"
   [_ params]
-  {:odds (filter odd? (:range params))})
+  {:odds (filter odd? (:numbers params))})
+
+(defn ^{:params {"coll1" "json" "coll2" "json"} :results {"coll" "json"}} concatenate
+  "Concatenate collections"
+  [_ params]
+  {:coll (into (:coll1 params) (:coll2 params))})
 
 (defn ^{:params {"n" "json"}} invokable-odd? [_ params]
   (let [n (:n params)]

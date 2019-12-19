@@ -58,13 +58,12 @@
   (def ddo
     (env/agent-ddo (system/env system)))
 
-  ;; -- Resolver API
-  (.getDDOString sfa/*resolver* did)
-  (.getDDO sfa/*resolver* did)
-
   (def aladdin
     (sfa/did->agent did))
 
+  ;; -- Resolver API
+  (.getDDOString sfa/*resolver* did)
+  (.getDDO sfa/*resolver* did)
 
   ;; -- Dynamic *resolver*
 
@@ -134,15 +133,17 @@
 
 
 
-  (def invokable-range
-    (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-range)
-          operation (invoke/invokable-operation (app-context) metadata)]
-      (sf/register aladdin operation)))
+  (def make-range
+    (let [metadata (invoke/invokable-metadata #'demo.invokable/make-range)]
+      (invoke/register-invokable aladdin metadata)))
 
-  (def invokable-range-odds
-    (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-range-odds)
-          operation (invoke/invokable-operation (app-context) metadata)]
-      (sf/register aladdin operation)))
+  (def filter-odds
+    (let [metadata (invoke/invokable-metadata #'demo.invokable/filter-odds)]
+      (invoke/register-invokable aladdin metadata)))
+
+  (def concatenate
+    (let [metadata (invoke/invokable-metadata #'demo.invokable/concatenate)]
+      (invoke/register-invokable aladdin metadata)))
 
 
   (sf/poll-result job)
