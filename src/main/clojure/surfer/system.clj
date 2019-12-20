@@ -35,5 +35,13 @@
 (defn starfish [system]
   (:starfish system))
 
+(defn new-context
+  ([system]
+   (new-context (env system) (database system) (starfish system)))
+  ([env database starfish]
+   #:app-context{:env env
+                 :database database
+                 :starfish starfish}))
+
 (def context->db
   (comp database/db :app-context/database))
