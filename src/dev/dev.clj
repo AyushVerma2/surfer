@@ -156,6 +156,7 @@
     (let [metadata (invoke/invokable-metadata #'demo.invokable/concatenate)]
       (invoke/register-invokable aladdin metadata)))
 
+  ;; A very basic Orchestration example
   (let [orchestration {:children
                        {"make-range" (sf/asset-id make-range)
                         "filter-odds" (sf/asset-id filter-odds)}
@@ -163,9 +164,16 @@
                        :edges
                        [{:source "make-range"
                          :target "filter-odds"
-                         :ports [:range :numbers]}]}
+                         :ports [:range :numbers]}]}]
+    (orchestration/execute (context) orchestration))
 
-        orchestration {:children
+  ;; Nodes (Operations) with dependencies
+  ;;     :a
+  ;;    / |
+  ;;  :b  |
+  ;;    \ |
+  ;;     :c
+  (let [orchestration {:children
                        {"make-range1" (sf/asset-id make-range)
                         "make-range2" (sf/asset-id make-range)
                         "concatenate" (sf/asset-id concatenate)}
@@ -177,9 +185,11 @@
 
                         {:source "make-range2"
                          :target "concatenate"
-                         :ports [:range :coll2]}]}
+                         :ports [:range :coll2]}]}]
+    (orchestration/execute (context) orchestration))
 
-        orchestration {:children
+  ;; Re-using the same Operation n times to connect to a different port
+  (let [orchestration {:children
                        {"make-range" (sf/asset-id make-range)
                         "concatenate" (sf/asset-id concatenate)}
 
@@ -190,8 +200,7 @@
 
                         {:source "make-range"
                          :target "concatenate"
-                         :ports [:range :coll2]}]}
-        ]
+                         :ports [:range :coll2]}]}]
     (orchestration/execute (context) orchestration))
 
 

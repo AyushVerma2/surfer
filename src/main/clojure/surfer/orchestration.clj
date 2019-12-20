@@ -36,10 +36,25 @@
   (->> (dependency-edges orchestration nid dependency-nid)
        (map :ports)))
 
-(defn execute [context orchestration]
-  (let [{:keys [dependencies] :as dependency-graph} (dependency-graph orchestration)
+(defn params [orchestration process nid]
+  (let [dependency-graph (dependency-graph orchestration)
+        params (some->> (get (:dependencies dependency-graph) nid)
+                        (map
+                          (fn [dependency-nid]
+                            (let [dependency-output (fn [dependency-nid output-key]
+                                                      (get-in process [dependency-nid :output output-key]))
 
-        nodes (dep/topo-sort dependency-graph)
+                                  make-params (fn [params [port-out port-in]]
+                                                (assoc params port-in (dependency-output dependency-nid port-out)))]
+                              (reduce
+                                make-params
+                                {}
+                                (dependency-ports orchestration nid dependency-nid)))))
+                        (apply merge))]
+    (or params {})))
+
+(defn execute [context orchestration]
+  (let [nodes (dep/topo-sort (dependency-graph orchestration))
 
         process (reduce
                   (fn [process nid]
@@ -50,18 +65,7 @@
 
                           invokable (invoke/invokable-operation context metadata)
 
-                          params (when (seq (get-in metadata [:operation :params]))
-                                   (some->> (get dependencies nid)
-                                            (map
-                                              (fn [dependency-nid]
-                                                (reduce
-                                                  (fn [params [port-out port-in]]
-                                                    (assoc params port-in (get-in process [dependency-nid :output port-out])))
-                                                  {}
-                                                  (dependency-ports orchestration nid dependency-nid))))
-                                            (apply merge)))
-                          params (or params {})]
-                      ;; Can't pass nil params; empty map is fine though.
+                          params (params orchestration process nid)]
                       (assoc process nid {:input params
                                           :output (sf/invoke-result invokable params)})))
                   {}
