@@ -48,3 +48,32 @@
 
     (is (= #{"concatenate"} (->> (map :target edges)
                                  (into #{}))))))
+
+(deftest params-test
+  (testing "Single param"
+    (let [orchestration {:edges
+                         [{:source "make-range"
+                           :target "filter-odds"
+                           :ports [:range :coll]}]}
+
+          process {"make-range" {:input {}
+                                 :output {:range [0 1 2]}}}
+
+          params (orchestration/params orchestration process "filter-odds")]
+      (is (= {:coll [0 1 2]} params))))
+
+  (testing "Re-using source"
+    (let [orchestration {:edges
+                         [{:source "make-range"
+                           :target "concatenate"
+                           :ports [:range :coll1]}
+
+                          {:source "make-range"
+                           :target "concatenate"
+                           :ports [:range :coll2]}]}
+
+          process {"make-range" {:input {}
+                                 :output {:range [0 1 2]}}}
+
+          params (orchestration/params orchestration process "concatenate")]
+      (is (= {:coll1 [0 1 2] :coll2 [0 1 2]} params)))))
