@@ -18,6 +18,24 @@
       (dep/graph)
       edges)))
 
+(defn dependency-edges
+  "Returns edges where nid (target) and dependency-nid (source) are connected.
+
+   It's possible to have n edges from same source and target. That's the case
+   whenever source is 'reused' to connect to a different port."
+  [orchestration nid dependency-nid]
+  (filter
+    (fn [{:keys [source target]}]
+      (and (= dependency-nid source)
+           (= nid target)))
+    (:edges orchestration)))
+
+(defn dependency-ports
+  "Returns ports where nid (target) and dependency-nid (source) are connected."
+  [orchestration nid dependency-nid]
+  (->> (dependency-edges orchestration nid dependency-nid)
+       (map :ports)))
+
 (defn execute [context orchestration]
   (let [{:keys [dependencies] :as dependency-graph} (dependency-graph orchestration)
 
@@ -36,18 +54,11 @@
                                    (some->> (get dependencies nid)
                                             (map
                                               (fn [dependency-nid]
-                                                (let [;; Find ports where dependency-nid is source and nid is target.
-                                                      ports-coll (->> (:edges orchestration)
-                                                                      (filter
-                                                                        (fn [{:keys [source target]}]
-                                                                          (and (= dependency-nid source)
-                                                                               (= nid target))))
-                                                                      (map :ports))]
-                                                  (reduce
-                                                    (fn [params [port-out port-in]]
-                                                      (assoc params port-in (get-in process [dependency-nid :output port-out])))
-                                                    {}
-                                                    ports-coll))))
+                                                (reduce
+                                                  (fn [params [port-out port-in]]
+                                                    (assoc params port-in (get-in process [dependency-nid :output port-out])))
+                                                  {}
+                                                  (dependency-ports orchestration nid dependency-nid))))
                                             (apply merge)))
                           params (or params {})]
                       ;; Can't pass nil params; empty map is fine though.
