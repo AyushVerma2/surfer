@@ -14,19 +14,21 @@
   (:import [sg.dex.starfish.util DID]
            (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation)))
 
+(defn- wrapped-params [metadata params]
+  (reduce
+    (fn [params' [param-name param-type]]
+      (let [param-value (if (= "asset" param-type)
+                          (let [did (sf/did (get-in params [param-name "did"]))
+                                agent (sfa/did->agent did)]
+                            (sf/get-asset agent did))
+                          (get params param-name))]
+        (assoc params' param-name param-value)))
+    {}
+    (get-in metadata [:operation :params])))
+
 (defn wrap-params [invokable metadata]
   (fn [context params]
-    (let [wrapped-params (reduce
-                           (fn [wrapped-params [param-name param-type]]
-                             (let [param-value (if (= "asset" param-type)
-                                                 (let [did (sf/did (get-in params [param-name "did"]))
-                                                       agent (sfa/did->agent did)]
-                                                   (sf/get-asset agent did))
-                                                 (get params param-name))]
-                               (assoc wrapped-params param-name param-value)))
-                           {}
-                           (get-in metadata [:operation :params]))]
-      (invokable context wrapped-params))))
+    (invokable context (wrapped-params metadata params))))
 
 (defn wrap-results [invokable metadata]
   (fn [context params]
