@@ -5,6 +5,7 @@
             [surfer.storage :as storage]
             [surfer.env :as env]
             [surfer.app-context :as app-context]
+            [surfer.demo.asset.content :as asset.content]
             [clojure.data.json :as data.json]
             [clojure.java.io :as io]))
 
@@ -36,11 +37,7 @@
         {:n n
          :is_odd (odd? n)}))))
 
-(defn ^{:params {"n" "asset"}} invokable-asset-odd?2 [app-context params]
-  (let [did (sf/did (get-in params [:n "did"]))
-        agent (sfa/did->agent did)
-        asset (sf/get-asset agent did)]
-    (with-open [input-stream (sf/content-stream asset)]
-      (let [{:keys [n]} (data.json/read (io/reader input-stream) :key-fn keyword)]
-        {:n n
-         :is_odd (odd? n)}))))
+(defn ^{:params {"n" "asset"}} invokable-asset-odd?2 [_ {:keys [n]}]
+  (let [{:keys [n]} (asset.content/json-reader n)]
+    {:n n
+     :is_odd (odd? n)}))

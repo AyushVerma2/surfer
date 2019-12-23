@@ -9,9 +9,26 @@
     [clojure.data.json :as json]
     [clojure.tools.logging :as log]
     [surfer.app-context :as app-context]
-    [clojure.data.json :as data.json])
+    [clojure.data.json :as data.json]
+    [starfish.alpha :as sfa])
   (:import [sg.dex.starfish.util DID]
            (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation)))
+
+(defn wrap-params [invokable]
+  (fn [context params]
+    (let [param->asset (fn [param-name]
+                         (let [did (sf/did (get-in params [(keyword param-name) "did"]))
+                               agent (sfa/did->agent did)]
+                           (sf/get-asset agent did)))
+
+          wrapped-params (reduce
+                           (fn [wrapped-params [param-name param-type]]
+                             (assoc wrapped-params (keyword param-name) (if (= "asset" param-type)
+                                                                          (param->asset param-name)
+                                                                          param-type)))
+                           {}
+                           (:params (meta invokable)))]
+      (invokable context wrapped-params))))
 
 (defonce JOBS (atom {}))
 
@@ -25,7 +42,7 @@
     (sf/invokable-metadata invokable params-results)))
 
 (defn invokable-operation [context metadata]
-  (let [invokable (resolve-invokable metadata)
+  (let [invokable (wrap-params (resolve-invokable metadata))
 
         metadata-str (data.json/write-str metadata)
 

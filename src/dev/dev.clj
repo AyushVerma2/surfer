@@ -114,10 +114,7 @@
         params {"n" {"did" (str n-asset-did)}}]
     (sf/invoke-result operation params))
 
-  (def operation-odd?
-    (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-asset-odd?)
-          operation (invoke/invokable-operation (context) metadata)]
-      (sf/register aladdin operation)))
+
 
   ;; Param keys *must be* a string when calling the Java API directly.
   (def job
