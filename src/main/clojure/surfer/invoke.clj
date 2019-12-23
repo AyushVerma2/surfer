@@ -68,6 +68,11 @@
 (defn register-invokable [agent metadata]
   (sf/register agent (sf/memory-asset metadata "")))
 
+(defn invoke [invokable context params]
+  (let [metadata (invokable-metadata invokable)
+        operation (invokable-operation context metadata)]
+    (sf/invoke-result operation params)))
+
 (defn get-operation
   "Gets an in-memory operation for the given operation id"
   [db op-id]

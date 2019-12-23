@@ -94,16 +94,9 @@
 
   ;; -- Invoke
 
-  (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-asset-odd?)
-        operation (invoke/invokable-operation (context) metadata)
-        params {"n" {"did" (str n-asset-did)}}]
-    (sf/invoke-result operation params))
+  (invoke/invoke #'demo.invokable/invokable-asset-odd? (context) {"n" {"did" (str n-asset-did)}})
 
-  (let [metadata (invoke/invokable-metadata #'demo.invokable/make-range-asset)
-        operation (invoke/invokable-operation (context) metadata)
-        params {}]
-    (sf/invoke-result operation params))
-
+  (invoke/invoke #'demo.invokable/make-range-asset (context) {})
 
   ;; Param keys *must be* a string when calling the Java API directly.
   (def job
