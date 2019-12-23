@@ -34,15 +34,7 @@
     {:n n
      :is_odd (odd? n)}))
 
-(defn ^{:params {"n" "asset"}} invokable-asset-odd? [app-context params]
-  (let [storage-path (env/storage-path (app-context/env app-context))
-        asset-id (sf/asset-id (get-in params [:n "did"]))]
-    (with-open [input-stream (storage/load-stream storage-path asset-id)]
-      (let [{:keys [n]} (data.json/read (io/reader input-stream) :key-fn keyword)]
-        {:n n
-         :is_odd (odd? n)}))))
-
-(defn ^{:params {"n" "asset"}} invokable-asset-odd?2 [_ {:keys [n]}]
+(defn ^{:params {"n" "asset"}} invokable-asset-odd? [_ {:keys [n]}]
   (let [{:keys [n]} (asset.content/json-reader n)]
     {:n n
      :is_odd (odd? n)}))

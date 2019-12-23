@@ -13,7 +13,7 @@
   (:import [sg.dex.starfish.util DID]
            (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation)))
 
-(defn wrap-params [invokable]
+(defn wrap-params [invokable metadata]
   (fn [context params]
     (let [wrapped-params (reduce
                            (fn [wrapped-params [param-name param-type]]
@@ -25,7 +25,7 @@
                                                  param-type)]
                                (assoc wrapped-params param-name param-value)))
                            {}
-                           (:params (meta invokable)))]
+                           (get-in metadata [:operation "params"]))]
       (invokable context wrapped-params))))
 
 (defn wrap-results [invokable metadata]
@@ -34,6 +34,7 @@
       (fn [wrapped-results [result-name result-value]]
         (let [result-value (if (= "asset" (get-in metadata [:operation "results" (name result-name)]))
                              (let [asset (sf/memory-asset (data.json/write-str result-value))
+                                   ;; FIXME
                                    agent (sfa/did->agent (sf/did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"))
                                    remote-asset (sf/upload agent asset)]
                                {:did (sf/did remote-asset)})
@@ -55,7 +56,7 @@
 
 (defn invokable-operation [context metadata]
   (let [invokable (-> (resolve-invokable metadata)
-                      (wrap-params)
+                      (wrap-params metadata)
                       (wrap-results metadata))
 
         metadata-str (data.json/write-str metadata)

@@ -94,26 +94,10 @@
 
   ;; -- Invoke
 
-  (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
-        operation (invoke/invokable-operation (context) metadata)
-        params {"n" 1}]
-    (sf/invoke-result operation params))
-
-  (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
-        operation (invoke/invokable-operation (context) metadata)
-        params {"n" 1}]
-    (sf/invoke-sync operation params))
-
   (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-asset-odd?)
         operation (invoke/invokable-operation (context) metadata)
         params {"n" {"did" (str n-asset-did)}}]
     (sf/invoke-result operation params))
-
-  (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-asset-odd?2)
-        operation (invoke/invokable-operation (context) metadata)
-        params {"n" {"did" (str n-asset-did)}}]
-    (sf/invoke-result operation params))
-
 
   (let [metadata (invoke/invokable-metadata #'demo.invokable/make-range-asset)
         operation (invoke/invokable-operation (context) metadata)
