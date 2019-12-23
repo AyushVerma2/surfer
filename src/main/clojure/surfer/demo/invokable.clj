@@ -14,6 +14,11 @@
   [_ _]
   {:range (vec (range 10))})
 
+(defn ^{:params {} :results {"range" "asset"}} make-range-asset
+  "Make range 0-10"
+  [_ _]
+  {:range (vec (range 10))})
+
 (defn ^{:params {"numbers" "json"} :results {"odds" "json"}} filter-odds
   "Filter odd numbers"
   [_ params]

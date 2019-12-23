@@ -16,16 +16,15 @@
 
 (defn wrap-params [invokable]
   (fn [context params]
-    (let [param->asset (fn [param-name]
-                         (let [did (sf/did (get-in params [(keyword param-name) "did"]))
-                               agent (sfa/did->agent did)]
-                           (sf/get-asset agent did)))
-
-          wrapped-params (reduce
+    (let [wrapped-params (reduce
                            (fn [wrapped-params [param-name param-type]]
-                             (assoc wrapped-params (keyword param-name) (if (= "asset" param-type)
-                                                                          (param->asset param-name)
-                                                                          param-type)))
+                             (let [param-name (keyword param-name)
+                                   param-value (if (= "asset" param-type)
+                                                 (let [did (sf/did (get-in params [param-name "did"]))
+                                                       agent (sfa/did->agent did)]
+                                                   (sf/get-asset agent did))
+                                                 param-type)]
+                               (assoc wrapped-params param-name param-value)))
                            {}
                            (:params (meta invokable)))]
       (invokable context wrapped-params))))
