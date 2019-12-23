@@ -61,27 +61,6 @@
   (def aladdin
     (sfa/did->agent did))
 
-  ;; -- Resolver API
-  (.getDDOString sfa/*resolver* did)
-  (.getDDO sfa/*resolver* did)
-
-  ;; -- Dynamic *resolver*
-
-  (binding [sfa/*resolver* (LocalResolverImpl.)]
-    (.getDDOString sfa/*resolver* did))
-
-  (binding [sfa/*resolver* (LocalResolverImpl.)]
-    (sfa/did->agent did))
-
-  ;; ---
-
-
-  ;; -- Agent API
-  (.getDID aladdin)
-  (.getDDO aladdin)
-  (.getEndpoint aladdin "Ocean.Meta.v1")
-  (.getMetaEndpoint aladdin)
-
   (def n-asset
     ;; Data must be a JSON-encoded string
     (sf/upload aladdin (sf/memory-asset (data.json/write-str {:n 2}))))
@@ -89,12 +68,10 @@
   (def n-asset-did
     (sf/did n-asset))
 
-  (sf/asset-id n-asset-did)
-
 
   ;; -- Invoke
 
-  (invoke/invoke #'demo.invokable/invokable-asset-odd? (context) {"n" {"did" (str n-asset-did)}})
+  (invoke/invoke #'demo.invokable/invokable-asset-odd? (context) {:n {:did (str n-asset-did)}})
 
   (invoke/invoke #'demo.invokable/make-range-asset (context) {})
 
