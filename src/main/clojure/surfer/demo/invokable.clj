@@ -9,12 +9,12 @@
             [clojure.data.json :as data.json]
             [clojure.java.io :as io]))
 
-(defn ^{:params {} :results {"range" "json"}} make-range
+(defn ^{:params {} :results {:range "json"}} make-range
   "Make range 0-10"
   [_ _]
   {:range (vec (range 10))})
 
-(defn ^{:params {} :results {"range" "asset"}} make-range-asset
+(defn ^{:params {} :results {:range "asset"}} make-range-asset
   "Make range 0-10"
   [_ _]
   {:range (vec (range 10))})

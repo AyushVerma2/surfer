@@ -6,7 +6,6 @@
     [starfish.core :as sf]
     [surfer.utils :as utils]
     [schema.core :as s]
-    [clojure.data.json :as json]
     [clojure.tools.logging :as log]
     [surfer.app-context :as app-context]
     [clojure.data.json :as data.json]
@@ -29,6 +28,20 @@
                            (:params (meta invokable)))]
       (invokable context wrapped-params))))
 
+(defn wrap-results [invokable metadata]
+  (fn [context params]
+    (reduce
+      (fn [wrapped-results [result-name result-value]]
+        (let [result-value (if (= "asset" (get-in metadata [:operation "results" (name result-name)]))
+                             (let [asset (sf/memory-asset (data.json/write-str result-value))
+                                   agent (sfa/did->agent (sf/did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"))
+                                   remote-asset (sf/upload agent asset)]
+                               {:did (sf/did remote-asset)})
+                             result-value)]
+          (assoc wrapped-results result-name result-value)))
+      {}
+      (invokable context params))))
+
 (defonce JOBS (atom {}))
 
 (defn resolve-invokable [metadata]
@@ -41,7 +54,9 @@
     (sf/invokable-metadata invokable params-results)))
 
 (defn invokable-operation [context metadata]
-  (let [invokable (wrap-params (resolve-invokable metadata))
+  (let [invokable (-> (resolve-invokable metadata)
+                      (wrap-params)
+                      (wrap-results metadata))
 
         metadata-str (data.json/write-str metadata)
 

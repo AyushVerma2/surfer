@@ -115,6 +115,11 @@
     (sf/invoke-result operation params))
 
 
+  (let [metadata (invoke/invokable-metadata #'demo.invokable/make-range-asset)
+        operation (invoke/invokable-operation (context) metadata)
+        params {}]
+    (sf/invoke-result operation params))
+
 
   ;; Param keys *must be* a string when calling the Java API directly.
   (def job
