@@ -1,13 +1,5 @@
 (ns surfer.demo.invokable
-  (:require [starfish.core :as sf]
-            [starfish.alpha :as sfa]
-            [clojure.tools.logging :as log]
-            [surfer.storage :as storage]
-            [surfer.env :as env]
-            [surfer.app-context :as app-context]
-            [surfer.demo.asset.content :as asset.content]
-            [clojure.data.json :as data.json]
-            [clojure.java.io :as io]))
+  (:require [surfer.demo.asset.content :as asset.content]))
 
 (defn ^{:params {} :results {:range "json"}} make-range
   "Make range 0-10"

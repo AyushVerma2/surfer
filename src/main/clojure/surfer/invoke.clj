@@ -19,8 +19,7 @@
     (let [wrapped-params (reduce
                            (fn [wrapped-params [param-name param-type]]
                              (let [param-value (if (= "asset" param-type)
-                                                 (let [_ (prn 'params params)
-                                                       did (sf/did (get-in params [param-name "did"]))
+                                                 (let [did (sf/did (get-in params [param-name "did"]))
                                                        agent (sfa/did->agent did)]
                                                    (sf/get-asset agent did))
                                                  (get params param-name))]
