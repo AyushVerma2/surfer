@@ -16,13 +16,13 @@
 
 (defn- wrapped-params [metadata params]
   (reduce
-    (fn [params' [param-name param-type]]
+    (fn [new-params [param-name param-type]]
       (let [param-value (if (= "asset" param-type)
                           (let [did (sf/did (get-in params [param-name "did"]))
                                 agent (sfa/did->agent did)]
                             (sf/get-asset agent did))
                           (get params param-name))]
-        (assoc params' param-name param-value)))
+        (assoc new-params param-name param-value)))
     {}
     (get-in metadata [:operation :params])))
 
