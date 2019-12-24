@@ -38,7 +38,12 @@
     (is (= {:x 1} (#'invoke/wrapped-results {:operation {:results {:x "json"}}} {:x 1})))
     (is (= {:x 1} (#'invoke/wrapped-results {:operation {:results {:x "json"}}} {"x" 1})))
     (is (= {:x 1} (#'invoke/wrapped-results {"operation" {"results" {"x" "json"}}} {"x" 1})))
-    (is (= {:x 1} (#'invoke/wrapped-results {} {:x 1})))))
+    (is (= {:x 1} (#'invoke/wrapped-results {} {:x 1}))))
+
+  (testing "Generate Asset"
+    (let [results (#'invoke/wrapped-results {:operation {:results {:x "asset"}}} {:x 1})]
+      (is (= true (string? (get-in results [:x :did]))))
+      (is (= true (sf/did? (sf/did (get-in results [:x :did]))))))))
 
 (deftest invoke-test
   (testing "Invoke"
