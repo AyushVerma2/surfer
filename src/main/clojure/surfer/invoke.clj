@@ -38,7 +38,7 @@
                                  ;; FIXME
                                  agent (sfa/did->agent (sf/did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"))
                                  remote-asset (sf/upload agent asset)]
-                             {:did (sf/did remote-asset)})
+                             {:did (str (sf/did remote-asset))})
                            result-value)]
         (assoc new-results result-name result-value)))
     {}

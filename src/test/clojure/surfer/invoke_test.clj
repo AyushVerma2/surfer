@@ -41,9 +41,11 @@
     (testing "Make range 0-9"
       (is (= {:range [0 1 2 3 4 5 6 7 8 9]} (invoke/invoke #'demo.invokable/make-range (system/new-context test-system) {}))))
 
-    (testing "Make range 0-9, and return a new Asset"
-      (let [results (invoke/invoke #'demo.invokable/make-range-asset (system/new-context test-system) {})]
-        (is (= true (sf/did? (get-in results [:range :did]))))))
+    (testing "Make range 0-9, and return a new Asset (reference)"
+      (let [results (invoke/invoke #'demo.invokable/make-range-asset (system/new-context test-system) {})
+            did-str (get-in results [:range :did])]
+        (is (= true (string? did-str)))
+        (is (= true (sf/did? (sf/did did-str))))))
 
     (testing "Odd numbers"
       (is (= {:odds [1 3 5]} (invoke/invoke #'demo.invokable/filter-odds (system/new-context test-system) {:numbers [1 2 3 4 5]}))))
