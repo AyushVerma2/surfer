@@ -21,3 +21,14 @@
 
     (testing "Invalid metadata & params"
       (is (= {} (#'invoke/wrapped-params {"operation" {"params" {:x "json"}}} {"x" 1}))))))
+
+(deftest wrapped-results-test
+  (testing "Metadata and Results keys must be keywords"
+    (testing "Valid Metadata & Results"
+      (is (= {:x 1} (#'invoke/wrapped-results {:operation {:results {:x "json"}}} {:x 1}))))
+
+    (testing "Invalid Results"
+      (is (= {"x" 1} (#'invoke/wrapped-results {:operation {:results {:x "json"}}} {"x" 1}))))
+
+    (testing "Missing Metadata"
+      (is (= {:x 1} (#'invoke/wrapped-results {} {:x 1}))))))

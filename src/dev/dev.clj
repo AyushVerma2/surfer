@@ -104,6 +104,10 @@
     (let [metadata (invoke/invokable-metadata #'demo.invokable/make-range)]
       (invoke/register-invokable aladdin metadata)))
 
+  (def make-range-asset
+    (let [metadata (invoke/invokable-metadata #'demo.invokable/make-range-asset)]
+      (invoke/register-invokable aladdin metadata)))
+
   (def filter-odds
     (let [metadata (invoke/invokable-metadata #'demo.invokable/filter-odds)]
       (invoke/register-invokable aladdin metadata)))

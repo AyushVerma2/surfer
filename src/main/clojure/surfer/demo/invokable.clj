@@ -1,32 +1,45 @@
 (ns surfer.demo.invokable
   (:require [surfer.demo.asset.content :as asset.content]))
 
-(defn ^{:params {} :results {:range "json"}} make-range
+(defn make-range
   "Make range 0-10"
+  {:params {}
+   :results {:range "json"}}
   [_ _]
   {:range (vec (range 10))})
 
-(defn ^{:params {} :results {:range "asset"}} make-range-asset
+(defn make-range-asset
   "Make range 0-10"
+  {:params {}
+   :results {:range "asset"}}
   [_ _]
   {:range (vec (range 10))})
 
-(defn ^{:params {:numbers "json"} :results {:odds "json"}} filter-odds
+(defn filter-odds
   "Filter odd numbers"
+  {:params {:numbers "json"}
+   :results {:odds "json"}}
   [_ params]
   {:odds (vec (filter odd? (:numbers params)))})
 
-(defn ^{:params {:coll1 "json" :coll2 "json"} :results {:coll "json"}} concatenate
+(defn concatenate
   "Concatenate collections"
+  {:params {:coll1 "json"
+            :coll2 "json"}
+   :results {:coll "json"}}
   [_ params]
   {:coll (into (:coll1 params) (:coll2 params))})
 
-(defn ^{:params {:n "json"}} invokable-odd? [_ params]
+(defn invokable-odd?
+  {:params {:n "json"}}
+  [_ params]
   (let [n (:n params)]
     {:n n
      :is_odd (odd? n)}))
 
-(defn ^{:params {:n "asset"}} invokable-asset-odd? [_ {:keys [n]}]
+(defn invokable-asset-odd?
+  {:params {:n "asset"}}
+  [_ {:keys [n]}]
   (let [{:keys [n]} (asset.content/json-reader n)]
     {:n n
      :is_odd (odd? n)}))

@@ -30,20 +30,24 @@
   (fn [context params]
     (invokable context (wrapped-params metadata params))))
 
+(defn- wrapped-results [metadata results]
+  (reduce
+    (fn [new-results [result-name result-value]]
+      (let [result-value (if (= "asset" (get-in metadata [:operation :results result-name]))
+                           (let [asset (sf/memory-asset (data.json/write-str result-value))
+                                 ;; FIXME
+                                 agent (sfa/did->agent (sf/did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"))
+                                 remote-asset (sf/upload agent asset)]
+                             {:did (sf/did remote-asset)})
+                           result-value)]
+        (assoc new-results result-name result-value)))
+    {}
+    results))
+
 (defn wrap-results [invokable metadata]
   (fn [context params]
-    (reduce
-      (fn [wrapped-results [result-name result-value]]
-        (let [result-value (if (= "asset" (get-in metadata [:operation "results" (name result-name)]))
-                             (let [asset (sf/memory-asset (data.json/write-str result-value))
-                                   ;; FIXME
-                                   agent (sfa/did->agent (sf/did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"))
-                                   remote-asset (sf/upload agent asset)]
-                               {:did (sf/did remote-asset)})
-                             result-value)]
-          (assoc wrapped-results result-name result-value)))
-      {}
-      (invokable context params))))
+    (->> (invokable context params)
+         (wrapped-results metadata))))
 
 (defonce JOBS (atom {}))
 
