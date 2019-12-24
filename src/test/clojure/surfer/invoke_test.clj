@@ -15,10 +15,11 @@
 (use-fixtures :once (fixture/system-fixture #'test-system))
 
 (deftest wrapped-params-test
-  (is (= {:x 1} (#'invoke/wrapped-params {:operation {:params {:x "json"}}} {:x 1})))
-  (is (= {:x 1} (#'invoke/wrapped-params {:operation {:params {:x "json"}}} {"x" 1})))
-  (is (= {:x 1} (#'invoke/wrapped-params {"operation" {"params" {:x "json"}}} {:x 1})))
-  (is (= {:x 1} (#'invoke/wrapped-params {"operation" {"params" {:x "json"}}} {"x" 1})))
+  (testing "Keywordize keys"
+    (is (= {:x 1} (#'invoke/wrapped-params {:operation {:params {:x "json"}}} {:x 1})))
+    (is (= {:x 1} (#'invoke/wrapped-params {:operation {:params {:x "json"}}} {"x" 1})))
+    (is (= {:x 1} (#'invoke/wrapped-params {"operation" {"params" {:x "json"}}} {:x 1})))
+    (is (= {:x 1} (#'invoke/wrapped-params {"operation" {"params" {:x "json"}}} {"x" 1}))))
 
   (testing "Resolve Asset (DID)"
     (binding [sfa/*resolver* (LocalResolverImpl.)]
@@ -33,10 +34,11 @@
         (is (= true (sf/asset? x)))))))
 
 (deftest wrapped-results-test
-  (is (= {:x 1} (#'invoke/wrapped-results {:operation {:results {:x "json"}}} {:x 1})))
-  (is (= {:x 1} (#'invoke/wrapped-results {:operation {:results {:x "json"}}} {"x" 1})))
-  (is (= {:x 1} (#'invoke/wrapped-results {"operation" {"results" {"x" "json"}}} {"x" 1})))
-  (is (= {:x 1} (#'invoke/wrapped-results {} {:x 1}))))
+  (testing "Keywordize keys"
+    (is (= {:x 1} (#'invoke/wrapped-results {:operation {:results {:x "json"}}} {:x 1})))
+    (is (= {:x 1} (#'invoke/wrapped-results {:operation {:results {:x "json"}}} {"x" 1})))
+    (is (= {:x 1} (#'invoke/wrapped-results {"operation" {"results" {"x" "json"}}} {"x" 1})))
+    (is (= {:x 1} (#'invoke/wrapped-results {} {:x 1})))))
 
 (deftest invoke-test
   (testing "Invoke"
