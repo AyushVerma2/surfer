@@ -192,15 +192,12 @@
           :coercion nil
           :body [body schema/InvokeRequest]
           (let [op-id (get-in request [:params :op-id])
-                op-meta (store/get-metadata db op-id {:key-fn keyword})]
-
-            (log/debug (str "Invoke Sync - " op-id " - " (or op-meta "?")))
-
+                metadata (store/get-metadata db op-id {:key-fn keyword})]
             (cond
-              (nil? op-meta)
+              (nil? metadata)
               (response/not-found {:error (str "Metadata not found. Did you forget to register Metadata for operation '" op-id "'?")})
 
-              (not= "operation" (:type op-meta))
+              (not= "operation" (:type metadata))
               (response/bad-request {:error (str "Invalid Metadata. Operation " op-id " metadata type value should be 'operation'.")})
 
               :else
@@ -208,19 +205,16 @@
                 (let [^InputStream body-stream (:body request)
                       _ (.reset body-stream)
 
-                      operation (invoke/invokable-operation app-context op-meta)
+                      params (json/read-str (slurp body-stream) :key-fn keyword)
 
-                      params (-> (slurp body-stream)
-                                 (json/read-str :key-fn str))
+                      result (invoke/invoke metadata app-context params)]
 
-                      result (sf/invoke-result operation params)]
-
-                  (log/debug (str "Invoke Sync Result - " operation " - " params " -> " result))
+                  (log/debug (str "Invoke Sync - " op-id " : " params " -> " result))
 
                   {:status 200
                    :body result})
                 (catch Exception e
-                  (log/error e "Failed to invoke operation." op-meta)
+                  (log/error e "Failed to invoke operation." metadata)
 
                   {:status 500
                    :body "Failed to invoke operation. Please try again."})))))

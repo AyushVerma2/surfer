@@ -78,8 +78,10 @@
 (defn register-invokable [agent metadata]
   (sf/register agent (sf/memory-asset metadata "")))
 
-(defn invoke [invokable context params]
-  (let [metadata (invokable-metadata invokable)
+(defn invoke [var-or-metadata context params]
+  (let [metadata (if (var? var-or-metadata)
+                   (invokable-metadata var-or-metadata)
+                   var-or-metadata)
         operation (invokable-operation context metadata)]
     (sf/invoke-result operation params)))
 
