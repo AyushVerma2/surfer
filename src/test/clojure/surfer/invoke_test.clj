@@ -4,7 +4,10 @@
             [surfer.test.fixture :as fixture]
             [surfer.demo.invokable :as demo.invokable]
             [surfer.system :as system]
-            [starfish.core :as sf]))
+            [starfish.core :as sf]
+            [surfer.env :as env]
+            [starfish.alpha :as sfa])
+  (:import (sg.dex.starfish.impl.memory LocalResolverImpl)))
 
 (def test-system
   nil)
@@ -23,7 +26,19 @@
       (is (= {} (#'invoke/wrapped-params {"operation" {"params" {:x "json"}}} {:x 1}))))
 
     (testing "Invalid metadata & params"
-      (is (= {} (#'invoke/wrapped-params {"operation" {"params" {:x "json"}}} {"x" 1}))))))
+      (is (= {} (#'invoke/wrapped-params {"operation" {"params" {:x "json"}}} {"x" 1})))))
+
+  (testing "Resolve Asset (DID) Parameter"
+    (binding [sfa/*resolver* (LocalResolverImpl.)]
+
+      (sfa/register! (sf/did "did:dex:abc") (env/agent-ddo (system/env test-system)))
+
+      (let [aladdin (sfa/did->agent (sf/did "did:dex:abc"))
+
+            asset (sf/upload aladdin (sf/memory-asset ""))
+
+            {:keys [x]} (#'invoke/wrapped-params {:operation {:params {:x "asset"}}} {:x {"did" (str (sf/did asset))}})]
+        (is (= true (sf/asset? x)))))))
 
 (deftest wrapped-results-test
   (testing "Metadata and Results keys must be keywords"
