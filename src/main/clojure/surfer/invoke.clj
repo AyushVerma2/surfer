@@ -15,34 +15,38 @@
            (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation)))
 
 (defn- wrapped-params [metadata params]
-  (reduce
-    (fn [new-params [param-name param-type]]
-      (let [param-value (if (= "asset" param-type)
-                          (let [did (sf/did (get-in params [param-name "did"]))
-                                agent (sfa/did->agent did)]
-                            (sf/get-asset agent did))
-                          (get params param-name))]
-        (assoc new-params param-name param-value)))
-    {}
-    (get-in metadata [:operation :params])))
+  (let [metadata (walk/keywordize-keys metadata)
+        params (walk/keywordize-keys params)]
+    (reduce
+      (fn [new-params [param-name param-type]]
+        (let [param-value (if (= "asset" param-type)
+                            (let [did (sf/did (get-in params [param-name :did]))
+                                  agent (sfa/did->agent did)]
+                              (sf/get-asset agent did))
+                            (get params param-name))]
+          (assoc new-params param-name param-value)))
+      {}
+      (get-in metadata [:operation :params]))))
 
 (defn wrap-params [invokable metadata]
   (fn [context params]
     (invokable context (wrapped-params metadata params))))
 
 (defn- wrapped-results [metadata results]
-  (reduce
-    (fn [new-results [result-name result-value]]
-      (let [result-value (if (= "asset" (get-in metadata [:operation :results result-name]))
-                           (let [asset (sf/memory-asset (data.json/write-str result-value))
-                                 ;; FIXME
-                                 agent (sfa/did->agent (sf/did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"))
-                                 remote-asset (sf/upload agent asset)]
-                             {:did (str (sf/did remote-asset))})
-                           result-value)]
-        (assoc new-results result-name result-value)))
-    {}
-    results))
+  (let [metadata (walk/keywordize-keys metadata)
+        results (walk/keywordize-keys results)]
+    (reduce
+      (fn [new-results [result-name result-value]]
+        (let [result-value (if (= "asset" (get-in metadata [:operation :results result-name]))
+                             (let [asset (sf/memory-asset (data.json/write-str result-value))
+                                   ;; FIXME
+                                   agent (sfa/did->agent (sf/did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"))
+                                   remote-asset (sf/upload agent asset)]
+                               {:did (str (sf/did remote-asset))})
+                             result-value)]
+          (assoc new-results result-name result-value)))
+      {}
+      results)))
 
 (defn wrap-results [invokable metadata]
   (fn [context params]
