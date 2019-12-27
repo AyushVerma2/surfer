@@ -6,7 +6,8 @@
             [surfer.system :as system]
             [starfish.core :as sf]
             [surfer.env :as env]
-            [starfish.alpha :as sfa])
+            [starfish.alpha :as sfa]
+            [clojure.data.json :as data.json])
   (:import (sg.dex.starfish.impl.memory LocalResolverImpl)))
 
 (def test-system
@@ -21,17 +22,25 @@
     (is (= {:x 1} (#'invoke/wrapped-params {"operation" {"params" {:x "json"}}} {:x 1})))
     (is (= {:x 1} (#'invoke/wrapped-params {"operation" {"params" {:x "json"}}} {"x" 1}))))
 
-  (testing "Resolve Asset (DID)"
+  (testing "Asset Param"
     (binding [sfa/*resolver* (LocalResolverImpl.)]
 
       (sfa/register! (sf/did "did:dex:abc") (env/agent-ddo (system/env test-system)))
 
       (let [aladdin (sfa/did->agent (sf/did "did:dex:abc"))
 
-            asset (sf/upload aladdin (sf/memory-asset ""))
+            x {:x 1}
 
-            {:keys [x]} (#'invoke/wrapped-params {:operation {:params {:x "asset"}}} {:x {"did" (str (sf/did asset))}})]
-        (is (= true (sf/asset? x)))))))
+            asset (sf/upload aladdin (sf/memory-asset (data.json/write-str x)))
+
+            var-metadata {:params {:x "asset"}
+                          :asset-params {:x {:reader #(data.json/read % :key-fn keyword)}}}
+
+            params {:x {:did (str (sf/did asset))}}
+            params' (#'invoke/wrapped-params var-metadata params)]
+        (is (= (:x params) (:x params')))
+        (is (= true (sf/asset? (get-in params' [:asset-params :x :asset]))))
+        (is (= x (get-in params' [:asset-params :x :data])))))))
 
 (deftest wrapped-results-test
   (testing "Keywordize keys"

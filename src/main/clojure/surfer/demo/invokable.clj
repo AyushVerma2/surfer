@@ -1,5 +1,6 @@
 (ns surfer.demo.invokable
-  (:require [surfer.demo.asset.content :as asset.content]))
+  (:require [surfer.demo.asset.content :as asset.content]
+            [clojure.data.json :as data.json]))
 
 (defn make-range
   "Make range 0-10"
@@ -38,8 +39,9 @@
      :is_odd (odd? n)}))
 
 (defn invokable-asset-odd?
-  {:params {:n "asset"}}
-  [_ {:keys [n]}]
-  (let [{:keys [n]} (asset.content/json-reader n)]
+  {:params {:n "asset"}
+   :asset-params {:n {:reader #(data.json/read % :key-fn keyword)}}}
+  [_ params]
+  (let [n (get-in params [:asset-params :n :data :n])]
     {:n n
      :is_odd (odd? n)}))

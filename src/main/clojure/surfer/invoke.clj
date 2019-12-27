@@ -10,27 +10,32 @@
     [surfer.app-context :as app-context]
     [clojure.data.json :as data.json]
     [starfish.alpha :as sfa]
-    [clojure.walk :as walk])
+    [clojure.walk :as walk]
+    [clojure.java.io :as io])
   (:import [sg.dex.starfish.util DID]
            (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation)))
 
-(defn- wrapped-params [metadata params]
-  (let [metadata (walk/keywordize-keys metadata)
-        params (walk/keywordize-keys params)]
+(defn- wrapped-params [var-metadata params]
+  (let [params (walk/keywordize-keys params)]
     (reduce
-      (fn [new-params [param-name param-type]]
-        (let [param-value (if (= "asset" param-type)
-                            (let [did (sf/did (get-in params [param-name :did]))
-                                  agent (sfa/did->agent did)]
-                              (sf/get-asset agent did))
-                            (get params param-name))]
-          (assoc new-params param-name param-value)))
-      {}
-      (get-in metadata [:operation :params]))))
+      (fn [params [param-name param-type]]
+        (if (= "asset" param-type)
+          (let [did (sf/did (get-in params [param-name :did]))
+                agent (sfa/did->agent did)
+                asset (sf/get-asset agent did)
+                reader (get-in var-metadata [:asset-params param-name :reader])
+                data (with-open [input-stream (sf/content-stream asset)]
+                       (reader (io/reader input-stream)))]
+            (-> params
+                (assoc-in [:asset-params param-name :asset] asset)
+                (assoc-in [:asset-params param-name :data] data)))
+          params))
+      params
+      (:params var-metadata))))
 
-(defn wrap-params [invokable metadata]
+(defn wrap-params [invokable]
   (fn [context params]
-    (invokable context (wrapped-params metadata params))))
+    (invokable context (wrapped-params (meta invokable) params))))
 
 (defn- wrapped-results [metadata results]
   (let [metadata (walk/keywordize-keys metadata)
@@ -66,7 +71,7 @@
 
 (defn invokable-operation [context metadata]
   (let [invokable (-> (resolve-invokable metadata)
-                      (wrap-params metadata)
+                      (wrap-params)
                       (wrap-results metadata))
 
         metadata-str (data.json/write-str metadata)
