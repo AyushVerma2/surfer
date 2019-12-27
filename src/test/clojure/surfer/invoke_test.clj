@@ -34,7 +34,7 @@
             asset (sf/upload aladdin (sf/memory-asset (data.json/write-str x)))
 
             pmeta {:params {:x "asset"}
-                          :asset-params {:x {:reader #(data.json/read % :key-fn keyword)}}}
+                   :asset-params {:x {:reader #(data.json/read % :key-fn keyword)}}}
 
             params {:x {:did (str (sf/did asset))}}
             wrapped-params (#'invoke/wrapped-params pmeta params)]
@@ -50,7 +50,10 @@
     (is (= {:x 1} (#'invoke/wrapped-results {} {:x 1}))))
 
   (testing "Generate Asset"
-    (let [results (#'invoke/wrapped-results {:results {:x "asset"}} {:x 1})]
+    (let [results (#'invoke/wrapped-results
+                    {:results {:x "asset"}
+                     :asset-results {:x {:asset-fn (comp sf/memory-asset data.json/write-str)}}}
+                    {:x 1})]
       (is (= true (string? (get-in results [:x :did]))))
       (is (= true (sf/did? (sf/did (get-in results [:x :did]))))))))
 

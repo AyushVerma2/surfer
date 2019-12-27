@@ -42,9 +42,12 @@
     (reduce
       (fn [new-results [result-name result-value]]
         (let [result-value (if (= "asset" (get-in imeta [:results result-name]))
-                             (let [asset (sf/memory-asset (data.json/write-str result-value))
+                             (let [asset-fn (get-in imeta [:asset-results result-name :asset-fn])
+                                   asset (asset-fn result-value)
+
                                    ;; FIXME
                                    agent (sfa/did->agent (sf/did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"))
+
                                    remote-asset (sf/upload agent asset)]
                                {:did (str (sf/did remote-asset))})
                              result-value)]

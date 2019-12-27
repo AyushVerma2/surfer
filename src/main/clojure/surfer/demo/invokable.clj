@@ -1,6 +1,7 @@
 (ns surfer.demo.invokable
   (:require [surfer.demo.asset.content :as asset.content]
-            [clojure.data.json :as data.json]))
+            [clojure.data.json :as data.json]
+            [starfish.core :as sf]))
 
 (defn make-range
   "Make range 0-10"
@@ -12,7 +13,8 @@
 (defn make-range-asset
   "Make range 0-10"
   {:params {}
-   :results {:range "asset"}}
+   :results {:range "asset"}
+   :asset-results {:range {:asset-fn (comp sf/memory-asset data.json/write-str)}}}
   [_ _]
   {:range (vec (range 10))})
 
