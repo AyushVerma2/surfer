@@ -71,7 +71,7 @@
 
   ;; -- Invoke
 
-  (invoke/invoke #'demo.invokable/invokable-asset-odd? (context) {:n {:did (str n-asset-did)}})
+  (invoke/invoke #'demo.invokable/n-odd? (context) {:n {:did (str n-asset-did)}})
 
   (invoke/invoke #'demo.invokable/make-range-asset (context) {})
 

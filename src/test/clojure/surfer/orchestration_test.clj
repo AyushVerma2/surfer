@@ -9,19 +9,12 @@
             [surfer.env :as env]
             [starfish.core :as sf]
             [starfish.alpha :as sfa])
-  (:import (sg.dex.starfish.impl.remote RemoteAgent)
-           (sg.dex.starfish.impl.memory LocalResolverImpl)))
+  (:import (sg.dex.starfish.impl.memory LocalResolverImpl)))
 
 (def test-system
   nil)
 
 (use-fixtures :once (fixture/system-fixture #'test-system))
-
-(defmethod sfa/resolve-agent "abc" [resolver did ddo]
-  (let [username (get-in ddo ["credentials" "username"])
-        password (get-in ddo ["credentials" "password"])
-        account (sf/remote-account username password)]
-    (RemoteAgent/create resolver did account)))
 
 (deftest dependency-graph-test
   (let [orchestration {:id "Root"
@@ -100,9 +93,9 @@
 (deftest execute-test
   (binding [sfa/*resolver* (LocalResolverImpl.)]
 
-    (sfa/register! (sf/did "did:dex:abc") (env/agent-ddo (system/env test-system)))
+    (sfa/register! fixture/agent-did (env/agent-ddo (system/env test-system)))
 
-    (let [aladdin (sfa/did->agent (sf/did "did:dex:abc"))
+    (let [aladdin (fixture/agent)
 
           make-range (->> (invoke/invokable-metadata #'demo.invokable/make-range)
                           (invoke/register-invokable aladdin))

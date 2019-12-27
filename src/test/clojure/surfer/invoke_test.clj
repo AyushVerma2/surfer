@@ -29,7 +29,7 @@
 
       (let [aladdin (sfa/did->agent (sf/did "did:dex:abc"))
 
-            x {:x 1}
+            x 1
 
             asset (sf/upload aladdin (sf/memory-asset (data.json/write-str x)))
 
@@ -37,10 +37,10 @@
                           :asset-params {:x {:reader #(data.json/read % :key-fn keyword)}}}
 
             params {:x {:did (str (sf/did asset))}}
-            params' (#'invoke/wrapped-params var-metadata params)]
-        (is (= (:x params) (:x params')))
-        (is (= true (sf/asset? (get-in params' [:asset-params :x :asset]))))
-        (is (= x (get-in params' [:asset-params :x :data])))))))
+            wrapped-params (#'invoke/wrapped-params var-metadata params)]
+        (is (= (:x params) (:x wrapped-params)))
+        (is (= true (sf/asset? (get-in wrapped-params [:asset-params :x :asset]))))
+        (is (= x (get-in wrapped-params [:asset-params :x :data])))))))
 
 (deftest wrapped-results-test
   (testing "Keywordize keys"
@@ -69,4 +69,27 @@
       (is (= {:odds [1 3 5]} (invoke/invoke #'demo.invokable/filter-odds (system/new-context test-system) {:numbers [1 2 3 4 5]}))))
 
     (testing "Concatenate collections"
-      (is (= {:coll [1 2 3 4]} (invoke/invoke #'demo.invokable/concatenate (system/new-context test-system) {:coll1 [1 2] :coll2 [3 4]}))))))
+      (is (= {:coll [1 2 3 4]} (invoke/invoke #'demo.invokable/concatenate (system/new-context test-system) {:coll1 [1 2] :coll2 [3 4]}))))
+
+    (testing "Number (Asset content) is odd"
+      (binding [sfa/*resolver* (LocalResolverImpl.)]
+
+        (sfa/register! fixture/agent-did (env/agent-ddo (system/env test-system)))
+
+        (testing "Function call"
+          (let [agent (fixture/agent)
+                asset (sf/upload agent (sf/memory-asset (data.json/write-str 1)))
+                invokable (invoke/wrap-params #'demo.invokable/n-odd?)]
+            (is (= {:is_odd true} (invokable (system/new-context test-system) {:n {:did (str (sf/did asset))}})))))
+
+        ;;(testing "Invokable call"
+        ;;  (let [aladdin (fixture/agent)
+        ;;        asset (sf/upload aladdin (sf/memory-asset (data.json/write-str 1)))
+        ;;        metadata (invoke/invokable-metadata #'demo.invokable/n-odd?)
+        ;;        operation (invoke/invokable-operation (system/new-context test-system) metadata)]
+        ;;    (try
+        ;;      (is (= {:is_odd true} (sf/invoke-result operation {:n {:did (str (sf/did asset))}})))
+        ;;      (catch ExecutionException ex
+        ;;        (prn ex)))))
+
+        ))))

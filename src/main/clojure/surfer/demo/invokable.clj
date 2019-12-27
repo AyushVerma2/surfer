@@ -38,10 +38,10 @@
     {:n n
      :is_odd (odd? n)}))
 
-(defn invokable-asset-odd?
+(defn n-odd?
   {:params {:n "asset"}
-   :asset-params {:n {:reader #(data.json/read % :key-fn keyword)}}}
+   :asset-params {:n {:reader #(data.json/read % :key-fn keyword)}}
+   :results {:is_odd "json"}}
   [_ params]
-  (let [n (get-in params [:asset-params :n :data :n])]
-    {:n n
-     :is_odd (odd? n)}))
+  (let [n (get-in params [:asset-params :n :data])]
+    {:is_odd (odd? n)}))
