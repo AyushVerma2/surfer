@@ -35,7 +35,8 @@
 
 (defn wrap-params [invokable imeta]
   (fn [context params]
-    (invokable context (wrapped-params imeta params))))
+    (->> (wrapped-params imeta params)
+         (invokable context))))
 
 (defn- wrapped-results [imeta results]
   (let [results (walk/keywordize-keys results)]
