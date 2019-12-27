@@ -207,7 +207,8 @@
 
                       params (json/read-str (slurp body-stream) :key-fn keyword)
 
-                      result (invoke/invoke metadata app-context params)]
+                      result (-> (invoke/resolve-invokable metadata)
+                                 (invoke/invoke app-context params))]
 
                   (log/debug (str "Invoke Sync - " op-id " : " params " -> " result))
 

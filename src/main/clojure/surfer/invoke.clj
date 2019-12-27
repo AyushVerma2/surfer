@@ -12,10 +12,10 @@
     [starfish.alpha :as sfa]
     [clojure.walk :as walk]
     [clojure.java.io :as io])
-  (:import [sg.dex.starfish.util DID]
+  (:import (sg.dex.starfish.util DID)
            (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation)))
 
-(defn- wrapped-params [var-metadata params]
+(defn- wrapped-params [imeta params]
   (let [params (walk/keywordize-keys params)]
     (reduce
       (fn [params [param-name param-type]]
@@ -23,7 +23,7 @@
           (let [did (sf/did (get-in params [param-name :did]))
                 agent (sfa/did->agent did)
                 asset (sf/get-asset agent did)
-                reader (get-in var-metadata [:asset-params param-name :reader])
+                reader (get-in imeta [:asset-params param-name :reader])
                 data (with-open [input-stream (sf/content-stream asset)]
                        (reader (io/reader input-stream)))]
             (-> params
@@ -31,18 +31,17 @@
                 (assoc-in [:asset-params param-name :data] data)))
           params))
       params
-      (:params var-metadata))))
+      (:params imeta))))
 
-(defn wrap-params [invokable]
+(defn wrap-params [invokable imeta]
   (fn [context params]
-    (invokable context (wrapped-params (meta invokable) params))))
+    (invokable context (wrapped-params imeta params))))
 
-(defn- wrapped-results [metadata results]
-  (let [metadata (walk/keywordize-keys metadata)
-        results (walk/keywordize-keys results)]
+(defn- wrapped-results [imeta results]
+  (let [results (walk/keywordize-keys results)]
     (reduce
       (fn [new-results [result-name result-value]]
-        (let [result-value (if (= "asset" (get-in metadata [:operation :results result-name]))
+        (let [result-value (if (= "asset" (get-in imeta [:results result-name]))
                              (let [asset (sf/memory-asset (data.json/write-str result-value))
                                    ;; FIXME
                                    agent (sfa/did->agent (sf/did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"))
@@ -53,10 +52,10 @@
       {}
       results)))
 
-(defn wrap-results [invokable metadata]
+(defn wrap-results [invokable imeta]
   (fn [context params]
     (->> (invokable context params)
-         (wrapped-results metadata))))
+         (wrapped-results imeta))))
 
 (defonce JOBS (atom {}))
 
@@ -70,23 +69,23 @@
     (walk/keywordize-keys (sf/invokable-metadata invokable params-results))))
 
 (defn invokable-operation [context metadata]
-  (let [invokable (-> (resolve-invokable metadata)
-                      (wrap-params)
-                      (wrap-results metadata))
+  (let [invokable (resolve-invokable metadata)
 
-        metadata-str (data.json/write-str metadata)
+        imeta (meta invokable)
 
-        closure (fn [params]
-                  (invokable context params))]
-    (ClojureOperation/create metadata-str (MemoryAgent/create) closure)))
+        invokable (-> invokable
+                      (wrap-params imeta)
+                      (wrap-results imeta))
+
+        metadata-str (data.json/write-str metadata)]
+    (ClojureOperation/create metadata-str (MemoryAgent/create) (fn [params]
+                                                                 (invokable context params)))))
 
 (defn register-invokable [agent metadata]
   (sf/register agent (sf/memory-asset metadata "")))
 
-(defn invoke [var-or-metadata context params]
-  (let [metadata (if (var? var-or-metadata)
-                   (invokable-metadata var-or-metadata)
-                   var-or-metadata)
+(defn invoke [invokable context params]
+  (let [metadata (invokable-metadata invokable)
         operation (invokable-operation context metadata)]
     (sf/invoke-result operation params)))
 

@@ -17,10 +17,10 @@
 
 (deftest wrapped-params-test
   (testing "Keywordize keys"
-    (is (= {:x 1} (#'invoke/wrapped-params {:operation {:params {:x "json"}}} {:x 1})))
-    (is (= {:x 1} (#'invoke/wrapped-params {:operation {:params {:x "json"}}} {"x" 1})))
-    (is (= {:x 1} (#'invoke/wrapped-params {"operation" {"params" {:x "json"}}} {:x 1})))
-    (is (= {:x 1} (#'invoke/wrapped-params {"operation" {"params" {:x "json"}}} {"x" 1}))))
+    (is (= {:x 1} (#'invoke/wrapped-params {:params {:x "json"}} {:x 1})))
+    (is (= {:x 1} (#'invoke/wrapped-params {:params {:x "json"}} {"x" 1})))
+    (is (= {:x 1} (#'invoke/wrapped-params {"params" {:x "json"}} {:x 1})))
+    (is (= {:x 1} (#'invoke/wrapped-params {"params" {:x "json"}} {"x" 1}))))
 
   (testing "Asset Param"
     (binding [sfa/*resolver* (LocalResolverImpl.)]
@@ -33,24 +33,24 @@
 
             asset (sf/upload aladdin (sf/memory-asset (data.json/write-str x)))
 
-            var-metadata {:params {:x "asset"}
+            pmeta {:params {:x "asset"}
                           :asset-params {:x {:reader #(data.json/read % :key-fn keyword)}}}
 
             params {:x {:did (str (sf/did asset))}}
-            wrapped-params (#'invoke/wrapped-params var-metadata params)]
+            wrapped-params (#'invoke/wrapped-params pmeta params)]
         (is (= (:x params) (:x wrapped-params)))
         (is (= true (sf/asset? (get-in wrapped-params [:asset-params :x :asset]))))
         (is (= x (get-in wrapped-params [:asset-params :x :data])))))))
 
 (deftest wrapped-results-test
   (testing "Keywordize keys"
-    (is (= {:x 1} (#'invoke/wrapped-results {:operation {:results {:x "json"}}} {:x 1})))
-    (is (= {:x 1} (#'invoke/wrapped-results {:operation {:results {:x "json"}}} {"x" 1})))
-    (is (= {:x 1} (#'invoke/wrapped-results {"operation" {"results" {"x" "json"}}} {"x" 1})))
+    (is (= {:x 1} (#'invoke/wrapped-results {:results {:x "json"}} {:x 1})))
+    (is (= {:x 1} (#'invoke/wrapped-results {:results {:x "json"}} {"x" 1})))
+    (is (= {:x 1} (#'invoke/wrapped-results {"results" {"x" "json"}} {"x" 1})))
     (is (= {:x 1} (#'invoke/wrapped-results {} {:x 1}))))
 
   (testing "Generate Asset"
-    (let [results (#'invoke/wrapped-results {:operation {:results {:x "asset"}}} {:x 1})]
+    (let [results (#'invoke/wrapped-results {:results {:x "asset"}} {:x 1})]
       (is (= true (string? (get-in results [:x :did]))))
       (is (= true (sf/did? (sf/did (get-in results [:x :did]))))))))
 
@@ -79,7 +79,7 @@
         (testing "Function call"
           (let [agent (fixture/agent)
                 asset (sf/upload agent (sf/memory-asset (data.json/write-str 1)))
-                invokable (invoke/wrap-params #'demo.invokable/n-odd?)]
+                invokable (invoke/wrap-params #'demo.invokable/n-odd? (meta #'demo.invokable/n-odd?))]
             (is (= {:is_odd true} (invokable (system/new-context test-system) {:n {:did (str (sf/did asset))}})))))
 
         ;;(testing "Invokable call"
