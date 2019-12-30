@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [surfer.invoke :as invoke]
             [surfer.test.fixture :as fixture]
-            [surfer.demo.invokable :as demo.invokable]
+            [surfer.demo.invokable-demo :as demo.invokable]
             [surfer.system :as system]
             [starfish.core :as sf]
             [surfer.env :as env]

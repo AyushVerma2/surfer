@@ -1,5 +1,5 @@
 (ns dev
-  (:require [surfer.demo.invokable :as demo.invokable]
+  (:require [surfer.demo.invokable-demo :as demo.invokable]
             [surfer.store :as store]
             [surfer.env :as env]
             [surfer.system :as system]

@@ -1,4 +1,4 @@
-(ns surfer.demo.invokable
+(ns surfer.demo.invokable-demo
   (:require [surfer.demo.asset.content :as asset.content]
             [clojure.data.json :as data.json]
             [starfish.core :as sf]))

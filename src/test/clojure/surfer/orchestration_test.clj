@@ -4,7 +4,7 @@
             [com.stuartsierra.dependency :as dep]
             [surfer.test.fixture :as fixture]
             [surfer.invoke :as invoke]
-            [surfer.demo.invokable :as demo.invokable]
+            [surfer.demo.invokable-demo :as demo.invokable]
             [surfer.system :as system]
             [surfer.env :as env]
             [starfish.core :as sf]
