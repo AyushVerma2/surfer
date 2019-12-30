@@ -33,6 +33,23 @@
   [_ params]
   {:coll (into (:coll1 params) (:coll2 params))})
 
+(defn concatenate-asset
+  "Concatenate collections"
+  {:params
+   {:coll1 "asset"
+    :coll2 "asset"}
+   :asset-params
+   {:coll1 {:data-fn #(data.json/read % :key-fn keyword)}
+    :coll2 {:data-fn #(data.json/read % :key-fn keyword)}}
+   :results
+   {:coll "asset"}
+   :asset-results
+   {:coll {:asset-fn (comp sf/memory-asset data.json/write-str)}}}
+  [_ params]
+  (let [coll1 (get-in params [:asset-params :coll1 :data])
+        coll2 (get-in params [:asset-params :coll2 :data])]
+    {:coll (into coll1 coll2)}))
+
 (defn invokable-odd?
   {:params {:n "json"}}
   [_ params]
@@ -42,7 +59,7 @@
 
 (defn n-odd?
   {:params {:n "asset"}
-   :asset-params {:n {:reader #(data.json/read % :key-fn keyword)}}
+   :asset-params {:n {:data-fn #(data.json/read % :key-fn keyword)}}
    :results {:is_odd "json"}}
   [_ params]
   (let [n (get-in params [:asset-params :n :data])]

@@ -33,11 +33,11 @@
 
             asset (sf/upload aladdin (sf/memory-asset (data.json/write-str x)))
 
-            pmeta {:params {:x "asset"}
-                   :asset-params {:x {:reader #(data.json/read % :key-fn keyword)}}}
+            imeta {:params {:x "asset"}
+                   :asset-params {:x {:data-fn #(data.json/read % :key-fn keyword)}}}
 
             params {:x {:did (str (sf/did asset))}}
-            wrapped-params (#'invoke/wrapped-params pmeta params)]
+            wrapped-params (#'invoke/wrapped-params imeta params)]
         (is (= (:x params) (:x wrapped-params)))
         (is (= true (sf/asset? (get-in wrapped-params [:asset-params :x :asset]))))
         (is (= x (get-in wrapped-params [:asset-params :x :data])))))))

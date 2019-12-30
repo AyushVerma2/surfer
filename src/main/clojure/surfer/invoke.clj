@@ -23,9 +23,9 @@
           (let [did (sf/did (get-in params [param-name :did]))
                 agent (sfa/did->agent did)
                 asset (sf/get-asset agent did)
-                reader (get-in imeta [:asset-params param-name :reader])
+                data-fn (get-in imeta [:asset-params param-name :data-fn])
                 data (with-open [input-stream (sf/content-stream asset)]
-                       (reader (io/reader input-stream)))]
+                       (data-fn (io/reader input-stream)))]
             (-> params
                 (assoc-in [:asset-params param-name :asset] asset)
                 (assoc-in [:asset-params param-name :data] data)))
