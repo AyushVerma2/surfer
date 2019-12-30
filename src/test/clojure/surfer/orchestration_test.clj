@@ -93,9 +93,9 @@
 (deftest execute-test
   (binding [sfa/*resolver* (LocalResolverImpl.)]
 
-    (sfa/register! fixture/agent-did (env/self-ddo (system/env test-system)))
+    (sfa/register! fixture/test-agent-did (env/self-ddo (system/env test-system)))
 
-    (let [aladdin (fixture/agent)
+    (let [aladdin (fixture/test-agent)
 
           make-range (->> (invoke/invokable-metadata #'demo.invokable/make-range)
                           (invoke/register-invokable aladdin))

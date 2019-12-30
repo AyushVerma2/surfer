@@ -27,8 +27,8 @@
         account (sf/remote-account username password)]
     (RemoteAgent/create resolver did account)))
 
-(def agent-did
+(def test-agent-did
   (sf/did "did:dex:abc"))
 
-(defn agent []
-  (sfa/did->agent agent-did))
+(defn test-agent []
+  (sfa/did->agent test-agent-did))

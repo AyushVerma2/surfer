@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [surfer.invoke :as invoke]
             [surfer.test.fixture :as fixture]
-            [surfer.demo.invokable-demo :as demo.invokable]
+            [surfer.demo.invokable-demo :as invokable-demo]
             [surfer.system :as system]
             [starfish.core :as sf]
             [surfer.env :as env]
@@ -22,25 +22,33 @@
     (is (= {:x 1} (#'invoke/wrapped-params {"params" {:x "json"}} {:x 1})))
     (is (= {:x 1} (#'invoke/wrapped-params {"params" {:x "json"}} {"x" 1}))))
 
-  (testing "Asset Param"
+  (testing "Asset Params"
     (binding [sfa/*resolver* (LocalResolverImpl.)]
 
-      (sfa/register! (sf/did "did:dex:abc") (env/self-ddo (system/env test-system)))
+      (sfa/register! fixture/test-agent-did (env/self-ddo (system/env test-system)))
 
-      (let [aladdin (sfa/did->agent (sf/did "did:dex:abc"))
+      (let [coll1 [1 2 3]
+            coll2 [4 5 6]
 
-            x 1
+            coll1-asset (sf/upload (fixture/test-agent) (sf/memory-asset (data.json/write-str coll1)))
+            coll2-asset (sf/upload (fixture/test-agent) (sf/memory-asset (data.json/write-str coll2)))
 
-            asset (sf/upload aladdin (sf/memory-asset (data.json/write-str x)))
+            params {:coll1 {:did (str (sf/did coll1-asset))}
+                    :coll2 {:did (str (sf/did coll2-asset))}}
 
-            imeta {:params {:x "asset"}
-                   :asset-params {:x {:data-fn #(data.json/read % :key-fn keyword)}}}
+            wrapped-params (#'invoke/wrapped-params (meta #'invokable-demo/concatenate-asset) params)]
 
-            params {:x {:did (str (sf/did asset))}}
-            wrapped-params (#'invoke/wrapped-params imeta params)]
-        (is (= (:x params) (:x wrapped-params)))
-        (is (= true (sf/asset? (get-in wrapped-params [:asset-params :x :asset]))))
-        (is (= x (get-in wrapped-params [:asset-params :x :data])))))))
+        (testing "Params don't change"
+          (is (= (:coll1 params) (:coll1 wrapped-params)))
+          (is (= (:coll2 params) (:coll2 wrapped-params))))
+
+        (testing "Asset (DID) param to Asset"
+          (is (= true (sf/asset? (get-in wrapped-params [:asset-params :coll1 :asset]))))
+          (is (= true (sf/asset? (get-in wrapped-params [:asset-params :coll2 :asset])))))
+
+        (testing "Asset (DID) param to data"
+          (is (= [1 2 3] (get-in wrapped-params [:asset-params :coll1 :data])))
+          (is (= [4 5 6] (get-in wrapped-params [:asset-params :coll2 :data]))))))))
 
 (deftest wrapped-results-test
   (testing "Keywordize keys"
@@ -60,29 +68,29 @@
 (deftest invoke-test
   (testing "Invoke"
     (testing "Make range 0-9"
-      (is (= {:range [0 1 2 3 4 5 6 7 8 9]} (invoke/invoke #'demo.invokable/make-range (system/new-context test-system) {}))))
+      (is (= {:range [0 1 2 3 4 5 6 7 8 9]} (invoke/invoke #'invokable-demo/make-range (system/new-context test-system) {}))))
 
     (testing "Make range 0-9, and return a new Asset (reference)"
-      (let [results (invoke/invoke #'demo.invokable/make-range-asset (system/new-context test-system) {})
+      (let [results (invoke/invoke #'invokable-demo/make-range-asset (system/new-context test-system) {})
             did-str (get-in results [:range :did])]
         (is (= true (string? did-str)))
         (is (= true (sf/did? (sf/did did-str))))))
 
     (testing "Odd numbers"
-      (is (= {:odds [1 3 5]} (invoke/invoke #'demo.invokable/filter-odds (system/new-context test-system) {:numbers [1 2 3 4 5]}))))
+      (is (= {:odds [1 3 5]} (invoke/invoke #'invokable-demo/filter-odds (system/new-context test-system) {:numbers [1 2 3 4 5]}))))
 
     (testing "Concatenate collections"
-      (is (= {:coll [1 2 3 4]} (invoke/invoke #'demo.invokable/concatenate (system/new-context test-system) {:coll1 [1 2] :coll2 [3 4]}))))
+      (is (= {:coll [1 2 3 4]} (invoke/invoke #'invokable-demo/concatenate (system/new-context test-system) {:coll1 [1 2] :coll2 [3 4]}))))
 
     (testing "Number (Asset content) is odd"
       (binding [sfa/*resolver* (LocalResolverImpl.)]
 
-        (sfa/register! fixture/agent-did (env/self-ddo (system/env test-system)))
+        (sfa/register! fixture/test-agent-did (env/self-ddo (system/env test-system)))
 
         (testing "Function call"
-          (let [agent (fixture/agent)
+          (let [agent (fixture/test-agent)
                 asset (sf/upload agent (sf/memory-asset (data.json/write-str 1)))
-                invokable (invoke/wrap-params #'demo.invokable/n-odd? (meta #'demo.invokable/n-odd?))]
+                invokable (invoke/wrap-params #'invokable-demo/n-odd? (meta #'invokable-demo/n-odd?))]
             (is (= {:is_odd true} (invokable (system/new-context test-system) {:n {:did (str (sf/did asset))}})))))
 
         ;;(testing "Invokable call"
