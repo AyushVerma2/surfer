@@ -95,16 +95,16 @@
 
     (sfa/register! fixture/test-agent-did (env/self-ddo (system/env test-system)))
 
-    (let [aladdin (fixture/test-agent)
+    (let [test-agent (fixture/test-agent)
 
           make-range (->> (invoke/invokable-metadata #'demo.invokable/make-range)
-                          (invoke/register-invokable aladdin))
+                          (invoke/register-invokable test-agent))
 
           filter-odds (->> (invoke/invokable-metadata #'demo.invokable/filter-odds)
-                           (invoke/register-invokable aladdin))
+                           (invoke/register-invokable test-agent))
 
           concatenate (->> (invoke/invokable-metadata #'demo.invokable/concatenate)
-                           (invoke/register-invokable aladdin))]
+                           (invoke/register-invokable test-agent))]
       (testing "A very basic Orchestration example"
         (let [orchestration {:children
                              {"make-range" (sf/asset-id make-range)
