@@ -139,3 +139,19 @@
                             "concatenate" {:input {:coll2 [0 1 2 3 4 5 6 7 8 9], :coll1 [0 1 2 3 4 5 6 7 8 9]},
                                            :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}}}
                  (orchestration/execute (system/app-context test-system) orchestration))))))))
+
+(deftest results-test
+  (is (= {:status "succeeded"
+          :results {:odds [1 3]}
+          :children
+          {"make-range"
+           {:status "succeeded"
+            :results {:range [0 1 2 3]}}
+           "filter-odds"
+           {:status "succeeded"
+            :results {:odds [1 3]}}}}
+         (orchestration/results {:topo '("make-range" "filter-odds")
+                                 :process {"make-range" {:input {}
+                                                         :output {:range [0 1 2 3]}}
+                                           "filter-odds" {:input {:numbers [0 1 2 3]}
+                                                          :output {:odds [1 3]}}}}))))

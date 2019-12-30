@@ -73,3 +73,13 @@
                   nodes)]
     {:topo nodes
      :process process}))
+
+(defn results [{:keys [topo process]}]
+  {:status "succeeded"
+   :results (get-in process [(last topo) :output])
+   :children (->> process
+                  (map
+                    (fn [[k v]]
+                      [k {:status "succeeded"
+                          :results (:output v)}]))
+                  (into {}))})
