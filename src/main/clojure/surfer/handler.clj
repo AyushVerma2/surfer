@@ -85,7 +85,7 @@
           :return schema/DDO
           {:status 200
            :headers {"Content-Type" "application/json"}
-           :body (env/agent-ddo env)})
+           :body (env/self-ddo env)})
 
         (GET "/status" []
           :summary "Gets the status for this Agent"

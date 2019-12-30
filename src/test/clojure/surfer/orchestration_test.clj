@@ -93,7 +93,7 @@
 (deftest execute-test
   (binding [sfa/*resolver* (LocalResolverImpl.)]
 
-    (sfa/register! fixture/agent-did (env/agent-ddo (system/env test-system)))
+    (sfa/register! fixture/agent-did (env/self-ddo (system/env test-system)))
 
     (let [aladdin (fixture/agent)
 

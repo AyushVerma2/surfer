@@ -161,7 +161,7 @@
   "Gets the appropriate response map for a job result, or null if the job does not exist."
   [app-context jobid]
   (when-let [job (get-job jobid)]
-    (let [agent-did (env/agent-did (app-context/env app-context))
+    (let [agent-did (env/self-did (app-context/env app-context))
 
           _ (try
               (sf/poll-result job)

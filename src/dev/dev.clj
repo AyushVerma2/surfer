@@ -53,10 +53,10 @@
     (asset/import-edn! (db) storage-path "datasets.edn"))
 
   (def did
-    (env/agent-did (system/env system)))
+    (env/self-did (system/env system)))
 
   (def ddo
-    (env/agent-ddo (system/env system)))
+    (env/self-ddo (system/env system)))
 
   (def aladdin
     (sfa/did->agent did))

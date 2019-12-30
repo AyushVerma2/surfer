@@ -25,7 +25,7 @@
   (testing "Asset Param"
     (binding [sfa/*resolver* (LocalResolverImpl.)]
 
-      (sfa/register! (sf/did "did:dex:abc") (env/agent-ddo (system/env test-system)))
+      (sfa/register! (sf/did "did:dex:abc") (env/self-ddo (system/env test-system)))
 
       (let [aladdin (sfa/did->agent (sf/did "did:dex:abc"))
 
@@ -77,7 +77,7 @@
     (testing "Number (Asset content) is odd"
       (binding [sfa/*resolver* (LocalResolverImpl.)]
 
-        (sfa/register! fixture/agent-did (env/agent-ddo (system/env test-system)))
+        (sfa/register! fixture/agent-did (env/self-ddo (system/env test-system)))
 
         (testing "Function call"
           (let [agent (fixture/agent)
