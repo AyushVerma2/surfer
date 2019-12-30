@@ -4,7 +4,8 @@
             [starfish.core :as sf]
             [surfer.invoke :as invoke]
             [surfer.database :as database]
-            [surfer.system :as system]))
+            [surfer.system :as system]
+            [surfer.app-context :as app-context]))
 
 (defn dependency-graph [orchestration]
   (let [edges (remove
@@ -53,17 +54,17 @@
                         (apply merge))]
     (or params {})))
 
-(defn execute [context orchestration]
+(defn execute [app-context orchestration]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))
 
         process (reduce
                   (fn [process nid]
                     (let [aid (get-in orchestration [:children nid])
 
-                          metadata (-> (system/context->db context)
+                          metadata (-> (app-context/db app-context)
                                        (store/get-metadata aid {:key-fn keyword}))
 
-                          invokable (invoke/invokable-operation context metadata)
+                          invokable (invoke/invokable-operation app-context metadata)
 
                           params (params orchestration process nid)]
                       (assoc process nid {:input params

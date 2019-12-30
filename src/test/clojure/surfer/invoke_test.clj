@@ -68,19 +68,19 @@
 (deftest invoke-test
   (testing "Invoke"
     (testing "Make range 0-9"
-      (is (= {:range [0 1 2 3 4 5 6 7 8 9]} (invoke/invoke #'invokable-demo/make-range (system/new-context test-system) {}))))
+      (is (= {:range [0 1 2 3 4 5 6 7 8 9]} (invoke/invoke #'invokable-demo/make-range (system/app-context test-system) {}))))
 
     (testing "Make range 0-9, and return a new Asset (reference)"
-      (let [results (invoke/invoke #'invokable-demo/make-range-asset (system/new-context test-system) {})
+      (let [results (invoke/invoke #'invokable-demo/make-range-asset (system/app-context test-system) {})
             did-str (get-in results [:range :did])]
         (is (= true (string? did-str)))
         (is (= true (sf/did? (sf/did did-str))))))
 
     (testing "Odd numbers"
-      (is (= {:odds [1 3 5]} (invoke/invoke #'invokable-demo/filter-odds (system/new-context test-system) {:numbers [1 2 3 4 5]}))))
+      (is (= {:odds [1 3 5]} (invoke/invoke #'invokable-demo/filter-odds (system/app-context test-system) {:numbers [1 2 3 4 5]}))))
 
     (testing "Concatenate collections"
-      (is (= {:coll [1 2 3 4]} (invoke/invoke #'invokable-demo/concatenate (system/new-context test-system) {:coll1 [1 2] :coll2 [3 4]}))))
+      (is (= {:coll [1 2 3 4]} (invoke/invoke #'invokable-demo/concatenate (system/app-context test-system) {:coll1 [1 2] :coll2 [3 4]}))))
 
     (testing "Number (Asset content) is odd"
       (binding [sfa/*resolver* (LocalResolverImpl.)]
@@ -91,7 +91,7 @@
           (let [agent (fixture/test-agent)
                 asset (sf/upload agent (sf/memory-asset (data.json/write-str 1)))
                 invokable (invoke/wrap-params #'invokable-demo/n-odd? (meta #'invokable-demo/n-odd?))]
-            (is (= {:is_odd true} (invokable (system/new-context test-system) {:n {:did (str (sf/did asset))}})))))
+            (is (= {:is_odd true} (invokable (system/app-context test-system) {:n {:did (str (sf/did asset))}})))))
 
         ;;(testing "Invokable call"
         ;;  (let [aladdin (fixture/agent)

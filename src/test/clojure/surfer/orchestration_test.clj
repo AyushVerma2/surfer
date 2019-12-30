@@ -117,7 +117,7 @@
           (is (= {:topo '("make-range" "filter-odds"),
                   :process {"make-range" {:input {}, :output {:range [0 1 2 3 4 5 6 7 8 9]}},
                             "filter-odds" {:input {:numbers [0 1 2 3 4 5 6 7 8 9]}, :output {:odds [1 3 5 7 9]}}}}
-                 (orchestration/execute (system/new-context test-system) orchestration)))))
+                 (orchestration/execute (system/app-context test-system) orchestration)))))
 
       (testing "Nodes (Operations) with dependencies"
         (let [orchestration {:children
@@ -138,4 +138,4 @@
                             "make-range2" {:input {}, :output {:range [0 1 2 3 4 5 6 7 8 9]}},
                             "concatenate" {:input {:coll2 [0 1 2 3 4 5 6 7 8 9], :coll1 [0 1 2 3 4 5 6 7 8 9]},
                                            :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}}}
-                 (orchestration/execute (system/new-context test-system) orchestration))))))))
+                 (orchestration/execute (system/app-context test-system) orchestration))))))))

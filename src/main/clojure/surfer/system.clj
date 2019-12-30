@@ -1,6 +1,7 @@
 (ns surfer.system
   (:require [com.stuartsierra.component :as component]
             [surfer.database :as database]
+            [surfer.app-context :as app-context]
             [surfer.env :as env]
             [surfer.starfish :as starfish]
             [surfer.migration :as migration]
@@ -35,13 +36,5 @@
 (defn starfish [system]
   (:starfish system))
 
-(defn new-context
-  ([system]
-   (new-context (env system) (database system) (starfish system)))
-  ([env database starfish]
-   #:app-context{:env env
-                 :database database
-                 :starfish starfish}))
-
-(def context->db
-  (comp database/db :app-context/database))
+(defn app-context [system]
+  (app-context/new-context (env system) (database system) (starfish system)))

@@ -987,8 +987,7 @@
         (friend/authenticate config))))
 
 (defn make-handler [app-context]
-  (let [db (database/db (app-context/database app-context))
-        config (auth-config db)
+  (let [config (auth-config (app-context/db app-context))
 
         wrap-auth (wrap-auth config)
         wrap-cors (fn [handler]

@@ -18,8 +18,8 @@
             [clojure.edn :as edn]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
             [clj-http.client :as http]
-            [com.stuartsierra.dependency :as dep])
-  (:import (sg.dex.starfish.impl.memory LocalResolverImpl)))
+            [com.stuartsierra.dependency :as dep]
+            [surfer.database :as database]))
 
 (set-init (constantly (system/new-system :dev)))
 
@@ -28,13 +28,11 @@
 (defn env []
   (system/env system))
 
-(defn context []
-  (app-context/new-context (system/env system)
-                           (system/database system)
-                           (system/starfish system)))
+(defn app-context []
+  (system/app-context system))
 
 (defn db []
-  (:db-spec (system/database system)))
+  (database/db (system/database system)))
 
 (defn reset-db []
   (store/clear-db (db) (env/dbtype (env)))
@@ -71,20 +69,20 @@
 
   ;; -- Invoke
 
-  (invoke/invoke #'demo.invokable/n-odd? (context) {:n {:did (str n-asset-did)}})
+  (invoke/invoke #'demo.invokable/n-odd? (app-context) {:n {:did (str n-asset-did)}})
 
-  (invoke/invoke #'demo.invokable/make-range-asset (context) {})
+  (invoke/invoke #'demo.invokable/make-range-asset (app-context) {})
 
   ;; Param keys *must be* a string when calling the Java API directly.
   (def job
     (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (invoke/invokable-operation (context) metadata)]
+          operation (invoke/invokable-operation (app-context) metadata)]
       (.invoke operation {"n" 1})))
 
   ;; Param keys can be a keyword because `starfish.core/invoke` uses `stringify-keys`.
   (def job
     (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (invoke/invokable-operation (context) metadata)]
+          operation (invoke/invokable-operation (app-context) metadata)]
       (sf/invoke operation {:n 1})))
 
 
@@ -125,7 +123,7 @@
                        [{:source "make-range"
                          :target "filter-odds"
                          :ports [:range :numbers]}]}]
-    (orchestration/execute (context) orchestration))
+    (orchestration/execute (app-context) orchestration))
 
   ;; Nodes (Operations) with dependencies
   ;;     :a
@@ -146,7 +144,7 @@
                         {:source "make-range2"
                          :target "concatenate"
                          :ports [:range :coll2]}]}]
-    (orchestration/execute (context) orchestration))
+    (orchestration/execute (app-context) orchestration))
 
   ;; Re-using the same Operation n times to connect to a different port
   (let [orchestration {:children
@@ -161,7 +159,7 @@
                         {:source "make-range"
                          :target "concatenate"
                          :ports [:range :coll2]}]}]
-    (orchestration/execute (context) orchestration))
+    (orchestration/execute (app-context) orchestration))
 
 
   (def orchestration
