@@ -17,10 +17,9 @@
 
 (deftest wrapped-params-test
   (testing "Keywordize keys"
-    (is (= {:x 1} (#'invoke/wrapped-params {:params {:x "json"}} {:x 1})))
-    (is (= {:x 1} (#'invoke/wrapped-params {:params {:x "json"}} {"x" 1})))
-    (is (= {:x 1} (#'invoke/wrapped-params {"params" {:x "json"}} {:x 1})))
-    (is (= {:x 1} (#'invoke/wrapped-params {"params" {:x "json"}} {"x" 1}))))
+    (is (= {:x 1} (#'invoke/wrapped-params {:operation {:params {:x "json"}}} {:x 1})))
+    (is (= {:x 1} (#'invoke/wrapped-params {"operation" {"params" {"x" "json"}}} {"x" 1})))
+    (is (= {:x 1} (#'invoke/wrapped-params {} {:x 1}))))
 
   (testing "Asset Params"
     (binding [sfa/*resolver* (LocalResolverImpl.)]
@@ -37,31 +36,19 @@
                     :coll2 {:did (str (sf/did coll2-asset))}}
 
             wrapped-params (#'invoke/wrapped-params (meta #'invokable-demo/concatenate-asset) params)]
-
-        (testing "Params don't change"
-          (is (= (:coll1 params) (:coll1 wrapped-params)))
-          (is (= (:coll2 params) (:coll2 wrapped-params))))
-
-        (testing "Asset (DID) param to Asset"
-          (is (= true (sf/asset? (get-in wrapped-params [:asset-params :coll1 :asset]))))
-          (is (= true (sf/asset? (get-in wrapped-params [:asset-params :coll2 :asset])))))
-
-        (testing "Asset (DID) param to data"
-          (is (= [1 2 3] (get-in wrapped-params [:asset-params :coll1 :data])))
-          (is (= [4 5 6] (get-in wrapped-params [:asset-params :coll2 :data]))))))))
+        (is (= true (sf/asset? (:coll1 wrapped-params))))
+        (is (= true (sf/asset? (:coll2 wrapped-params))))))))
 
 (deftest wrapped-results-test
   (testing "Keywordize keys"
-    (is (= {:x 1} (#'invoke/wrapped-results {:results {:x "json"}} {:x 1})))
-    (is (= {:x 1} (#'invoke/wrapped-results {:results {:x "json"}} {"x" 1})))
-    (is (= {:x 1} (#'invoke/wrapped-results {"results" {"x" "json"}} {"x" 1})))
+    (is (= {:x 1} (#'invoke/wrapped-results {:operation {:results {:x "json"}}} {:x 1})))
+    (is (= {:x 1} (#'invoke/wrapped-results {"operation" {"results" {"x" "json"}}} {"x" 1})))
     (is (= {:x 1} (#'invoke/wrapped-results {} {:x 1}))))
 
   (testing "Generate Asset"
     (let [results (#'invoke/wrapped-results
-                    {:results {:x "asset"}
-                     :asset-results {:x {:asset-fn (comp sf/memory-asset data.json/write-str)}}}
-                    {:x 1})]
+                    {:operation {:results {:x "asset"}}}
+                    {:x (sf/memory-asset (data.json/write-str 1))})]
       (is (= true (string? (get-in results [:x :did]))))
       (is (= true (sf/did? (sf/did (get-in results [:x :did]))))))))
 
@@ -93,14 +80,10 @@
                 invokable (invoke/wrap-params #'invokable-demo/n-odd? (meta #'invokable-demo/n-odd?))]
             (is (= {:is_odd true} (invokable (system/app-context test-system) {:n {:did (str (sf/did asset))}})))))
 
-        ;;(testing "Invokable call"
-        ;;  (let [aladdin (fixture/agent)
-        ;;        asset (sf/upload aladdin (sf/memory-asset (data.json/write-str 1)))
-        ;;        metadata (invoke/invokable-metadata #'demo.invokable/n-odd?)
-        ;;        operation (invoke/invokable-operation (system/new-context test-system) metadata)]
-        ;;    (try
-        ;;      (is (= {:is_odd true} (sf/invoke-result operation {:n {:did (str (sf/did asset))}})))
-        ;;      (catch ExecutionException ex
-        ;;        (prn ex)))))
+        ;; FIXME
+        #_(testing "Invokable call"
+            (let [aladdin (fixture/test-agent)
+                  asset (sf/upload aladdin (sf/memory-asset (data.json/write-str 1)))]
+              (is (= {:is_odd true} (invoke/invoke #'invokable-demo/n-odd? (system/app-context test-system) {:n {:did (str (sf/did asset))}})))))
 
         ))))

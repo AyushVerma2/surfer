@@ -13,31 +13,30 @@
     [clojure.walk :as walk]
     [clojure.java.io :as io])
   (:import (sg.dex.starfish.util DID)
-           (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation)
+           (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation MemoryAsset)
            (java.time Instant)))
 
-(defn- wrapped-params [imeta params]
+(defn read-json-content [asset]
+  (with-open [input-stream (sf/content-stream asset)]
+    (data.json/read (io/reader input-stream) :key-fn keyword)))
+
+(defn- wrapped-params [metadata params]
   (let [params (walk/keywordize-keys params)]
     (reduce
       (fn [params [param-name param-type]]
         (if (= "asset" param-type)
           (let [did (sf/did (get-in params [param-name :did]))
                 agent (sfa/did->agent did)
-                asset (sf/get-asset agent did)
-                data-fn (get-in imeta [:asset-params param-name :data-fn])
-                data (with-open [input-stream (sf/content-stream asset)]
-                       (data-fn (io/reader input-stream)))]
-            (-> params
-                (assoc-in [:asset-params param-name :asset] asset)
-                (assoc-in [:asset-params param-name :data] data)))
+                asset (sf/get-asset agent did)]
+            (assoc params param-name asset))
           params))
       params
-      (:params imeta))))
+      (get-in metadata [:operation :params]))))
 
-(defn wrap-params [invokable imeta]
-  (fn [context params]
-    (->> (wrapped-params imeta params)
-         (invokable context))))
+(defn wrap-params [invokable metadata]
+  (fn [app-context params]
+    (->> (wrapped-params metadata params)
+         (invokable app-context))))
 
 ;; TODO: More thinking
 ;; Don't need 'asset-fn' - it's up to the user.
@@ -47,28 +46,24 @@
 ;;  - DID
 ;;  - MemoryAsset (upload)
 ;;  - RemoteAsset (don't upload)
-(defn- wrapped-results [imeta results]
+(defn- wrapped-results [metadata results]
   (let [results (walk/keywordize-keys results)]
     (reduce
       (fn [new-results [result-name result-value]]
-        (let [result-value (if (= "asset" (get-in imeta [:results result-name]))
-                             (let [asset-fn (get-in imeta [:asset-results result-name :asset-fn])
-                                   asset (asset-fn result-value)
-
-                                   ;; FIXME
+        (let [result-value (if (= "asset" (get-in metadata [:operation :results result-name]))
+                             (let [;; TODO
                                    agent (sfa/did->agent (sf/did "did:dex:1acd41655b2d8ea3f3513cc847965e72c31bbc9bfc38e7e7ec901852bd3c457c"))
-
-                                   remote-asset (sf/upload agent asset)]
-                               {:did (str (sf/did remote-asset))})
+                                   asset (sf/upload agent result-value)]
+                               {:did (str (sf/did asset))})
                              result-value)]
           (assoc new-results result-name result-value)))
       {}
       results)))
 
-(defn wrap-results [invokable imeta]
-  (fn [context params]
-    (->> (invokable context params)
-         (wrapped-results imeta))))
+(defn wrap-results [invokable metadata]
+  (fn [app-context params]
+    (->> (invokable app-context params)
+         (wrapped-results metadata))))
 
 (defonce JOBS (atom {}))
 
@@ -88,7 +83,7 @@
    DEP 8 - Asset Metadata
    https://github.com/DEX-Company/DEPs/tree/master/8"
   [obj]
-  (let [{:keys [doc params results]} (meta obj)]
+  (let [{:keys [doc operation]} (meta obj)]
     {:name (or doc "Unnamed Operation")
      :type "operation"
      :dateCreated (str (Instant/now))
@@ -97,21 +92,19 @@
      :additionalInfo {:function (-> obj symbol str)}
 
      :operation {:modes ["sync" "async"]
-                 :params (or params {})
-                 :results (or results {})}}))
+                 :params (or (:params operation) {})
+                 :results (or (:results operation) {})}}))
 
-(defn invokable-operation [context metadata]
+(defn invokable-operation [app-context metadata]
   (let [invokable (resolve-invokable metadata)
 
-        imeta (meta invokable)
-
         invokable (-> invokable
-                      (wrap-params imeta)
-                      (wrap-results imeta))
+                      (wrap-params metadata)
+                      (wrap-results metadata))
 
         metadata-str (data.json/write-str metadata)]
     (ClojureOperation/create metadata-str (MemoryAgent/create) (fn [params]
-                                                                 (invokable context params)))))
+                                                                 (invokable app-context params)))))
 
 (defn register-invokable [agent metadata]
   (sf/register agent (sf/memory-asset metadata "")))
