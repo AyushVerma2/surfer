@@ -1,24 +1,16 @@
 (ns surfer.invoke
   (:require
-    [surfer.storage :as storage]
     [surfer.store :as store]
     [surfer.env :as env]
     [starfish.core :as sf]
-    [surfer.utils :as utils]
-    [schema.core :as s]
     [clojure.tools.logging :as log]
     [surfer.app-context :as app-context]
     [clojure.data.json :as data.json]
     [starfish.alpha :as sfa]
-    [clojure.walk :as walk]
-    [clojure.java.io :as io])
+    [clojure.walk :as walk])
   (:import (sg.dex.starfish.util DID)
            (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation MemoryAsset)
            (java.time Instant)))
-
-(defn read-json-content [asset]
-  (with-open [input-stream (sf/content-stream asset)]
-    (data.json/read (io/reader input-stream) :key-fn keyword)))
 
 (defn- wrapped-params [metadata params]
   (let [params (walk/keywordize-keys params)]

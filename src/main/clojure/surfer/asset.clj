@@ -8,6 +8,12 @@
             [clojure.edn :as edn]
             [byte-streams]))
 
+(defn read-json-content
+  "Returns value read from asset's JSON content."
+  [asset]
+  (with-open [input-stream (sf/content-stream asset)]
+    (data.json/read (io/reader input-stream) :key-fn keyword)))
+
 (defn import!
   "Import, register and persist on disk, the asset file.
 

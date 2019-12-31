@@ -2,7 +2,8 @@
   (:require [clojure.data.json :as data.json]
             [starfish.core :as sf]
             [surfer.orchestration :as orchestration]
-            [surfer.invoke :as invoke]))
+            [surfer.invoke :as invoke]
+            [surfer.asset :as asset]))
 
 (defn make-range
   "Make range 0-10"
@@ -65,7 +66,7 @@
    {:params {:n "asset"}
     :results {:is_odd "json"}}}
   [_ params]
-  (let [n (invoke/read-json-content (:n params))]
+  (let [n (asset/read-json-content (:n params))]
     {:is_odd (odd? n)}))
 
 (defn orchestration1
