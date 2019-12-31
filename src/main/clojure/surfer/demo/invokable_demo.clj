@@ -48,6 +48,10 @@
   [_ params]
   (let [coll1 (get-in params [:asset-params :coll1 :data])
         coll2 (get-in params [:asset-params :coll2 :data])]
+    ;; String DID
+    ;; DID
+    ;; MemoryAsset (upload)
+    ;; RemoteAsset (don't upload)
     {:coll (into coll1 coll2)}))
 
 (defn invokable-odd?

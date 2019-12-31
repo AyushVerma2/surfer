@@ -140,6 +140,8 @@
                                            :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}}}
                  (orchestration/execute (system/app-context test-system) orchestration))))))))
 
+;; Add to Backlog - Think about the `additionalInfo` metadata
+
 (deftest results-test
   (is (= {:status "succeeded"
           :results {:odds [1 3]}
