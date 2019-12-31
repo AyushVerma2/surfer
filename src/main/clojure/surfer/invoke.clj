@@ -13,7 +13,8 @@
     [clojure.walk :as walk]
     [clojure.java.io :as io])
   (:import (sg.dex.starfish.util DID)
-           (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation)))
+           (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation)
+           (java.time Instant)))
 
 (defn- wrapped-params [imeta params]
   (let [params (walk/keywordize-keys params)]
@@ -76,9 +77,39 @@
           (symbol)
           (resolve)))
 
-(defn invokable-metadata [invokable]
-  (let [params-results (select-keys (meta invokable) [:params :results])]
-    (walk/keywordize-keys (sf/invokable-metadata invokable params-results))))
+(defn invokable-metadata
+  "Returns an Operation Metadata map.
+
+   `obj` *must* be a Var, and its value *must* be a function.
+
+   Params are extracted from `obj` metadata, but you can pass an option map
+   with `params` and `results` to be used instead.
+
+   DEP 8 - Asset Metadata
+   https://github.com/DEX-Company/DEPs/tree/master/8"
+  [obj & [{:keys [params results]}]]
+  (let [metadata (meta obj)
+
+        params (or params (reduce
+                            (fn [params arg]
+                              (let [arg (name arg)]
+                                (assoc params arg {"type" "json"})))
+                            {}
+                            ;; Take the first; ignore other arities.
+                            (first (:arglists metadata))))]
+    {:name (or (:doc metadata) "Unnamed Operation")
+     :type "operation"
+     :dateCreated (str (Instant/now))
+
+     ;; TODO - Remove
+     :additionalInfo {:function (-> obj symbol str)}
+
+     :operation (let [m {:modes ["sync" "async"]
+                         :params params}]
+                  (walk/keywordize-keys
+                    (if results
+                      (merge m {:results results})
+                      m)))}))
 
 (defn invokable-operation [context metadata]
   (let [invokable (resolve-invokable metadata)
