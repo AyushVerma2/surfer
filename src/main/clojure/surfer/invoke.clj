@@ -87,29 +87,18 @@
 
    DEP 8 - Asset Metadata
    https://github.com/DEX-Company/DEPs/tree/master/8"
-  [obj & [{:keys [params results]}]]
-  (let [metadata (meta obj)
-
-        params (or params (reduce
-                            (fn [params arg]
-                              (let [arg (name arg)]
-                                (assoc params arg {"type" "json"})))
-                            {}
-                            ;; Take the first; ignore other arities.
-                            (first (:arglists metadata))))]
-    {:name (or (:doc metadata) "Unnamed Operation")
+  [obj]
+  (let [{:keys [doc params results]} (meta obj)]
+    {:name (or doc "Unnamed Operation")
      :type "operation"
      :dateCreated (str (Instant/now))
 
      ;; TODO - Remove
      :additionalInfo {:function (-> obj symbol str)}
 
-     :operation (let [m {:modes ["sync" "async"]
-                         :params params}]
-                  (walk/keywordize-keys
-                    (if results
-                      (merge m {:results results})
-                      m)))}))
+     :operation {:modes ["sync" "async"]
+                 :params (or params {})
+                 :results (or results {})}}))
 
 (defn invokable-operation [context metadata]
   (let [invokable (resolve-invokable metadata)
