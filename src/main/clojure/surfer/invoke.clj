@@ -38,6 +38,14 @@
     (->> (wrapped-params imeta params)
          (invokable context))))
 
+;; TODO: More thinking
+;; Don't need 'asset-fn' - it's up to the user.
+;; When should the Asset be uploaded?
+;; What are the possible return types and the "handling" for each type:
+;;  - String DID
+;;  - DID
+;;  - MemoryAsset (upload)
+;;  - RemoteAsset (don't upload)
 (defn- wrapped-results [imeta results]
   (let [results (walk/keywordize-keys results)]
     (reduce
