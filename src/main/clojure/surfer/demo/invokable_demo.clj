@@ -69,7 +69,7 @@
   (let [n (get-in params [:asset-params :n :data])]
     {:is_odd (odd? n)}))
 
-(defn basic-orchestration
+(defn orchestration1
   {:params
    {:make-range-id "json"
     :filter-odds-id "json"}
@@ -83,4 +83,25 @@
                        [{:source "make-range"
                          :target "filter-odds"
                          :ports [:range :numbers]}]}]
+    {:results (orchestration/results (orchestration/execute app-context orchestration))}))
+
+(defn orchestration2
+  {:params
+   {:make-range-id "json"
+    :concatenate-id "json"}
+   :results {:results "json"}}
+  [app-context params]
+  (let [orchestration {:children
+                       {"make-range1" (:make-range-id params)
+                        "make-range2" (:make-range-id params)
+                        "concatenate" (:concatenate-id params)}
+
+                       :edges
+                       [{:source "make-range1"
+                         :target "concatenate"
+                         :ports [:range :coll1]}
+
+                        {:source "make-range2"
+                         :target "concatenate"
+                         :ports [:range :coll2]}]}]
     {:results (orchestration/results (orchestration/execute app-context orchestration))}))

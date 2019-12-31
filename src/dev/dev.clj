@@ -114,8 +114,12 @@
     (let [metadata (invoke/invokable-metadata #'demo.invokable/concatenate)]
       (invoke/register-invokable aladdin metadata)))
 
-  (def basic-orchestration
-    (let [metadata (invoke/invokable-metadata #'demo.invokable/basic-orchestration)]
+  (def orchestration1
+    (let [metadata (invoke/invokable-metadata #'demo.invokable/orchestration1)]
+      (invoke/register-invokable aladdin metadata)))
+
+  (def orchestration2
+    (let [metadata (invoke/invokable-metadata #'demo.invokable/orchestration2)]
       (invoke/register-invokable aladdin metadata)))
 
   ;; A very basic Orchestration example
