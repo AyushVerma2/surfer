@@ -114,6 +114,10 @@
     (let [metadata (invoke/invokable-metadata #'demo.invokable/concatenate)]
       (invoke/register-invokable aladdin metadata)))
 
+  (def basic-orchestration
+    (let [metadata (invoke/invokable-metadata #'demo.invokable/basic-orchestration)]
+      (invoke/register-invokable aladdin metadata)))
+
   ;; A very basic Orchestration example
   (let [orchestration {:children
                        {"make-range" (sf/asset-id make-range)

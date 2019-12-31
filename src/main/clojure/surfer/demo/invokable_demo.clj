@@ -1,7 +1,7 @@
 (ns surfer.demo.invokable-demo
-  (:require [surfer.demo.asset.content :as asset.content]
-            [clojure.data.json :as data.json]
-            [starfish.core :as sf]))
+  (:require [clojure.data.json :as data.json]
+            [starfish.core :as sf]
+            [surfer.orchestration :as orchestration]))
 
 (defn make-range
   "Make range 0-10"
@@ -68,3 +68,19 @@
   [_ params]
   (let [n (get-in params [:asset-params :n :data])]
     {:is_odd (odd? n)}))
+
+(defn basic-orchestration
+  {:params
+   {:make-range-id "json"
+    :filter-odds-id "json"}
+   :results {:results "json"}}
+  [app-context params]
+  (let [orchestration {:children
+                       {"make-range" (:make-range-id params)
+                        "filter-odds" (:filter-odds-id params)}
+
+                       :edges
+                       [{:source "make-range"
+                         :target "filter-odds"
+                         :ports [:range :numbers]}]}]
+    {:results (orchestration/results (orchestration/execute app-context orchestration))}))
