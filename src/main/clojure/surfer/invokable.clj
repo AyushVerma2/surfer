@@ -5,7 +5,7 @@
     [starfish.core :as sf]
     [clojure.tools.logging :as log]
     [surfer.app-context :as app-context]
-    [clojure.data.json :as data.json]
+    [clojure.data.json :as json]
     [starfish.alpha :as sfa]
     [clojure.walk :as walk])
   (:import (sg.dex.starfish.util DID)
@@ -94,7 +94,7 @@
                       (wrap-params metadata)
                       (wrap-results metadata))
 
-        metadata-str (data.json/write-str metadata)]
+        metadata-str (json/write-str metadata)]
     (ClojureOperation/create metadata-str (MemoryAgent/create) (fn [params]
                                                                  (invokable app-context params)))))
 
@@ -117,11 +117,6 @@
         f (resolve op-sym)]
     (when f (sf/create-operation params f))))
 
-(defn get-asset
-  "Gets an asset in the context of this surfer instance."
-  ([did]
-   (sf/asset did)))
-
 (defn coerce-input-params
   "Coerces the input request to a map of keywords to assets / objects"
   ([md req]
@@ -131,7 +126,7 @@
          (if-let [pspec (get pspecs (keyword k))]
            (let [type (:type pspec)]
              (if (= "asset" type)
-               (assoc m (keyword k) (get-asset (:did v)))
+               (assoc m (keyword k) (sf/asset (:did v)))
                (assoc m (keyword k) v)))
            m))
        req
