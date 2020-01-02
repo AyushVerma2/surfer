@@ -26,10 +26,12 @@
   [app-context {:keys [n]}]
   (let [db (app-context/db app-context)
 
-        increment-metadata (invokable/invokable-metadata #'increment)
+        increment-metadata (merge (invokable/invokable-metadata #'increment) {:dateCreated "2020-01-01T00:00:00"})
         increment-metadata-str (json/write-str increment-metadata)
         increment-digest (sf/digest increment-metadata-str)
-        increment-id (store/register-asset db increment-digest increment-metadata-str)
+        increment-id (if (store/get-metadata db increment-digest)
+                       increment-digest
+                       (store/register-asset db increment-digest increment-metadata-str))
 
         child-key (fn [n]
                     (str "increment-" n))
@@ -50,17 +52,20 @@
 
         orchestration {:children children :edges edges}
         orchestration-str (json/write-str orchestration)
-        orchestration-metadata {:name "Orchestration - Demo 1"
+        orchestration-metadata {:name (str "Orchestration - Demo 1 - n " n)
                                 :type "operation"
-                                :dateCreated (str (Instant/now))
+                                :dateCreated "2020-01-01T00:00:00"
                                 :operation {:modes ["sync"]
                                             :class "orchestration"
                                             :params {}
                                             :results {:results "json"}}}
         orchestration-metadata-str (json/write-str orchestration-metadata)
         orchestration-digest (sf/digest orchestration-metadata-str)
-        orchestration-id (store/register-asset db orchestration-digest orchestration-metadata-str)
-        _ (storage/save (env/storage-path (app-context/env app-context)) orchestration-id orchestration-str)]
+        orchestration-id (if (store/get-metadata db orchestration-digest)
+                           orchestration-digest
+                           (do
+                             (storage/save (env/storage-path (app-context/env app-context)) orchestration-digest orchestration-str)
+                             (store/register-asset db orchestration-digest orchestration-metadata-str)))]
     {:id orchestration-id}))
 
 (defn make-range
