@@ -122,6 +122,35 @@
     (let [metadata (invoke/invokable-metadata #'demo.invokable/orchestration2)]
       (invoke/register-invokable aladdin metadata)))
 
+  (def basic-orchestration
+    (let [metadata {:name "Basic Orchestration"
+                    :type "operation"
+                    :dateCreated (str (java.util.Date.))
+                    :operation {:modes ["sync"]
+                                :class "orchestration"
+                                :params {}
+                                :results {:results "json"}}}
+
+          metadata-str (data.json/write-str metadata)
+
+          data {:children
+                {"make-range" (sf/asset-id make-range)
+                 "filter-odds" (sf/asset-id filter-odds)}
+
+                :edges
+                [{:source "make-range"
+                  :target "filter-odds"
+                  :ports [:range :numbers]}]}
+
+          data-str (data.json/write-str data)
+
+          asset (sf/register aladdin (sf/memory-asset metadata-str data-str))]
+
+      ;; FIXME Figure out why it isn't uploading the data (is it because it's an Operation?)
+      (storage/save (env/storage-path (env)) (sf/asset-id asset) (.getBytes data-str))
+
+      asset))
+
   ;; A very basic Orchestration example
   (let [orchestration {:children
                        {"make-range" (sf/asset-id make-range)

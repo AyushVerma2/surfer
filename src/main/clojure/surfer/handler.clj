@@ -36,7 +36,9 @@
     [hiccup.page :as hiccup.page]
     [byte-streams]
     [clojure.string :as str]
-    [surfer.migration :as migration])
+    [surfer.migration :as migration]
+    [surfer.orchestration :as orchestration]
+    [clojure.walk :as walk])
   (:import [java.io InputStream StringWriter PrintWriter]
            (clojure.lang ExceptionInfo)))
 
@@ -176,6 +178,7 @@
 
 (defn invoke-api-v1 [app-context]
   (let [database (app-context/database app-context)
+        env (app-context/env app-context)
         db (database/db database)]
     (context "/api/v1/invoke" []
       :tags ["Invoke API v1"]
@@ -200,6 +203,42 @@
               (not= "operation" (:type metadata))
               (response/bad-request {:error (str "Invalid Metadata. Operation " op-id " metadata type value should be 'operation'.")})
 
+              (= "orchestration" (get-in metadata [:operation :class]))
+              (try
+                (let [params {}
+
+                      orchestration (with-open [input-stream (storage/asset-input-stream (env/storage-path env) op-id)]
+                                      (asset/read-json-input-stream input-stream))
+
+                      ;; TODO Think about the data format coercion
+                      ;; ---
+
+                      ;; Children keys must be strings
+                      children (walk/stringify-keys (:children orchestration))
+
+                      ;; Ports must be a vector of keywords
+                      edges (map
+                              (fn [{:keys [ports] :as edge}]
+                                (assoc edge :ports (mapv keyword ports)))
+                              (:edges orchestration))
+
+                      orchestration (-> orchestration
+                                        (assoc :children children)
+                                        (assoc :edges edges))
+                      ;; ---
+
+                      result (orchestration/execute app-context orchestration)]
+
+                  (log/debug (str "Invoke Sync - Orchestration " op-id " : " params " -> " result))
+
+                  {:status 200
+                   :body result})
+                (catch Exception e
+                  (log/error e "Failed to invoke Orchestration." metadata)
+
+                  {:status 500
+                   :body "Failed to invoke Orchestration. Please try again."}))
+
               :else
               (try
                 (let [^InputStream body-stream (:body request)
@@ -210,15 +249,15 @@
                       result (-> (invoke/resolve-invokable metadata)
                                  (invoke/invoke app-context params))]
 
-                  (log/debug (str "Invoke Sync - " op-id " : " params " -> " result))
+                  (log/debug (str "Invoke Sync - Operation " op-id " : " params " -> " result))
 
                   {:status 200
                    :body result})
                 (catch Exception e
-                  (log/error e "Failed to invoke operation." metadata)
+                  (log/error e "Failed to invoke Operation." metadata)
 
                   {:status 500
-                   :body "Failed to invoke operation. Please try again."})))))
+                   :body "Failed to invoke Operation. Please try again."})))))
 
         (POST "/async/:op-id"
           {{:keys [op-id]} :params :as request}
@@ -275,7 +314,7 @@
         (GET "/:id" [id]
           :summary "Gets data for a specified Asset ID"
           (if-let [meta (store/get-metadata db id)]         ;; NOTE meta is JSON (not EDN)!
-            (if-let [body (storage/load-stream (env/storage-path env) id)]
+            (if-let [body (storage/asset-input-stream (env/storage-path env) id)]
 
               (let [ctype (get meta "contentType" "application/octet-stream")
                     ext (utils/ext-for-content-type ctype)

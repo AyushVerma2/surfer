@@ -4,7 +4,7 @@
             [clojure.string :as str]
             [starfish.core :as sf]
             [byte-streams])
-  (:import (java.io File)))
+  (:import (java.io File InputStream)))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -22,23 +22,23 @@
 
 (defn get-asset-path
   "Gets a storage path given a valid Asset ID."
-  [storage-path asset-id]
+  [storage-path id]
   (when (str/blank? storage-path)
     (throw (ex-info "Can't get asset path. Nil or empty storage path."
                     {:storage-path storage-path
-                     :asset-id asset-id})))
+                     :asset-id id})))
 
-  (when (str/blank? asset-id)
+  (when (str/blank? id)
     (throw (ex-info "Can't get asset path. Nil or empty Asset ID."
                     {:storage-path storage-path
-                     :asset-id asset-id})))
+                     :asset-id id})))
 
-  (when-not (utils/valid-asset-id? asset-id)
+  (when-not (utils/valid-asset-id? id)
     (throw (ex-info "Can't get asset path. Invalid Asset ID."
                     {:storage-path storage-path
-                     :asset-id asset-id})))
+                     :asset-id id})))
 
-  (asset-path storage-path asset-id))
+  (asset-path storage-path id))
 
 (defn save
   "Saves data to the storage location for a given asset.
@@ -52,18 +52,17 @@
 
     (io/copy data (io/file asset-path))))
 
-(defn load-stream
+(defn asset-input-stream
   "Gets an input stream for the specified asset ID.
 
    Returns null is the asset data does not exist.
 
    Should be used inside with-open to ensure the InputStream is properly
    closed."
-  [storage-path asset-id]
-  (let [path (get-asset-path storage-path asset-id)
+  ^InputStream [storage-path id]
+  (let [path (get-asset-path storage-path id)
         ^File file (io/file path)]
-    (when (.isFile file)
-      (io/input-stream file))))
+    (io/input-stream file)))
 
 (defn hash-check
   "`object` is anything which can be converted to byte-array (e.g., File, InputStream).
