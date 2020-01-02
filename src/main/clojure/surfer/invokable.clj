@@ -1,4 +1,4 @@
-(ns surfer.invoke
+(ns surfer.invokable
   (:require
     [surfer.store :as store]
     [surfer.env :as env]

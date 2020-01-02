@@ -2,7 +2,7 @@
   (:require [com.stuartsierra.dependency :as dep]
             [surfer.store :as store]
             [starfish.core :as sf]
-            [surfer.invoke :as invoke]
+            [surfer.invokable :as invoke]
             [surfer.app-context :as app-context]))
 
 (defn dependency-graph [orchestration]

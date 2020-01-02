@@ -3,7 +3,7 @@
             [surfer.orchestration :as orchestration]
             [com.stuartsierra.dependency :as dep]
             [surfer.test.fixture :as fixture]
-            [surfer.invoke :as invoke]
+            [surfer.invokable :as invoke]
             [surfer.demo.invokable-demo :as demo.invokable]
             [surfer.system :as system]
             [surfer.env :as env]

@@ -16,7 +16,7 @@
     [starfish.core :as sf]
     [surfer.utils :as utils]
     [surfer.env :as env]
-    [surfer.invoke :as invoke]
+    [surfer.invokable :as invokable]
     [surfer.app-context :as app-context]
     [surfer.database :as database]
     [surfer.asset :as asset]
@@ -246,8 +246,8 @@
 
                       params (json/read-str (slurp body-stream) :key-fn keyword)
 
-                      result (-> (invoke/resolve-invokable metadata)
-                                 (invoke/invoke app-context params))]
+                      result (-> (invokable/resolve-invokable metadata)
+                                 (invokable/invoke app-context params))]
 
                   (log/debug (str "Invoke Sync - Operation " op-id " : " params " -> " result))
 
@@ -273,7 +273,7 @@
               (log/debug (str "POST INVOKE on operation [" op-id "] body=" invoke-req))
               (cond
                 (not (= "operation" (:type md))) (response/bad-request (str "Not a valid operation: " op-id))
-                :else (if-let [jobid (invoke/launch-job db op-id invoke-req)]
+                :else (if-let [jobid (invokable/launch-job db op-id invoke-req)]
                         {:status 201
                          :body (str "{\"jobid\" : \"" jobid "\" , "
                                     "\"status\" : \"scheduled\""
@@ -284,8 +284,8 @@
         (GET "/jobs/:jobid"
              [jobid]
           (log/debug (str "GET JOB on job [" jobid "]"))
-          (if-let [job (invoke/get-job jobid)]
-            (response/response (invoke/job-response app-context jobid))
+          (if-let [job (invokable/get-job jobid)]
+            (response/response (invokable/job-response app-context jobid))
             (response/not-found (str "Job not found: " jobid))))))))
 
 (defn hash-check! [file metadata]

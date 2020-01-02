@@ -1,6 +1,6 @@
 (ns surfer.invoke-test
   (:require [clojure.test :refer :all]
-            [surfer.invoke :as invoke]
+            [surfer.invokable :as invoke]
             [surfer.test.fixture :as fixture]
             [surfer.demo.invokable-demo :as invokable-demo]
             [surfer.system :as system]

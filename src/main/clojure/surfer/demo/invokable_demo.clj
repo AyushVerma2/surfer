@@ -2,7 +2,7 @@
   (:require [clojure.data.json :as data.json]
             [starfish.core :as sf]
             [surfer.orchestration :as orchestration]
-            [surfer.invoke :as invoke]
+            [surfer.invokable :as invoke]
             [surfer.asset :as asset]))
 
 (defn make-range

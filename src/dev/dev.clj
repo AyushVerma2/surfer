@@ -3,7 +3,7 @@
             [surfer.store :as store]
             [surfer.env :as env]
             [surfer.system :as system]
-            [surfer.invoke :as invoke]
+            [surfer.invokable :as invokable]
             [surfer.asset :as asset]
             [surfer.storage :as storage]
             [surfer.app-context :as app-context]
@@ -69,20 +69,20 @@
 
   ;; -- Invoke
 
-  (invoke/invoke #'demo.invokable/n-odd? (app-context) {:n {:did (str n-asset-did)}})
+  (invokable/invoke #'demo.invokable/n-odd? (app-context) {:n {:did (str n-asset-did)}})
 
-  (invoke/invoke #'demo.invokable/make-range-asset (app-context) {})
+  (invokable/invoke #'demo.invokable/make-range-asset (app-context) {})
 
   ;; Param keys *must be* a string when calling the Java API directly.
   (def job
-    (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (invoke/invokable-operation (app-context) metadata)]
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/invokable-odd?)
+          operation (invokable/invokable-operation (app-context) metadata)]
       (.invoke operation {"n" 1})))
 
   ;; Param keys can be a keyword because `starfish.core/invoke` uses `stringify-keys`.
   (def job
-    (let [metadata (invoke/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (invoke/invokable-operation (app-context) metadata)]
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/invokable-odd?)
+          operation (invokable/invokable-operation (app-context) metadata)]
       (sf/invoke operation {:n 1})))
 
 
@@ -99,28 +99,28 @@
 
 
   (def make-range
-    (let [metadata (invoke/invokable-metadata #'demo.invokable/make-range)]
-      (invoke/register-invokable aladdin metadata)))
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/make-range)]
+      (invokable/register-invokable aladdin metadata)))
 
   (def make-range-asset
-    (let [metadata (invoke/invokable-metadata #'demo.invokable/make-range-asset)]
-      (invoke/register-invokable aladdin metadata)))
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/make-range-asset)]
+      (invokable/register-invokable aladdin metadata)))
 
   (def filter-odds
-    (let [metadata (invoke/invokable-metadata #'demo.invokable/filter-odds)]
-      (invoke/register-invokable aladdin metadata)))
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/filter-odds)]
+      (invokable/register-invokable aladdin metadata)))
 
   (def concatenate
-    (let [metadata (invoke/invokable-metadata #'demo.invokable/concatenate)]
-      (invoke/register-invokable aladdin metadata)))
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/concatenate)]
+      (invokable/register-invokable aladdin metadata)))
 
   (def orchestration1
-    (let [metadata (invoke/invokable-metadata #'demo.invokable/orchestration1)]
-      (invoke/register-invokable aladdin metadata)))
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/orchestration1)]
+      (invokable/register-invokable aladdin metadata)))
 
   (def orchestration2
-    (let [metadata (invoke/invokable-metadata #'demo.invokable/orchestration2)]
-      (invoke/register-invokable aladdin metadata)))
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/orchestration2)]
+      (invokable/register-invokable aladdin metadata)))
 
   (def basic-orchestration
     (let [metadata {:name "Basic Orchestration"
