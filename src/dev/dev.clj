@@ -120,6 +120,10 @@
     (let [metadata (invokable/invokable-metadata #'demo.invokable/make-orchestration-demo1)]
       (invokable/register-invokable aladdin metadata)))
 
+  (def make-orchestration-demo2
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/make-orchestration-demo2)]
+      (invokable/register-invokable aladdin metadata)))
+
   (demo.invokable/make-orchestration-demo1 (app-context) {:n 10})
 
 

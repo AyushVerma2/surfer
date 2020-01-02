@@ -18,56 +18,6 @@
   [_ {:keys [n]}]
   {:n (inc (or n 0))})
 
-(defn make-orchestration-demo1
-  "Create Orchestration Demo 1"
-  {:operation
-   {:params {:n "json"}
-    :results {:id "json"}}}
-  [app-context {:keys [n]}]
-  (let [db (app-context/db app-context)
-
-        increment-metadata (merge (invokable/invokable-metadata #'increment) {:dateCreated "2020-01-01T00:00:00"})
-        increment-metadata-str (json/write-str increment-metadata)
-        increment-digest (sf/digest increment-metadata-str)
-        increment-id (if (store/get-metadata db increment-digest)
-                       increment-digest
-                       (store/register-asset db increment-digest increment-metadata-str))
-
-        child-key (fn [n]
-                    (str "increment-" n))
-
-        children (reduce
-                   (fn [children n]
-                     ;; n nodes (children), but same Operation
-                     (assoc children (child-key n) increment-id))
-                   {}
-                   (range n))
-
-        edges (map
-                (fn [n]
-                  {:source (child-key n)
-                   :target (child-key (inc n))
-                   :ports [:n :n]})
-                (range (dec n)))
-
-        orchestration {:children children :edges edges}
-        orchestration-str (json/write-str orchestration)
-        orchestration-metadata {:name (str "Orchestration Demo 1 - n " n)
-                                :type "operation"
-                                :dateCreated "2020-01-01T00:00:00"
-                                :operation {:modes ["sync"]
-                                            :class "orchestration"
-                                            :params {}
-                                            :results {:results "json"}}}
-        orchestration-metadata-str (json/write-str orchestration-metadata)
-        orchestration-digest (sf/digest orchestration-metadata-str)
-        orchestration-id (if (store/get-metadata db orchestration-digest)
-                           orchestration-digest
-                           (do
-                             (storage/save (env/storage-path (app-context/env app-context)) orchestration-digest orchestration-str)
-                             (store/register-asset db orchestration-digest orchestration-metadata-str)))]
-    {:id orchestration-id}))
-
 (defn make-range
   "Make range 0-9"
   {:operation
@@ -132,34 +82,82 @@
   (let [n (asset/read-json-content (:n params))]
     {:is_odd (odd? n)}))
 
-(defn orchestration1
+(defn make-orchestration-demo1
+  "Create Orchestration Demo 1"
   {:operation
-   {:params
-    {:make-range-id "json"
-     :filter-odds-id "json"}
-    :results {:results "json"}}}
-  [app-context params]
-  (let [orchestration {:children
-                       {"make-range" (:make-range-id params)
-                        "filter-odds" (:filter-odds-id params)}
+   {:params {:n "json"}
+    :results {:id "json"}}}
+  [app-context {:keys [n]}]
+  (let [db (app-context/db app-context)
 
-                       :edges
-                       [{:source "make-range"
-                         :target "filter-odds"
-                         :ports [:range :numbers]}]}]
-    {:results (orchestration/results (orchestration/execute app-context orchestration))}))
+        increment-metadata (merge (invokable/invokable-metadata #'increment) {:dateCreated "2020-01-01T00:00:00"})
+        increment-metadata-str (json/write-str increment-metadata)
+        increment-digest (sf/digest increment-metadata-str)
+        increment-id (if (store/get-metadata db increment-digest)
+                       increment-digest
+                       (store/register-asset db increment-digest increment-metadata-str))
 
-(defn orchestration2
+        child-key (fn [n]
+                    (str "increment-" n))
+
+        children (reduce
+                   (fn [children n]
+                     ;; n nodes (children), but same Operation
+                     (assoc children (child-key n) increment-id))
+                   {}
+                   (range n))
+
+        edges (map
+                (fn [n]
+                  {:source (child-key n)
+                   :target (child-key (inc n))
+                   :ports [:n :n]})
+                (range (dec n)))
+
+        orchestration {:children children :edges edges}
+        orchestration-str (json/write-str orchestration)
+        orchestration-metadata {:name (str "Orchestration Demo 1 - n " n)
+                                :type "operation"
+                                :dateCreated "2020-01-01T00:00:00"
+                                :operation {:modes ["sync"]
+                                            :class "orchestration"
+                                            :params {}
+                                            :results {:results "json"}}}
+        orchestration-metadata-str (json/write-str orchestration-metadata)
+        orchestration-digest (sf/digest orchestration-metadata-str)
+        orchestration-id (if (store/get-metadata db orchestration-digest)
+                           orchestration-digest
+                           (do
+                             (storage/save (env/storage-path (app-context/env app-context)) orchestration-digest orchestration-str)
+                             (store/register-asset db orchestration-digest orchestration-metadata-str)))]
+    {:id orchestration-id}))
+
+(defn make-orchestration-demo2
+  "Create Orchestration Demo 2"
   {:operation
-   {:params
-    {:make-range-id "json"
-     :concatenate-id "json"}
-    :results {:results "json"}}}
-  [app-context params]
-  (let [orchestration {:children
-                       {"make-range1" (:make-range-id params)
-                        "make-range2" (:make-range-id params)
-                        "concatenate" (:concatenate-id params)}
+   {:params {:n "json"}
+    :results {:id "json"}}}
+  [app-context {:keys [n]}]
+  (let [db (app-context/db app-context)
+
+        make-range-metadata (merge (invokable/invokable-metadata #'make-range) {:dateCreated "2020-01-01T00:00:00"})
+        make-range-metadata-str (json/write-str make-range-metadata)
+        make-range-digest (sf/digest make-range-metadata-str)
+        make-range-id (if (store/get-metadata db make-range-digest)
+                        make-range-digest
+                        (store/register-asset db make-range-digest make-range-metadata-str))
+
+        concatenate-metadata (merge (invokable/invokable-metadata #'concatenate) {:dateCreated "2020-01-01T00:00:00"})
+        concatenate-metadata-str (json/write-str concatenate-metadata)
+        concatenate-metadata-digest (sf/digest concatenate-metadata-str)
+        concatenate-id (if (store/get-metadata db concatenate-metadata-digest)
+                         concatenate-metadata-digest
+                         (store/register-asset db concatenate-metadata-digest concatenate-metadata-str))
+
+        orchestration {:children
+                       {"make-range1" make-range-id
+                        "make-range2" make-range-id
+                        "concatenate" concatenate-id}
 
                        :edges
                        [{:source "make-range1"
@@ -168,5 +166,20 @@
 
                         {:source "make-range2"
                          :target "concatenate"
-                         :ports [:range :coll2]}]}]
-    {:results (orchestration/results (orchestration/execute app-context orchestration))}))
+                         :ports [:range :coll2]}]}
+        orchestration-str (json/write-str orchestration)
+        orchestration-metadata {:name "Orchestration Demo 2"
+                                :type "operation"
+                                :dateCreated "2020-01-01T00:00:00"
+                                :operation {:modes ["sync"]
+                                            :class "orchestration"
+                                            :params {}
+                                            :results {:results "json"}}}
+        orchestration-metadata-str (json/write-str orchestration-metadata)
+        orchestration-digest (sf/digest orchestration-metadata-str)
+        orchestration-id (if (store/get-metadata db orchestration-digest)
+                           orchestration-digest
+                           (do
+                             (storage/save (env/storage-path (app-context/env app-context)) orchestration-digest orchestration-str)
+                             (store/register-asset db orchestration-digest orchestration-metadata-str)))]
+    {:id orchestration-id}))
