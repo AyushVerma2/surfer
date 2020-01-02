@@ -114,6 +114,8 @@
     (let [metadata (invokable/invokable-metadata #'demo.invokable/concatenate)]
       (invokable/register-invokable aladdin metadata)))
 
+  (demo.invokable/make-orchestration-demo1 (app-context) {:n 10})
+
   (def orchestration1
     (let [metadata (invokable/invokable-metadata #'demo.invokable/orchestration1)]
       (invokable/register-invokable aladdin metadata)))

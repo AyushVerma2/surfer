@@ -227,7 +227,7 @@
                                         (assoc :edges edges))
                       ;; ---
 
-                      result (orchestration/execute app-context orchestration)]
+                      result (orchestration/results (orchestration/execute app-context orchestration))]
 
                   (log/debug (str "Invoke Sync - Orchestration " op-id " : " params " -> " result))
 
