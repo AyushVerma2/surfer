@@ -19,7 +19,7 @@
   {:n (inc (or n 0))})
 
 (defn make-orchestration-demo1
-  "Register & upload an Orchestration that creates n increment nodes."
+  "Create Orchestration Demo 1"
   {:operation
    {:params {:n "json"}
     :results {:id "json"}}}
@@ -52,7 +52,7 @@
 
         orchestration {:children children :edges edges}
         orchestration-str (json/write-str orchestration)
-        orchestration-metadata {:name (str "Orchestration - Demo 1 - n " n)
+        orchestration-metadata {:name (str "Orchestration Demo 1 - n " n)
                                 :type "operation"
                                 :dateCreated "2020-01-01T00:00:00"
                                 :operation {:modes ["sync"]

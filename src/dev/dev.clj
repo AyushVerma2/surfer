@@ -114,44 +114,14 @@
     (let [metadata (invokable/invokable-metadata #'demo.invokable/concatenate)]
       (invokable/register-invokable aladdin metadata)))
 
+
+  ;; -- Orchestration Demo
+  (def make-orchestration-demo1
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/make-orchestration-demo1)]
+      (invokable/register-invokable aladdin metadata)))
+
   (demo.invokable/make-orchestration-demo1 (app-context) {:n 10})
 
-  (def orchestration1
-    (let [metadata (invokable/invokable-metadata #'demo.invokable/orchestration1)]
-      (invokable/register-invokable aladdin metadata)))
-
-  (def orchestration2
-    (let [metadata (invokable/invokable-metadata #'demo.invokable/orchestration2)]
-      (invokable/register-invokable aladdin metadata)))
-
-  (def basic-orchestration
-    (let [metadata {:name "Basic Orchestration"
-                    :type "operation"
-                    :dateCreated (str (java.util.Date.))
-                    :operation {:modes ["sync"]
-                                :class "orchestration"
-                                :params {}
-                                :results {:results "json"}}}
-
-          metadata-str (data.json/write-str metadata)
-
-          data {:children
-                {"make-range" (sf/asset-id make-range)
-                 "filter-odds" (sf/asset-id filter-odds)}
-
-                :edges
-                [{:source "make-range"
-                  :target "filter-odds"
-                  :ports [:range :numbers]}]}
-
-          data-str (data.json/write-str data)
-
-          asset (sf/register aladdin (sf/memory-asset metadata-str data-str))]
-
-      ;; FIXME Figure out why it isn't uploading the data (is it because it's an Operation?)
-      (storage/save (env/storage-path (env)) (sf/asset-id asset) (.getBytes data-str))
-
-      asset))
 
   ;; A very basic Orchestration example
   (let [orchestration {:children
