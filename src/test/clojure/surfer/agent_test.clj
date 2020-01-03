@@ -27,8 +27,8 @@
   (update params :text str/upper-case))
 
 (deftest ^:integration agent-integration
-  (let [local-did (env/agent-did (system/env test-system))
-        local-ddo (env/agent-ddo (system/env test-system))
+  (let [local-did (env/self-did (system/env test-system))
+        local-ddo (env/self-ddo (system/env test-system))
         local-ddo-string (sf/json-string-pprint local-ddo)
 
         username "Aladdin"

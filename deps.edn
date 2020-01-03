@@ -32,7 +32,8 @@
   org.bouncycastle/bcprov-jdk15on {:mvn/version "1.64"}
   ragtime {:mvn/version "0.8.0"}
   prismatic/schema-generators {:mvn/version "0.1.3"}
-  byte-streams {:mvn/version "0.2.4"}}
+  byte-streams {:mvn/version "0.2.4"}
+  com.stuartsierra/dependency {:mvn/version "0.2.0"}}
 
  :aliases
  {:main

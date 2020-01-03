@@ -16,7 +16,7 @@
     [starfish.core :as sf]
     [surfer.utils :as utils]
     [surfer.env :as env]
-    [surfer.invoke :as invoke]
+    [surfer.invokable :as invokable]
     [surfer.app-context :as app-context]
     [surfer.database :as database]
     [surfer.asset :as asset]
@@ -36,7 +36,9 @@
     [hiccup.page :as hiccup.page]
     [byte-streams]
     [clojure.string :as str]
-    [surfer.migration :as migration])
+    [surfer.migration :as migration]
+    [surfer.orchestration :as orchestration]
+    [clojure.walk :as walk])
   (:import [java.io InputStream StringWriter PrintWriter]
            (clojure.lang ExceptionInfo)))
 
@@ -85,7 +87,7 @@
           :return schema/DDO
           {:status 200
            :headers {"Content-Type" "application/json"}
-           :body (env/agent-ddo env)})
+           :body (env/self-ddo env)})
 
         (GET "/status" []
           :summary "Gets the status for this Agent"
@@ -176,6 +178,7 @@
 
 (defn invoke-api-v1 [app-context]
   (let [database (app-context/database app-context)
+        env (app-context/env app-context)
         db (database/db database)]
     (context "/api/v1/invoke" []
       :tags ["Invoke API v1"]
@@ -192,38 +195,69 @@
           :coercion nil
           :body [body schema/InvokeRequest]
           (let [op-id (get-in request [:params :op-id])
-                op-meta (store/get-metadata db op-id {:key-fn keyword})]
-
-            (log/debug (str "Invoke Sync - " op-id " - " op-meta))
-
+                metadata (store/get-metadata db op-id {:key-fn keyword})]
             (cond
-              (nil? op-meta)
-              (response/not-found (str "Operation (" op-id ") metadata not found."))
+              (nil? metadata)
+              (response/not-found {:error (str "Metadata not found. Did you forget to register Metadata for operation '" op-id "'?")})
 
-              (not= "operation" (:type op-meta))
-              (response/bad-request (str "Operation ( " op-id ") metadata type value is not 'operation': " op-meta))
+              (not= "operation" (:type metadata))
+              (response/bad-request {:error (str "Invalid Metadata. Operation " op-id " metadata type value should be 'operation'.")})
+
+              (= "orchestration" (get-in metadata [:operation :class]))
+              (try
+                (let [params {}
+
+                      orchestration (with-open [input-stream (storage/asset-input-stream (env/storage-path env) op-id)]
+                                      (asset/read-json-input-stream input-stream))
+
+                      ;; TODO Think about the data format coercion
+                      ;; ---
+
+                      ;; Children keys must be strings
+                      children (walk/stringify-keys (:children orchestration))
+
+                      ;; Ports must be a vector of keywords
+                      edges (map
+                              (fn [{:keys [ports] :as edge}]
+                                (assoc edge :ports (mapv keyword ports)))
+                              (:edges orchestration))
+
+                      orchestration (-> orchestration
+                                        (assoc :children children)
+                                        (assoc :edges edges))
+                      ;; ---
+
+                      result (orchestration/results (orchestration/execute app-context orchestration))]
+
+                  (log/debug (str "Invoke Sync - Orchestration " op-id " : " params " -> " result))
+
+                  {:status 200
+                   :body result})
+                (catch Exception e
+                  (log/error e "Failed to invoke Orchestration." metadata)
+
+                  {:status 500
+                   :body "Failed to invoke Orchestration. Please try again."}))
 
               :else
               (try
                 (let [^InputStream body-stream (:body request)
                       _ (.reset body-stream)
 
-                      operation (sf/in-memory-operation op-meta)
+                      params (json/read-str (slurp body-stream) :key-fn keyword)
 
-                      params (-> (slurp body-stream)
-                                 (json/read-str :key-fn str))
+                      result (-> (invokable/resolve-invokable metadata)
+                                 (invokable/invoke app-context params))]
 
-                      result (sf/invoke-result operation params)]
-
-                  (log/debug (str "Invoke Sync Result - " operation " - " params " -> " result))
+                  (log/debug (str "Invoke Sync - Operation " op-id " : " params " -> " result))
 
                   {:status 200
                    :body result})
                 (catch Exception e
-                  (log/error e "Failed to invoke operation." op-meta)
+                  (log/error e "Failed to invoke Operation." metadata)
 
                   {:status 500
-                   :body "Failed to invoke operation. Please try again."})))))
+                   :body "Failed to invoke Operation. Please try again."})))))
 
         (POST "/async/:op-id"
           {{:keys [op-id]} :params :as request}
@@ -239,7 +273,7 @@
               (log/debug (str "POST INVOKE on operation [" op-id "] body=" invoke-req))
               (cond
                 (not (= "operation" (:type md))) (response/bad-request (str "Not a valid operation: " op-id))
-                :else (if-let [jobid (invoke/launch-job db op-id invoke-req)]
+                :else (if-let [jobid (invokable/launch-job db op-id invoke-req)]
                         {:status 201
                          :body (str "{\"jobid\" : \"" jobid "\" , "
                                     "\"status\" : \"scheduled\""
@@ -250,8 +284,8 @@
         (GET "/jobs/:jobid"
              [jobid]
           (log/debug (str "GET JOB on job [" jobid "]"))
-          (if-let [job (invoke/get-job jobid)]
-            (response/response (invoke/job-response app-context jobid))
+          (if-let [job (invokable/get-job jobid)]
+            (response/response (invokable/job-response app-context jobid))
             (response/not-found (str "Job not found: " jobid))))))))
 
 (defn hash-check! [file metadata]
@@ -280,7 +314,7 @@
         (GET "/:id" [id]
           :summary "Gets data for a specified Asset ID"
           (if-let [meta (store/get-metadata db id)]         ;; NOTE meta is JSON (not EDN)!
-            (if-let [body (storage/load-stream (env/storage-path env) id)]
+            (if-let [body (storage/asset-input-stream (env/storage-path env) id)]
 
               (let [ctype (get meta "contentType" "application/octet-stream")
                     ext (utils/ext-for-content-type ctype)
@@ -992,8 +1026,7 @@
         (friend/authenticate config))))
 
 (defn make-handler [app-context]
-  (let [db (database/db (app-context/database app-context))
-        config (auth-config db)
+  (let [config (auth-config (app-context/db app-context))
 
         wrap-auth (wrap-auth config)
         wrap-cors (fn [handler]
