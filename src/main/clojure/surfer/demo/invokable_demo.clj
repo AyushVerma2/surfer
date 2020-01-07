@@ -116,6 +116,7 @@
         edges (into edges [{:source "Root"
                             :target (child-key 0)
                             :ports [:n :n]}
+
                            {:source (child-key (dec n))
                             :target "Root"
                             :ports [:n :n]}])
@@ -143,9 +144,9 @@
 (defn make-orchestration-demo2
   "Create Orchestration Demo 2"
   {:operation
-   {:params {:n "json"}
+   {:params {}
     :results {:id "json"}}}
-  [app-context {:keys [n]}]
+  [app-context _]
   (let [db (app-context/db app-context)
 
         make-range-metadata (merge (invokable/invokable-metadata #'make-range) {:dateCreated "2020-01-01T00:00:00"})
@@ -162,11 +163,11 @@
                          concatenate-metadata-digest
                          (store/register-asset db concatenate-metadata-digest concatenate-metadata-str))
 
-        orchestration {:children
+        orchestration {:id "Root"
+                       :children
                        {"make-range1" make-range-id
                         "make-range2" make-range-id
                         "concatenate" concatenate-id}
-
                        :edges
                        [{:source "make-range1"
                          :target "concatenate"
@@ -174,7 +175,11 @@
 
                         {:source "make-range2"
                          :target "concatenate"
-                         :ports [:range :coll2]}]}
+                         :ports [:range :coll2]}
+
+                        {:source "concatenate"
+                         :target "Root"
+                         :ports [:coll :coll]}]}
         orchestration-str (json/write-str orchestration)
         orchestration-metadata {:name "Orchestration Demo 2"
                                 :type "operation"

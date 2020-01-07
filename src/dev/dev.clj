@@ -129,6 +129,7 @@
       (invokable/register-invokable aladdin metadata)))
 
   (demo.invokable/make-orchestration-demo1 (app-context) {:n 10})
+  (demo.invokable/make-orchestration-demo2 (app-context) {})
 
 
   ;; A very basic Orchestration example
