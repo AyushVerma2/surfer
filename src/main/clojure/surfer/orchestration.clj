@@ -41,13 +41,17 @@
       (= (:id orchestration) source))
     (:edges orchestration)))
 
+(defn root-target-edges [orchestration]
+  (filter
+    (fn [{:keys [target]}]
+      (= (:id orchestration) target))
+    (:edges orchestration)))
+
 (defn invokable-params [orchestration parameters process nid]
   (let [root-source-edges (filter
                             (fn [{:keys [target]}]
                               (= nid target))
                             (root-source-edges orchestration))
-
-        dependency-graph (dependency-graph orchestration)
 
         params (if (seq root-source-edges)
                  (reduce
@@ -56,7 +60,7 @@
                        (assoc params n-in (get parameters o-in))))
                    {}
                    root-source-edges)
-                 (some->> (get-in dependency-graph [:dependencies nid])
+                 (some->> (get-in (dependency-graph orchestration) [:dependencies nid])
                           (map
                             (fn [dependency-nid]
                               (let [dependency-output (fn [dependency-nid output-key]
@@ -76,17 +80,14 @@
 
    Orchestration's output may provide less than Operation's output."
   [orchestration process]
-  (->> (:edges orchestration)
-       (filter
-         (fn [{:keys [target]}]
-           (= (:id orchestration) target)))
+  (->> (root-target-edges orchestration)
        (map
          (fn [{:keys [source ports]}]
            (let [[n-out o-out] ports]
              [o-out (get-in process [source :output n-out])])))
        (into {})))
 
-(defn execute [app-context orchestration & [parameters]]
+(defn execute [app-context orchestration & [params]]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))
 
         process (reduce
@@ -98,16 +99,16 @@
 
                           invokable (invoke/invokable-operation app-context metadata)
 
-                          params (invokable-params orchestration parameters process nid)]
-                      (assoc process nid {:input params
-                                          :output (sf/invoke-result invokable params)})))
-                  {(:id orchestration) {:input parameters}}
+                          invokable-params (invokable-params orchestration params process nid)]
+                      (assoc process nid {:input invokable-params
+                                          :output (sf/invoke-result invokable invokable-params)})))
+                  {(:id orchestration) {:input params}}
                   nodes)
 
         output (output-mapping orchestration process)
 
         ;; Update Orchestration's `output`
-        ;; See the process reducer above - `input` is set for the Orchestration
+        ;; See the process reducer above - `input` is already set for the Orchestration
         process (assoc-in process [(:id orchestration) :output] output)]
     {:topo nodes
      :process process}))
