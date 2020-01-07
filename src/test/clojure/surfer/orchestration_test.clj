@@ -145,25 +145,30 @@
           concatenate (->> (invoke/invokable-metadata #'demo.invokable/concatenate)
                            (invoke/register-invokable test-agent))]
       (testing "A very basic Orchestration example"
-        (let [orchestration {:children
+        (let [orchestration {:id "Root"
+                             :children
                              {"make-range" (sf/asset-id make-range)
                               "filter-odds" (sf/asset-id filter-odds)}
-
                              :edges
                              [{:source "make-range"
                                :target "filter-odds"
-                               :ports [:range :numbers]}]}]
+                               :ports [:range :numbers]}
+
+                              {:source "filter-odds"
+                               :target "Root"
+                               :ports [:odds :odds]}]}]
           (is (= {:topo '("make-range" "filter-odds"),
-                  :process {"make-range" {:input {}, :output {:range [0 1 2 3 4 5 6 7 8 9]}},
+                  :process {"Root" {:input nil :output {:odds [1 3 5 7 9]}}
+                            "make-range" {:input {}, :output {:range [0 1 2 3 4 5 6 7 8 9]}},
                             "filter-odds" {:input {:numbers [0 1 2 3 4 5 6 7 8 9]}, :output {:odds [1 3 5 7 9]}}}}
                  (orchestration/execute (system/app-context test-system) orchestration)))))
 
       (testing "Nodes (Operations) with dependencies"
-        (let [orchestration {:children
+        (let [orchestration {:id "Root"
+                             :children
                              {"make-range1" (sf/asset-id make-range)
                               "make-range2" (sf/asset-id make-range)
                               "concatenate" (sf/asset-id concatenate)}
-
                              :edges
                              [{:source "make-range1"
                                :target "concatenate"
@@ -171,13 +176,18 @@
 
                               {:source "make-range2"
                                :target "concatenate"
-                               :ports [:range :coll2]}]}]
+                               :ports [:range :coll2]}
+
+                              {:source "concatenate"
+                               :target "Root"
+                               :ports [:coll :coll]}]}]
           (is (= {:topo '("make-range1" "make-range2" "concatenate"),
-                  :process {"make-range1" {:input {}, :output {:range [0 1 2 3 4 5 6 7 8 9]}},
+                  :process {"Root" {:input {} :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}
+                            "make-range1" {:input {}, :output {:range [0 1 2 3 4 5 6 7 8 9]}},
                             "make-range2" {:input {}, :output {:range [0 1 2 3 4 5 6 7 8 9]}},
                             "concatenate" {:input {:coll2 [0 1 2 3 4 5 6 7 8 9], :coll1 [0 1 2 3 4 5 6 7 8 9]},
                                            :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}}}
-                 (orchestration/execute (system/app-context test-system) orchestration))))))))
+                 (orchestration/execute (system/app-context test-system) orchestration {}))))))))
 
 ;; Add to Backlog - Think about the `additionalInfo` metadata
 
