@@ -90,6 +90,45 @@
           params (orchestration/params orchestration process "concatenate")]
       (is (= {:coll1 [0 1 2] :coll2 [0 1 2]} params)))))
 
+(deftest output-mapping-test
+  (testing "Output less"
+    (is (= {:n 1} (orchestration/output-mapping {:id "Orchestration"
+                                                 :edges
+                                                 [{:source "Foo"
+                                                   :target "Orchestration"
+                                                   :ports [:n1 :n]}]}
+
+                                                {"Foo" {:output {:n1 1
+                                                                 :n2 2}}}))))
+
+  (testing "Output is the same as Operation's output"
+    (is (= {:n1 1 :n2 2} (orchestration/output-mapping {:id "Orchestration"
+                                                        :edges
+                                                        [{:source "Foo"
+                                                          :target "Orchestration"
+                                                          :ports [:n1 :n1]}
+
+                                                         {:source "Foo"
+                                                          :target "Orchestration"
+                                                          :ports [:n2 :n2]}]}
+
+                                                       {"Foo" {:output {:n1 1
+                                                                        :n2 2}}}))))
+
+  (testing "Remap output"
+    (is (= {:n1 1 :n2 1} (orchestration/output-mapping {:id "Orchestration"
+                                                        :edges
+                                                        [{:source "Foo"
+                                                          :target "Orchestration"
+                                                          :ports [:n1 :n1]}
+
+                                                         {:source "Foo"
+                                                          :target "Orchestration"
+                                                          :ports [:n1 :n2]}]}
+
+                                                       {"Foo" {:output {:n1 1
+                                                                        :n2 2}}})))))
+
 (deftest execute-test
   (binding [sfa/*resolver* (LocalResolverImpl.)]
 

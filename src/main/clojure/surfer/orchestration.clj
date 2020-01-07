@@ -52,6 +52,21 @@
                         (apply merge))]
     (or params {})))
 
+(defn output-mapping
+  "Mapping of Operation's output to Orchestration's output.
+
+   Orchestration's output may provide less than Operation's output."
+  [orchestration process]
+  (->> (:edges orchestration)
+       (filter
+         (fn [{:keys [target]}]
+           (= (:id orchestration) target)))
+       (map
+         (fn [{:keys [source ports]}]
+           (let [[n-out o-out] ports]
+             [o-out (get-in process [source :output n-out])])))
+       (into {})))
+
 (defn execute [app-context orchestration & [parameters]]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))
 
@@ -70,15 +85,7 @@
                   {(:id orchestration) {:input parameters}}
                   nodes)
 
-        output (->> (:edges orchestration)
-                    (filter
-                      (fn [{:keys [target]}]
-                        (= (:id orchestration) target)))
-                    (map
-                      (fn [{:keys [source ports]}]
-                        (let [[n-out o-out] ports]
-                          [o-out (get-in process [source :output n-out])])))
-                    (into {}))
+        output (output-mapping orchestration process)
 
         ;; Update Orchestration's `output`
         ;; See the process reducer above - `input` is set for the Orchestration
