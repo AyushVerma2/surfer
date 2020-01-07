@@ -178,25 +178,22 @@
                          :ports [:range :coll2]}]}]
     (orchestration/execute (app-context) orchestration))
 
-  (let [orchestration {:id "Inc-n"
-                       :children
-                       {"Inc-n1" (sf/asset-id increment)}
-
+  (let [orchestration {:id "Root"
+                       :children {"Inc-n1" (sf/asset-id increment)}
                        :edges
-                       [{:source "Parent"
-                         :target "Inc-n1"
-                         :ports [:in:n :in:n]}
+                       [{:source "Root"
+                         :target "Inc"
+                         :ports [:n :n]}
 
-                        {:source "Inc-n1"
-                         :target "Parent"
-                         :ports [:out:n :out:n]}]}]
-    (orchestration/execute (app-context) orchestration))
+                        {:source "Inc"
+                         :target "Root"
+                         :ports [:n :n]}]}]
+    (orchestration/execute (app-context) orchestration {:n 10}))
 
   (let [orchestration {:id "Orchestration"
                        :children
                        {"Inc-n1" (sf/asset-id increment)
                         "Inc-n2" (sf/asset-id increment)}
-
                        :edges
                        [{:source "Orchestration"
                          :target "Inc-n1"

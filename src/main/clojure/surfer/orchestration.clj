@@ -35,21 +35,40 @@
   (->> (dependency-edges orchestration nid dependency-nid)
        (map :ports)))
 
-(defn params [orchestration process nid]
-  (let [dependency-graph (dependency-graph orchestration)
-        params (some->> (get (:dependencies dependency-graph) nid)
-                        (map
-                          (fn [dependency-nid]
-                            (let [dependency-output (fn [dependency-nid output-key]
-                                                      (get-in process [dependency-nid :output output-key]))
+(defn root-source-edges [orchestration]
+  (filter
+    (fn [{:keys [source]}]
+      (= (:id orchestration) source))
+    (:edges orchestration)))
 
-                                  make-params (fn [params [port-out port-in]]
-                                                (assoc params port-in (dependency-output dependency-nid port-out)))]
-                              (reduce
-                                make-params
-                                {}
-                                (dependency-ports orchestration nid dependency-nid)))))
-                        (apply merge))]
+(defn invokable-params [orchestration parameters process nid]
+  (let [root-source-edges (filter
+                            (fn [{:keys [target]}]
+                              (= nid target))
+                            (root-source-edges orchestration))
+
+        dependency-graph (dependency-graph orchestration)
+
+        params (if (seq root-source-edges)
+                 (reduce
+                   (fn [params {:keys [ports]}]
+                     (let [[o-in n-in] ports]
+                       (assoc params n-in (get parameters o-in))))
+                   {}
+                   root-source-edges)
+                 (some->> (get-in dependency-graph [:dependencies nid])
+                          (map
+                            (fn [dependency-nid]
+                              (let [dependency-output (fn [dependency-nid output-key]
+                                                        (get-in process [dependency-nid :output output-key]))
+
+                                    make-params (fn [params [port-out port-in]]
+                                                  (assoc params port-in (dependency-output dependency-nid port-out)))]
+                                (reduce
+                                  make-params
+                                  {}
+                                  (dependency-ports orchestration nid dependency-nid)))))
+                          (apply merge)))]
     (or params {})))
 
 (defn output-mapping
@@ -79,7 +98,7 @@
 
                           invokable (invoke/invokable-operation app-context metadata)
 
-                          params (params orchestration process nid)]
+                          params (invokable-params orchestration parameters process nid)]
                       (assoc process nid {:input params
                                           :output (sf/invoke-result invokable params)})))
                   {(:id orchestration) {:input parameters}}

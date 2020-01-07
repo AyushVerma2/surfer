@@ -71,7 +71,7 @@
           process {"make-range" {:input {}
                                  :output {:range [0 1 2]}}}
 
-          params (orchestration/params orchestration process "filter-odds")]
+          params (orchestration/invokable-params orchestration {} process "filter-odds")]
       (is (= {:coll [0 1 2]} params))))
 
   (testing "Re-using source"
@@ -87,7 +87,7 @@
           process {"make-range" {:input {}
                                  :output {:range [0 1 2]}}}
 
-          params (orchestration/params orchestration process "concatenate")]
+          params (orchestration/invokable-params orchestration {} process "concatenate")]
       (is (= {:coll1 [0 1 2] :coll2 [0 1 2]} params)))))
 
 (deftest output-mapping-test
