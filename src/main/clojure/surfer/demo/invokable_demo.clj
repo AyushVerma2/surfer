@@ -16,7 +16,7 @@
    {:params {:n "json"}
     :results {:n "json"}}}
   [_ {:keys [n]}]
-  {:n (inc (or n 0))})
+  {:n (inc n)})
 
 (defn make-range
   "Make range 0-9"
@@ -113,15 +113,23 @@
                    :target (child-key (inc n))
                    :ports [:n :n]})
                 (range (dec n)))
+        edges (into edges [{:source "Root"
+                            :target (child-key 0)
+                            :ports [:n :n]}
+                           {:source (child-key (dec n))
+                            :target "Root"
+                            :ports [:n :n]}])
 
-        orchestration {:children children :edges edges}
+        orchestration {:id "Root"
+                       :children children
+                       :edges edges}
         orchestration-str (json/write-str orchestration)
         orchestration-metadata {:name (str "Orchestration Demo 1 - n " n)
                                 :type "operation"
                                 :dateCreated "2020-01-01T00:00:00"
                                 :operation {:modes ["sync"]
                                             :class "orchestration"
-                                            :params {}
+                                            :params {:n "json"}
                                             :results {:results "json"}}}
         orchestration-metadata-str (json/write-str orchestration-metadata)
         orchestration-digest (sf/digest orchestration-metadata-str)
