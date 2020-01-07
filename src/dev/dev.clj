@@ -98,6 +98,10 @@
 
 
 
+  (def increment
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/increment)]
+      (invokable/register-invokable aladdin metadata)))
+
   (def make-range
     (let [metadata (invokable/invokable-metadata #'demo.invokable/make-range)]
       (invokable/register-invokable aladdin metadata)))
@@ -174,49 +178,38 @@
                          :ports [:range :coll2]}]}]
     (orchestration/execute (app-context) orchestration))
 
+  (let [orchestration {:id "Inc-n"
+                       :children
+                       {"Inc-n1" (sf/asset-id increment)}
 
-  (def orchestration
-    {:id "Root"
-     :children
-     [{:id "A"
-       :did (sf/random-did-string)}
+                       :edges
+                       [{:source "Parent"
+                         :target "Inc-n1"
+                         :ports [:in:n :in:n]}
 
-      {:id "B"
-       :did (sf/random-did-string)}
+                        {:source "Inc-n1"
+                         :target "Parent"
+                         :ports [:out:n :out:n]}]}]
+    (orchestration/execute (app-context) orchestration))
 
-      {:id "C"
-       :did (sf/random-did-string)}]
+  (let [orchestration {:id "Orchestration"
+                       :children
+                       {"Inc-n1" (sf/asset-id increment)
+                        "Inc-n2" (sf/asset-id increment)}
 
-     :edges
-     [{:source "Root"
-       :target "A"}
+                       :edges
+                       [{:source "Orchestration"
+                         :target "Inc-n1"
+                         :ports [:n :n]}
 
-      {:source "A"
-       :target "C"}
+                        {:source "Inc-n1"
+                         :target "Inc-n2"
+                         :ports [:n :n]}
 
-      {:source "B"
-       :target "C"}
-
-      {:source "C"
-       :target "D"}
-
-      {:source "D"
-       :target "Root"}]})
-
-  (def g
-    (orchestration/dependency-graph {:children
-                                     {}
-
-                                     :edges
-                                     [{:source "make-range1"
-                                       :target "concatenate"
-                                       :ports [:range :coll1]}
-
-                                      [:source "make-range2"
-                                       :target "concatenate"
-                                       :ports [:range :coll2]]]}))
-
-  (dep/topo-sort g)
+                        {:source "Inc-n2"
+                         :target "Orchestration"
+                         :ports [:n :n]}]}]
+    (orchestration/execute (app-context) orchestration {:n 10}))
 
   )
 

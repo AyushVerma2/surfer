@@ -52,7 +52,7 @@
                         (apply merge))]
     (or params {})))
 
-(defn execute [app-context orchestration]
+(defn execute [app-context orchestration & [parameters]]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))
 
         process (reduce
@@ -67,8 +67,22 @@
                           params (params orchestration process nid)]
                       (assoc process nid {:input params
                                           :output (sf/invoke-result invokable params)})))
-                  {}
-                  nodes)]
+                  {(:id orchestration) {:input parameters}}
+                  nodes)
+
+        output (->> (:edges orchestration)
+                    (filter
+                      (fn [{:keys [target]}]
+                        (= (:id orchestration) target)))
+                    (map
+                      (fn [{:keys [source ports]}]
+                        (let [[n-out o-out] ports]
+                          [o-out (get-in process [source :output n-out])])))
+                    (into {}))
+
+        ;; Update Orchestration's `output`
+        ;; See the process reducer above - `input` is set for the Orchestration
+        process (assoc-in process [(:id orchestration) :output] output)]
     {:topo nodes
      :process process}))
 
