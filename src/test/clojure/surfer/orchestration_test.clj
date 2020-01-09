@@ -39,22 +39,22 @@
       (is (= true (s/valid? :orchestration/orchestration orchestration))))))
 
 (deftest dependency-graph-test
-  (let [orchestration {:id "Root"
-                       :edges
-                       [{:source "Root"
-                         :target "A"}
+  (let [orchestration #:orchestration{:id "Root"
+                                      :edges
+                                      [#:orchestration-edge{:source "Root"
+                                                            :target "A"}
 
-                        {:source "A"
-                         :target "C"}
+                                       #:orchestration-edge{:source "A"
+                                                            :target "C"}
 
-                        {:source "B"
-                         :target "C"}
+                                       #:orchestration-edge{:source "B"
+                                                            :target "C"}
 
-                        {:source "C"
-                         :target "D"}
+                                       #:orchestration-edge{:source "C"
+                                                            :target "D"}
 
-                        {:source "D"
-                         :target "Root"}]}
+                                       #:orchestration-edge{:source "D"
+                                                            :target "Root"}]}
         graph (orchestration/dependency-graph orchestration)]
     (is (= {"C" #{"B" "A"}, "D" #{"C"}} (:dependencies graph)))
     (is (= {"A" #{"C"}, "B" #{"C"}, "C" #{"D"}} (:dependents graph)))

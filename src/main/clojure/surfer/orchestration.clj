@@ -65,12 +65,12 @@
 
 (defn dependency-graph [orchestration]
   (let [edges (remove
-                (fn [{:keys [source target]}]
-                  (or (= source (:id orchestration))
-                      (= target (:id orchestration))))
-                (:edges orchestration))]
+                (fn [{:orchestration-edge/keys [source target]}]
+                  (or (= source (:orchestration/id orchestration))
+                      (= target (:orchestration/id orchestration))))
+                (:orchestration/edges orchestration))]
     (reduce
-      (fn [graph {:keys [source target]}]
+      (fn [graph {:orchestration-edge/keys [source target]}]
         (dep/depend graph target source))
       (dep/graph)
       edges)))
