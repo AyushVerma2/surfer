@@ -98,6 +98,10 @@
 
 
 
+  (def increment
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/increment)]
+      (invokable/register-invokable aladdin metadata)))
+
   (def make-range
     (let [metadata (invokable/invokable-metadata #'demo.invokable/make-range)]
       (invokable/register-invokable aladdin metadata)))
@@ -125,18 +129,25 @@
       (invokable/register-invokable aladdin metadata)))
 
   (demo.invokable/make-orchestration-demo1 (app-context) {:n 10})
+  (demo.invokable/make-orchestration-demo2 (app-context) {})
 
 
   ;; A very basic Orchestration example
-  (let [orchestration {:children
+  (let [orchestration {:id "Root"
+
+                       :children
                        {"make-range" (sf/asset-id make-range)
                         "filter-odds" (sf/asset-id filter-odds)}
 
                        :edges
                        [{:source "make-range"
                          :target "filter-odds"
-                         :ports [:range :numbers]}]}]
-    (orchestration/execute (app-context) orchestration))
+                         :ports [:range :numbers]}
+
+                        {:source "filter-odds"
+                         :target "Root"
+                         :ports [:odds :n]}]}]
+    (orchestration/execute (app-context) orchestration {}))
 
   ;; Nodes (Operations) with dependencies
   ;;     :a
@@ -144,7 +155,9 @@
   ;;  :b  |
   ;;    \ |
   ;;     :c
-  (let [orchestration {:children
+  (let [orchestration {:id "Root"
+
+                       :children
                        {"make-range1" (sf/asset-id make-range)
                         "make-range2" (sf/asset-id make-range)
                         "concatenate" (sf/asset-id concatenate)}
@@ -156,11 +169,17 @@
 
                         {:source "make-range2"
                          :target "concatenate"
-                         :ports [:range :coll2]}]}]
+                         :ports [:range :coll2]}
+
+                        {:source "concatenate"
+                         :target "Root"
+                         :ports [:coll :coll]}]}]
     (orchestration/execute (app-context) orchestration))
 
   ;; Re-using the same Operation n times to connect to a different port
-  (let [orchestration {:children
+  (let [orchestration {:id "Root"
+
+                       :children
                        {"make-range" (sf/asset-id make-range)
                         "concatenate" (sf/asset-id concatenate)}
 
@@ -171,52 +190,47 @@
 
                         {:source "make-range"
                          :target "concatenate"
-                         :ports [:range :coll2]}]}]
+                         :ports [:range :coll2]}
+
+                        {:source "concatenate"
+                         :target "Root"
+                         :ports [:coll :coll]}]}]
     (orchestration/execute (app-context) orchestration))
 
+  ;; TODO
+  (let [orchestration {:id "Root"
 
-  (def orchestration
-    {:id "Root"
-     :children
-     [{:id "A"
-       :did (sf/random-did-string)}
+                       :children {"Inc-n1" (sf/asset-id increment)}
 
-      {:id "B"
-       :did (sf/random-did-string)}
+                       :edges
+                       [{:source "Root"
+                         :target "Inc"
+                         :ports [:n :n]}
 
-      {:id "C"
-       :did (sf/random-did-string)}]
+                        {:source "Inc"
+                         :target "Root"
+                         :ports [:n :n]}]}]
+    (orchestration/execute (app-context) orchestration {:n 10}))
 
-     :edges
-     [{:source "Root"
-       :target "A"}
+  (let [orchestration {:id "Orchestration"
 
-      {:source "A"
-       :target "C"}
+                       :children
+                       {"Inc-n1" (sf/asset-id increment)
+                        "Inc-n2" (sf/asset-id increment)}
 
-      {:source "B"
-       :target "C"}
+                       :edges
+                       [{:source "Orchestration"
+                         :target "Inc-n1"
+                         :ports [:n :n]}
 
-      {:source "C"
-       :target "D"}
+                        {:source "Inc-n1"
+                         :target "Inc-n2"
+                         :ports [:n :n]}
 
-      {:source "D"
-       :target "Root"}]})
-
-  (def g
-    (orchestration/dependency-graph {:children
-                                     {}
-
-                                     :edges
-                                     [{:source "make-range1"
-                                       :target "concatenate"
-                                       :ports [:range :coll1]}
-
-                                      [:source "make-range2"
-                                       :target "concatenate"
-                                       :ports [:range :coll2]]]}))
-
-  (dep/topo-sort g)
+                        {:source "Inc-n2"
+                         :target "Orchestration"
+                         :ports [:n :n]}]}]
+    (orchestration/execute (app-context) orchestration {:n 10}))
 
   )
 

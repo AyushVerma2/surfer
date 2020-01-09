@@ -35,24 +35,59 @@
   (->> (dependency-edges orchestration nid dependency-nid)
        (map :ports)))
 
-(defn params [orchestration process nid]
-  (let [dependency-graph (dependency-graph orchestration)
-        params (some->> (get (:dependencies dependency-graph) nid)
-                        (map
-                          (fn [dependency-nid]
-                            (let [dependency-output (fn [dependency-nid output-key]
-                                                      (get-in process [dependency-nid :output output-key]))
+(defn root-source-edges [orchestration]
+  (filter
+    (fn [{:keys [source]}]
+      (= (:id orchestration) source))
+    (:edges orchestration)))
 
-                                  make-params (fn [params [port-out port-in]]
-                                                (assoc params port-in (dependency-output dependency-nid port-out)))]
-                              (reduce
-                                make-params
-                                {}
-                                (dependency-ports orchestration nid dependency-nid)))))
-                        (apply merge))]
+(defn root-target-edges [orchestration]
+  (filter
+    (fn [{:keys [target]}]
+      (= (:id orchestration) target))
+    (:edges orchestration)))
+
+(defn invokable-params [orchestration parameters process nid]
+  (let [root-source-edges (filter
+                            (fn [{:keys [target]}]
+                              (= nid target))
+                            (root-source-edges orchestration))
+
+        params (if (seq root-source-edges)
+                 (reduce
+                   (fn [params {:keys [ports]}]
+                     (let [[o-in n-in] ports]
+                       (assoc params n-in (get parameters o-in))))
+                   {}
+                   root-source-edges)
+                 (some->> (get-in (dependency-graph orchestration) [:dependencies nid])
+                          (map
+                            (fn [dependency-nid]
+                              (let [dependency-output (fn [dependency-nid output-key]
+                                                        (get-in process [dependency-nid :output output-key]))
+
+                                    make-params (fn [params [port-out port-in]]
+                                                  (assoc params port-in (dependency-output dependency-nid port-out)))]
+                                (reduce
+                                  make-params
+                                  {}
+                                  (dependency-ports orchestration nid dependency-nid)))))
+                          (apply merge)))]
     (or params {})))
 
-(defn execute [app-context orchestration]
+(defn output-mapping
+  "Mapping of Operation's output to Orchestration's output.
+
+   Orchestration's output may provide less than Operation's output."
+  [orchestration process]
+  (->> (root-target-edges orchestration)
+       (map
+         (fn [{:keys [source ports]}]
+           (let [[n-out o-out] ports]
+             [o-out (get-in process [source :output n-out])])))
+       (into {})))
+
+(defn execute [app-context orchestration & [params]]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))
 
         process (reduce
@@ -64,11 +99,17 @@
 
                           invokable (invoke/invokable-operation app-context metadata)
 
-                          params (params orchestration process nid)]
-                      (assoc process nid {:input params
-                                          :output (sf/invoke-result invokable params)})))
-                  {}
-                  nodes)]
+                          invokable-params (invokable-params orchestration params process nid)]
+                      (assoc process nid {:input invokable-params
+                                          :output (sf/invoke-result invokable invokable-params)})))
+                  {(:id orchestration) {:input params}}
+                  nodes)
+
+        output (output-mapping orchestration process)
+
+        ;; Update Orchestration's `output`
+        ;; See the process reducer above - `input` is already set for the Orchestration
+        process (assoc-in process [(:id orchestration) :output] output)]
     {:topo nodes
      :process process}))
 

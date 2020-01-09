@@ -195,7 +195,9 @@
           :coercion nil
           :body [body schema/InvokeRequest]
           (let [op-id (get-in request [:params :op-id])
-                metadata (store/get-metadata db op-id {:key-fn keyword})]
+                metadata (store/get-metadata db op-id {:key-fn keyword})
+                ^InputStream body-stream (doto (:body request) (.reset))
+                params (json/read-str (slurp body-stream) :key-fn keyword)]
             (cond
               (nil? metadata)
               (response/not-found {:error (str "Metadata not found. Did you forget to register Metadata for operation '" op-id "'?")})
@@ -205,9 +207,7 @@
 
               (= "orchestration" (get-in metadata [:operation :class]))
               (try
-                (let [params {}
-
-                      orchestration (with-open [input-stream (storage/asset-input-stream (env/storage-path env) op-id)]
+                (let [orchestration (with-open [input-stream (storage/asset-input-stream (env/storage-path env) op-id)]
                                       (asset/read-json-input-stream input-stream))
 
                       ;; TODO Think about the data format coercion
@@ -227,7 +227,7 @@
                                         (assoc :edges edges))
                       ;; ---
 
-                      result (orchestration/results (orchestration/execute app-context orchestration))]
+                      result (orchestration/results (orchestration/execute app-context orchestration params))]
 
                   (log/debug (str "Invoke Sync - Orchestration " op-id " : " params " -> " result))
 
@@ -241,12 +241,7 @@
 
               :else
               (try
-                (let [^InputStream body-stream (:body request)
-                      _ (.reset body-stream)
-
-                      params (json/read-str (slurp body-stream) :key-fn keyword)
-
-                      result (-> (invokable/resolve-invokable metadata)
+                (let [result (-> (invokable/resolve-invokable metadata)
                                  (invokable/invoke app-context params))]
 
                   (log/debug (str "Invoke Sync - Operation " op-id " : " params " -> " result))
