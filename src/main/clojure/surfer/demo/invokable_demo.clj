@@ -1,7 +1,6 @@
 (ns surfer.demo.invokable-demo
   (:require [clojure.data.json :as json]
             [starfish.core :as sf]
-            [surfer.orchestration :as orchestration]
             [surfer.asset :as asset]
             [surfer.invokable :as invokable]
             [surfer.store :as store]
