@@ -7,39 +7,48 @@
             [surfer.app-context :as app-context]
             [clojure.string :as str]))
 
-(s/def ::node-name
+;; -- ORCHESTRATION EDGE
+
+(s/def :orchestration-edge/source
   (s/and string? #(not (str/blank? %))))
 
-(s/def ::id
-  ::node-name)
+(s/def :orchestration-edge/target
+  (s/and string? #(not (str/blank? %))))
 
-(s/def ::children
-  (s/map-of ::node-name (s/and string? #(not (str/blank? %))) :min-count 1))
-
-(s/def ::edge-source
-  ::node-name)
-
-(s/def ::edge-target
-  ::node-name)
-
-(s/def ::edge-ports
+(s/def :orchestration-edge/ports
   (s/coll-of keyword? :kind vector? :count 2))
 
-(s/def ::edge-schema
-  (s/schema {:source ::edge-source
-             :target ::edge-target
-             :ports ::edge-ports}))
+(s/def :orchestration-edge/schema
+  (s/schema [:orchestration-edge/source
+             :orchestration-edge/target
+             :orchestration-edge/ports]))
 
-(s/def ::edges
-  (s/coll-of (s/select ::edge-schema [*]) :kind vector? :min-count 1))
+(s/def :orchestration-edge/orchestration-edge
+  (s/select :orchestration-edge/schema [*]))
 
-(s/def ::orchestration-schema
-  (s/schema {:id ::id
-             :children ::children
-             :edges ::edges}))
 
-(s/def ::orchestration
-  (s/select ::orchestration-schema [*]))
+;; -- ORCHESTRATION
+
+(s/def :orchestration/id
+  (s/and string? #(not (str/blank? %))))
+
+(s/def :orchestration/children
+  (s/map-of (s/and string? #(not (str/blank? %)))
+            (s/and string? #(not (str/blank? %)))
+            :min-count 1))
+
+(s/def :orchestration/edges
+  (s/coll-of :orchestration-edge/orchestration-edge :kind vector? :min-count 1))
+
+(s/def :orchestration/schema
+  (s/schema [:orchestration/id
+             :orchestration/children
+             :orchestration/edges]))
+
+(s/def :orchestration/orchestration
+  (s/select :orchestration/schema [*]))
+
+;; --
 
 (defn dependency-graph [orchestration]
   (let [edges (remove

@@ -180,7 +180,7 @@
     (orchestration/execute (app-context) orchestration))
 
 
-  (gen/sample (s/gen ::orchestration/orchestration) 1)
+  (gen/sample (s/gen :orchestration/orchestration) 1)
 
 
   ;; Re-using the same Operation n times to connect to a different port
