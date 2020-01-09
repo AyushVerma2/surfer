@@ -16,10 +16,13 @@
             [clojure.repl :refer :all]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
+            [clojure.alpha.spec :as s]
+            [clojure.alpha.spec.gen :as gen]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
             [clj-http.client :as http]
             [com.stuartsierra.dependency :as dep]
-            [surfer.database :as database]))
+            [surfer.database :as database]
+            [clojure.string :as str]))
 
 (set-init (constantly (system/new-system :dev)))
 
@@ -175,6 +178,10 @@
                          :target "Root"
                          :ports [:coll :coll]}]}]
     (orchestration/execute (app-context) orchestration))
+
+
+  (gen/sample (s/gen ::orchestration/orchestration) 1)
+
 
   ;; Re-using the same Operation n times to connect to a different port
   (let [orchestration {:id "Root"

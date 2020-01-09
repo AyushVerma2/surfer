@@ -1,9 +1,45 @@
 (ns surfer.orchestration
-  (:require [com.stuartsierra.dependency :as dep]
+  (:require [clojure.alpha.spec :as s]
+            [com.stuartsierra.dependency :as dep]
             [surfer.store :as store]
             [starfish.core :as sf]
             [surfer.invokable :as invoke]
-            [surfer.app-context :as app-context]))
+            [surfer.app-context :as app-context]
+            [clojure.string :as str]))
+
+(s/def ::node-name
+  (s/and string? #(not (str/blank? %))))
+
+(s/def ::id
+  ::node-name)
+
+(s/def ::children
+  (s/map-of ::node-name (s/and string? #(not (str/blank? %))) :min-count 1))
+
+(s/def ::edge-source
+  ::node-name)
+
+(s/def ::edge-target
+  ::node-name)
+
+(s/def ::edge-ports
+  (s/coll-of keyword? :kind vector? :count 2))
+
+(s/def ::edge-schema
+  (s/schema {:source ::edge-source
+             :target ::edge-target
+             :ports ::edge-ports}))
+
+(s/def ::edges
+  (s/coll-of (s/select ::edge-schema [*]) :kind vector? :min-count 1))
+
+(s/def ::orchestration-schema
+  (s/schema {:id ::id
+             :children ::children
+             :edges ::edges}))
+
+(s/def ::orchestration
+  (s/select ::orchestration-schema [*]))
 
 (defn dependency-graph [orchestration]
   (let [edges (remove
