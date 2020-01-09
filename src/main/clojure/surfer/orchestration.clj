@@ -102,20 +102,20 @@
                           invokable-params (invokable-params orchestration params process nid)]
                       (assoc process nid {:input invokable-params
                                           :output (sf/invoke-result invokable invokable-params)})))
-                  {(:id orchestration) {:input params}}
+                  {"Root" {:input params}}
                   nodes)
 
         output (output-mapping orchestration process)
 
         ;; Update Orchestration's `output`
         ;; See the process reducer above - `input` is already set for the Orchestration
-        process (assoc-in process [(:id orchestration) :output] output)]
+        process (assoc-in process ["Root" :output] output)]
     {:topo nodes
      :process process}))
 
-(defn results [{:keys [topo process]}]
+(defn results [{:keys [process]}]
   {:status "succeeded"
-   :results (get-in process [(last topo) :output])
+   :results (get-in process ["Root" :output])
    :children (->> process
                   (map
                     (fn [[k v]]

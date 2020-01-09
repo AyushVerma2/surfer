@@ -195,14 +195,22 @@
   (is (= {:status "succeeded"
           :results {:odds [1 3]}
           :children
-          {"make-range"
+          {"Root"
+           {:status "succeeded"
+            :results {:odds [1 3]}}
+
+           "make-range"
            {:status "succeeded"
             :results {:range [0 1 2 3]}}
+
            "filter-odds"
            {:status "succeeded"
             :results {:odds [1 3]}}}}
-         (orchestration/results {:topo '("make-range" "filter-odds")
-                                 :process {"make-range" {:input {}
+
+         (orchestration/results {:process {"Root" {:output {:odds [1 3]}}
+
+                                           "make-range" {:input {}
                                                          :output {:range [0 1 2 3]}}
+
                                            "filter-odds" {:input {:numbers [0 1 2 3]}
                                                           :output {:odds [1 3]}}}}))))
