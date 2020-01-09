@@ -82,16 +82,16 @@
    whenever source is 'reused' to connect to a different port."
   [orchestration nid dependency-nid]
   (filter
-    (fn [{:keys [source target]}]
+    (fn [{:orchestration-edge/keys [source target]}]
       (and (= dependency-nid source)
            (= nid target)))
-    (:edges orchestration)))
+    (:orchestration/edges orchestration)))
 
 (defn dependency-ports
   "Returns ports where nid (target) and dependency-nid (source) are connected."
   [orchestration nid dependency-nid]
   (->> (dependency-edges orchestration nid dependency-nid)
-       (map :ports)))
+       (map :orchestration-edge/ports)))
 
 (defn root-source-edges [orchestration]
   (filter
