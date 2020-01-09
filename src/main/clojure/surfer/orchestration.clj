@@ -75,22 +75,22 @@
       (dep/graph)
       edges)))
 
-(defn dependency-edges
+(defn edges=
   "Returns edges where nid (target) and dependency-nid (source) are connected.
 
    It's possible to have n edges from same source and target. That's the case
    whenever source is 'reused' to connect to a different port."
-  [orchestration nid dependency-nid]
+  [orchestration edge]
   (filter
-    (fn [{:orchestration-edge/keys [source target]}]
-      (and (= dependency-nid source)
-           (= nid target)))
+    (fn [e]
+      (= edge (select-keys e (keys edge))))
     (:orchestration/edges orchestration)))
 
 (defn dependency-ports
   "Returns ports where nid (target) and dependency-nid (source) are connected."
   [orchestration nid dependency-nid]
-  (->> (dependency-edges orchestration nid dependency-nid)
+  (->> (edges= orchestration #:orchestration-edge{:source dependency-nid
+                                                  :target nid})
        (map :orchestration-edge/ports)))
 
 (defn root-source-edges [orchestration]

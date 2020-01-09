@@ -60,7 +60,7 @@
     (is (= {"A" #{"C"}, "B" #{"C"}, "C" #{"D"}} (:dependents graph)))
     (is (= ["A" "B" "C" "D"] (dep/topo-sort graph)))))
 
-(deftest dependency-edges-test
+(deftest edges=-test
   (let [orchestration {:orchestration/edges
                        [#:orchestration-edge{:source "a"
                                              :target "b"}
@@ -72,16 +72,17 @@
                                              :target "concatenate"}
 
                         #:orchestration-edge{:source "make-range"
-                                             :target "concatenate"}]}
+                                             :target "concatenate"}]}]
 
-        edges (orchestration/dependency-edges orchestration "concatenate" "make-range")]
-    (is (= 2 (count edges)))
+    (is (= 1 (count (orchestration/edges= orchestration #:orchestration-edge{:source "a"
+                                                                             :target "b"}))))
 
-    (is (= #{"make-range"} (->> (map :orchestration-edge/source edges)
-                                (into #{}))))
+    (is (= 2 (count (orchestration/edges= orchestration #:orchestration-edge{:source "make-range"
+                                                                             :target "concatenate"}))))
 
-    (is (= #{"concatenate"} (->> (map :orchestration-edge/target edges)
-                                 (into #{}))))))
+    (is (= 2 (count (orchestration/edges= orchestration #:orchestration-edge{:source "make-range"}))))
+
+    (is (= 2 (count (orchestration/edges= orchestration #:orchestration-edge{:target "concatenate"}))))))
 
 (deftest params-test
   (testing "Single param"
