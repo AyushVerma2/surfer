@@ -5,7 +5,8 @@
             [starfish.core :as sf]
             [surfer.invokable :as invoke]
             [surfer.app-context :as app-context]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.walk :as walk]))
 
 ;; -- ORCHESTRATION EDGE
 
@@ -38,7 +39,7 @@
             :min-count 1))
 
 (s/def :orchestration/edges
-  (s/coll-of :orchestration-edge/orchestration-edge :kind vector? :min-count 1))
+  (s/coll-of :orchestration-edge/orchestration-edge :min-count 1))
 
 (s/def :orchestration/schema
   (s/schema [:orchestration/id
@@ -49,6 +50,18 @@
   (s/select :orchestration/schema [*]))
 
 ;; --
+
+(defn dep13->orchestration
+  "Returns an Orchestration entity from a DEP 13 format."
+  [m]
+  {:orchestration/id (:id m)
+   :orchestration/children (walk/stringify-keys (:children m))
+   :orchestration/edges (map
+                          (fn [{:keys [source sourcePort target targetPort]}]
+                            {:orchestration-edge/source source
+                             :orchestration-edge/target target
+                             :orchestration-edge/ports [(keyword sourcePort) (keyword targetPort)]})
+                          (:edges m))})
 
 (defn dependency-graph [orchestration]
   (let [edges (remove

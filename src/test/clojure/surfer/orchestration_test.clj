@@ -8,13 +8,35 @@
             [surfer.system :as system]
             [surfer.env :as env]
             [starfish.core :as sf]
-            [starfish.alpha :as sfa])
+            [starfish.alpha :as sfa]
+            [clojure.alpha.spec :as s])
   (:import (sg.dex.starfish.impl.memory LocalResolverImpl)))
 
 (def test-system
   nil)
 
 (use-fixtures :once (fixture/system-fixture #'test-system))
+
+(deftest dep13->orchestration-test
+  (let [orchestration (orchestration/dep13->orchestration {:id "Root"
+                                                           :children {:A "<DID>"
+                                                                      :B "<DID>"}
+                                                           :edges [{:source "A"
+                                                                    :sourcePort "x"
+                                                                    :target "B"
+                                                                    :targetPort "y"}]})]
+    (testing "Conversion"
+      (is (= #:orchestration{:id "Root"
+                             :children {"A" "<DID>"
+                                        "B" "<DID>"}
+                             :edges [#:orchestration-edge{:source "A"
+                                                          :target "B"
+                                                          :ports [:x :y]}]}
+
+             orchestration)))
+
+    (testing "Spec"
+      (is (= true (s/valid? :orchestration/orchestration orchestration))))))
 
 (deftest dependency-graph-test
   (let [orchestration {:id "Root"
