@@ -196,8 +196,8 @@
           :body [body schema/InvokeRequest]
           (let [op-id (get-in request [:params :op-id])
                 metadata (store/get-metadata db op-id {:key-fn keyword})
-                ^InputStream body-stream (doto (:body request) (.reset))
-                params (json/read-str (slurp body-stream) :key-fn keyword)]
+                ^InputStream body (:body request)
+                params (json/read-str (slurp (doto body (.reset))) :key-fn keyword)]
             (cond
               (nil? metadata)
               (response/not-found {:error (str "Metadata not found. Did you forget to register Metadata for operation '" op-id "'?")})
