@@ -56,7 +56,9 @@
   (s/and string? #(not (str/blank? %))))
 
 (s/def :orchestration-invocation/status
-  keyword?)
+  #{:orchestration-invocation.status/running
+    :orchestration-invocation.status/success
+    :orchestration-invocation.status/failure})
 
 (s/def :orchestration-invocation/input
   (s/map-of keyword? any?))
@@ -70,8 +72,16 @@
              :orchestration-invocation/input
              :orchestration-invocation/output]))
 
-(s/def :orchestration-invocation/orchestration-invocation
-  (s/select :orchestration-invocation/schema [*]))
+(s/def :orchestration-invocation/running
+  (s/and (s/select :orchestration-invocation/schema [:orchestration-invocation/node
+                                                     :orchestration-invocation/status
+                                                     :orchestration-invocation/input])
+         #(= :orchestration-invocation.status/running (:orchestration-invocation/status %))))
+
+(s/def :orchestration-invocation/completed
+  (s/and (s/select :orchestration-invocation/schema [*])
+         (s/or :success #(= :orchestration-invocation.status/success (:orchestration-invocation/status %))
+               :failure #(= :orchestration-invocation.status/failure (:orchestration-invocation/status %)))))
 
 ;; ORCHESTRATION EXECUTION
 
@@ -79,7 +89,9 @@
   (s/coll-of string?))
 
 (s/def :orchestration-execution/process
-  (s/map-of (s/and string? #(not (str/blank? %))) :orchestration-invocation/orchestration-invocation))
+  (s/map-of (s/and string? #(not (str/blank? %)))
+            (s/or :running :orchestration-invocation/running
+                  :completed :orchestration-invocation/completed)))
 
 ;; --
 

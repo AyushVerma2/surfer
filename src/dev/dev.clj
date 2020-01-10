@@ -181,7 +181,10 @@
 
 
   (gen/sample (s/gen :orchestration/orchestration) 1)
-  (gen/sample (s/gen :orchestration-invocation/orchestration-invocation) 1)
+
+  (gen/sample (s/gen :orchestration-invocation/completed) 1)
+  (gen/sample (s/gen :orchestration-invocation/running) 1)
+
   (gen/sample (s/gen :orchestration-execution/process) 1)
 
 
