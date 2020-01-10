@@ -35,8 +35,9 @@
                                                                    :did "<DID>"}}
 
                              :edges [#:orchestration-edge{:source "A"
+                                                          :source-port :x
                                                           :target "B"
-                                                          :ports [:x :y]}]}
+                                                          :target-port :y}]}
 
              orchestration)))
 

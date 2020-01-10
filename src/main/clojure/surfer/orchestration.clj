@@ -12,18 +12,25 @@
 (s/def :orchestration-edge/source
   (s/and string? #(not (str/blank? %))))
 
+(s/def :orchestration-edge/source-port
+  keyword?)
+
 (s/def :orchestration-edge/target
   (s/and string? #(not (str/blank? %))))
+
+(s/def :orchestration-edge/target-port
+  keyword?)
 
 (s/def :orchestration-edge/ports
   (s/coll-of keyword? :kind vector? :count 2))
 
 (s/def :orchestration-edge/schema
   (s/schema [:orchestration-edge/source
+             :orchestration-edge/source-port
              :orchestration-edge/target
-             :orchestration-edge/ports]))
+             :orchestration-edge/target-port]))
 
-(s/def :orchestration-edge/orchestration-edge
+(s/def :orchestration-edge/edge
   (s/select :orchestration-edge/schema [*]))
 
 ;; -- ORCHESTRATION CHILD
@@ -51,7 +58,7 @@
   (s/map-of (s/and string? #(not (str/blank? %))) :orchestration-child/child :min-count 1))
 
 (s/def :orchestration/edges
-  (s/coll-of :orchestration-edge/orchestration-edge :min-count 1))
+  (s/coll-of :orchestration-edge/edge :min-count 1))
 
 (s/def :orchestration/schema
   (s/schema [:orchestration/id
@@ -120,8 +127,9 @@
    :orchestration/edges (map
                           (fn [{:keys [source sourcePort target targetPort]}]
                             {:orchestration-edge/source source
+                             :orchestration-edge/source-port (keyword sourcePort)
                              :orchestration-edge/target target
-                             :orchestration-edge/ports [(keyword sourcePort) (keyword targetPort)]})
+                             :orchestration-edge/target-port (keyword targetPort)})
                           (:edges m))})
 
 (defn dependency-graph [orchestration]
@@ -146,13 +154,6 @@
     (fn [e]
       (= edge (select-keys e (keys edge))))
     (:orchestration/edges orchestration)))
-
-(defn dependency-ports
-  "Returns ports where nid (target) and dependency-nid (source) are connected."
-  [orchestration nid dependency-nid]
-  (->> (edges= orchestration #:orchestration-edge{:source dependency-nid
-                                                  :target nid})
-       (map :orchestration-edge/ports)))
 
 (defn root-source-edges [orchestration]
   (filter
