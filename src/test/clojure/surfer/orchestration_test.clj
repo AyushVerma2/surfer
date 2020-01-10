@@ -84,12 +84,12 @@
 
     (is (= 2 (count (orchestration/edges= orchestration #:orchestration-edge{:target "concatenate"}))))))
 
-(deftest params-test
+(deftest invokable-params-test
   (testing "Single param"
-    (let [orchestration {:edges
-                         [{:source "make-range"
-                           :target "filter-odds"
-                           :ports [:range :coll]}]}
+    (let [orchestration {:orchestration/edges
+                         [#:orchestration-edge {:source "make-range"
+                                                :target "filter-odds"
+                                                :ports [:range :coll]}]}
 
           process {"make-range" {:input {}
                                  :output {:range [0 1 2]}}}
@@ -98,14 +98,14 @@
       (is (= {:coll [0 1 2]} params))))
 
   (testing "Re-using source"
-    (let [orchestration {:edges
-                         [{:source "make-range"
-                           :target "concatenate"
-                           :ports [:range :coll1]}
+    (let [orchestration {:orchestration/edges
+                         [#:orchestration-edge {:source "make-range"
+                                                :target "concatenate"
+                                                :ports [:range :coll1]}
 
-                          {:source "make-range"
-                           :target "concatenate"
-                           :ports [:range :coll2]}]}
+                          #:orchestration-edge {:source "make-range"
+                                                :target "concatenate"
+                                                :ports [:range :coll2]}]}
 
           process {"make-range" {:input {}
                                  :output {:range [0 1 2]}}}

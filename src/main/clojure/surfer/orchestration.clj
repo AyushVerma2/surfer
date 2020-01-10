@@ -95,9 +95,9 @@
 
 (defn root-source-edges [orchestration]
   (filter
-    (fn [{:keys [source]}]
-      (= (:id orchestration) source))
-    (:edges orchestration)))
+    (fn [{:orchestration-edge/keys [source]}]
+      (= (:orchestration/id orchestration) source))
+    (:orchestration/edges orchestration)))
 
 (defn root-target-edges [orchestration]
   (filter
@@ -107,13 +107,13 @@
 
 (defn invokable-params [orchestration parameters process nid]
   (let [root-source-edges (filter
-                            (fn [{:keys [target]}]
+                            (fn [{:orchestration-edge/keys [target]}]
                               (= nid target))
                             (root-source-edges orchestration))
 
         params (if (seq root-source-edges)
                  (reduce
-                   (fn [params {:keys [ports]}]
+                   (fn [params {:orchestration-edge/keys [ports]}]
                      (let [[o-in n-in] ports]
                        (assoc params n-in (get parameters o-in))))
                    {}
@@ -121,15 +121,13 @@
                  (some->> (get-in (dependency-graph orchestration) [:dependencies nid])
                           (map
                             (fn [dependency-nid]
-                              (let [dependency-output (fn [dependency-nid output-key]
-                                                        (get-in process [dependency-nid :output output-key]))
-
-                                    make-params (fn [params [port-out port-in]]
-                                                  (assoc params port-in (dependency-output dependency-nid port-out)))]
-                                (reduce
-                                  make-params
-                                  {}
-                                  (dependency-ports orchestration nid dependency-nid)))))
+                              (reduce
+                                (fn [params {:orchestration-edge/keys [ports]}]
+                                  (let [[port-out port-in] ports]
+                                    (assoc params port-in (get-in process [dependency-nid :output port-out]))))
+                                {}
+                                (edges= orchestration #:orchestration-edge{:source dependency-nid
+                                                                           :target nid}))))
                           (apply merge)))]
     (or params {})))
 
