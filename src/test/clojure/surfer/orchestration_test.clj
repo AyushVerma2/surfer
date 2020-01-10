@@ -115,39 +115,39 @@
 
 (deftest output-mapping-test
   (testing "Output less"
-    (is (= {:n 1} (orchestration/output-mapping {:id "Orchestration"
-                                                 :edges
-                                                 [{:source "Foo"
-                                                   :target "Orchestration"
-                                                   :ports [:n1 :n]}]}
+    (is (= {:n 1} (orchestration/output-mapping {:orchestration/id "Orchestration"
+                                                 :orchestration/edges
+                                                 [#:orchestration-edge {:source "Foo"
+                                                                        :target "Orchestration"
+                                                                        :ports [:n1 :n]}]}
 
                                                 {"Foo" {:output {:n1 1
                                                                  :n2 2}}}))))
 
   (testing "Output is the same as Operation's output"
-    (is (= {:n1 1 :n2 2} (orchestration/output-mapping {:id "Orchestration"
-                                                        :edges
-                                                        [{:source "Foo"
-                                                          :target "Orchestration"
-                                                          :ports [:n1 :n1]}
+    (is (= {:n1 1 :n2 2} (orchestration/output-mapping {:orchestration/id "Orchestration"
+                                                        :orchestration/edges
+                                                        [#:orchestration-edge {:source "Foo"
+                                                                               :target "Orchestration"
+                                                                               :ports [:n1 :n1]}
 
-                                                         {:source "Foo"
-                                                          :target "Orchestration"
-                                                          :ports [:n2 :n2]}]}
+                                                         #:orchestration-edge {:source "Foo"
+                                                                               :target "Orchestration"
+                                                                               :ports [:n2 :n2]}]}
 
                                                        {"Foo" {:output {:n1 1
                                                                         :n2 2}}}))))
 
   (testing "Remap output"
-    (is (= {:n1 1 :n2 1} (orchestration/output-mapping {:id "Orchestration"
-                                                        :edges
-                                                        [{:source "Foo"
-                                                          :target "Orchestration"
-                                                          :ports [:n1 :n1]}
+    (is (= {:n1 1 :n2 1} (orchestration/output-mapping {:orchestration/id "Orchestration"
+                                                        :orchestration/edges
+                                                        [#:orchestration-edge {:source "Foo"
+                                                                               :target "Orchestration"
+                                                                               :ports [:n1 :n1]}
 
-                                                         {:source "Foo"
-                                                          :target "Orchestration"
-                                                          :ports [:n1 :n2]}]}
+                                                         #:orchestration-edge {:source "Foo"
+                                                                               :target "Orchestration"
+                                                                               :ports [:n1 :n2]}]}
 
                                                        {"Foo" {:output {:n1 1
                                                                         :n2 2}}})))))
@@ -168,18 +168,20 @@
           concatenate (->> (invoke/invokable-metadata #'demo.invokable/concatenate)
                            (invoke/register-invokable test-agent))]
       (testing "A very basic Orchestration example"
-        (let [orchestration {:id "Root"
-                             :children
+        (let [orchestration {:orchestration/id "Root"
+
+                             :orchestration/children
                              {"make-range" (sf/asset-id make-range)
                               "filter-odds" (sf/asset-id filter-odds)}
-                             :edges
-                             [{:source "make-range"
-                               :target "filter-odds"
-                               :ports [:range :numbers]}
 
-                              {:source "filter-odds"
-                               :target "Root"
-                               :ports [:odds :odds]}]}]
+                             :orchestration/edges
+                             [#:orchestration-edge {:source "make-range"
+                                                    :target "filter-odds"
+                                                    :ports [:range :numbers]}
+
+                              #:orchestration-edge {:source "filter-odds"
+                                                    :target "Root"
+                                                    :ports [:odds :odds]}]}]
           (is (= {:topo '("make-range" "filter-odds"),
                   :process {"Root" {:input nil :output {:odds [1 3 5 7 9]}}
                             "make-range" {:input {}, :output {:range [0 1 2 3 4 5 6 7 8 9]}},
@@ -187,23 +189,25 @@
                  (orchestration/execute (system/app-context test-system) orchestration)))))
 
       (testing "Nodes (Operations) with dependencies"
-        (let [orchestration {:id "Root"
-                             :children
+        (let [orchestration {:orchestration/id "Root"
+
+                             :orchestration/children
                              {"make-range1" (sf/asset-id make-range)
                               "make-range2" (sf/asset-id make-range)
                               "concatenate" (sf/asset-id concatenate)}
-                             :edges
-                             [{:source "make-range1"
-                               :target "concatenate"
-                               :ports [:range :coll1]}
 
-                              {:source "make-range2"
-                               :target "concatenate"
-                               :ports [:range :coll2]}
+                             :orchestration/edges
+                             [#:orchestration-edge {:source "make-range1"
+                                                    :target "concatenate"
+                                                    :ports [:range :coll1]}
 
-                              {:source "concatenate"
-                               :target "Root"
-                               :ports [:coll :coll]}]}]
+                              #:orchestration-edge {:source "make-range2"
+                                                    :target "concatenate"
+                                                    :ports [:range :coll2]}
+
+                              #:orchestration-edge {:source "concatenate"
+                                                    :target "Root"
+                                                    :ports [:coll :coll]}]}]
           (is (= {:topo '("make-range1" "make-range2" "concatenate"),
                   :process {"Root" {:input {} :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}
                             "make-range1" {:input {}, :output {:range [0 1 2 3 4 5 6 7 8 9]}},

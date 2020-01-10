@@ -101,9 +101,9 @@
 
 (defn root-target-edges [orchestration]
   (filter
-    (fn [{:keys [target]}]
-      (= (:id orchestration) target))
-    (:edges orchestration)))
+    (fn [{:orchestration-edge/keys [target]}]
+      (= (:orchestration/id orchestration) target))
+    (:orchestration/edges orchestration)))
 
 (defn invokable-params [orchestration parameters process nid]
   (let [root-source-edges (filter
@@ -138,7 +138,7 @@
   [orchestration process]
   (->> (root-target-edges orchestration)
        (map
-         (fn [{:keys [source ports]}]
+         (fn [{:orchestration-edge/keys [source ports]}]
            (let [[n-out o-out] ports]
              [o-out (get-in process [source :output n-out])])))
        (into {})))
@@ -148,7 +148,7 @@
 
         process (reduce
                   (fn [process nid]
-                    (let [aid (get-in orchestration [:children nid])
+                    (let [aid (get-in orchestration [:orchestration/children nid])
 
                           metadata (-> (app-context/db app-context)
                                        (store/get-metadata aid {:key-fn keyword}))
