@@ -19,16 +19,21 @@
 
 (deftest dep13->orchestration-test
   (let [orchestration (orchestration/dep13->orchestration {:id "Root"
-                                                           :children {:A "<DID>"
-                                                                      :B "<DID>"}
+                                                           :children {:A {:did "<DID>"}
+                                                                      :B {:did "<DID>"}}
                                                            :edges [{:source "A"
                                                                     :sourcePort "x"
                                                                     :target "B"
                                                                     :targetPort "y"}]})]
     (testing "Conversion"
       (is (= #:orchestration{:id "Root"
-                             :children {"A" "<DID>"
-                                        "B" "<DID>"}
+
+                             :children {"A" #:orchestration-child {:id "A"
+                                                                   :did "<DID>"}
+
+                                        "B" #:orchestration-child {:id "B"
+                                                                   :did "<DID>"}}
+
                              :edges [#:orchestration-edge{:source "A"
                                                           :target "B"
                                                           :ports [:x :y]}]}

@@ -5,8 +5,7 @@
             [starfish.core :as sf]
             [surfer.invokable :as invoke]
             [surfer.app-context :as app-context]
-            [clojure.string :as str]
-            [clojure.walk :as walk]))
+            [clojure.string :as str]))
 
 ;; -- ORCHESTRATION EDGE
 
@@ -27,6 +26,21 @@
 (s/def :orchestration-edge/orchestration-edge
   (s/select :orchestration-edge/schema [*]))
 
+;; -- ORCHESTRATION CHILD
+
+(s/def :orchestration-child/id
+  (s/and string? #(not (str/blank? %))))
+
+(s/def :orchestration-child/did
+  (s/and string? #(not (str/blank? %))))
+
+(s/def :orchestration-child/schema
+  (s/schema [:orchestration-child/id
+             :orchestration-child/did]))
+
+(s/def :orchestration-child/child
+  (s/select :orchestration-child/schema [*]))
+
 
 ;; -- ORCHESTRATION
 
@@ -34,9 +48,7 @@
   (s/and string? #(not (str/blank? %))))
 
 (s/def :orchestration/children
-  (s/map-of (s/and string? #(not (str/blank? %)))
-            (s/and string? #(not (str/blank? %)))
-            :min-count 1))
+  (s/map-of (s/and string? #(not (str/blank? %))) :orchestration-child/child :min-count 1))
 
 (s/def :orchestration/edges
   (s/coll-of :orchestration-edge/orchestration-edge :min-count 1))
@@ -99,7 +111,12 @@
   "Returns an Orchestration entity from a DEP 13 format."
   [m]
   {:orchestration/id (:id m)
-   :orchestration/children (walk/stringify-keys (:children m))
+   :orchestration/children (reduce
+                             (fn [children [id {:keys [did]}]]
+                               (assoc children (name id) #:orchestration-child {:id (name id)
+                                                                                :did did}))
+                             {}
+                             (:children m))
    :orchestration/edges (map
                           (fn [{:keys [source sourcePort target targetPort]}]
                             {:orchestration-edge/source source
