@@ -181,6 +181,8 @@
 
 
   (gen/sample (s/gen :orchestration/orchestration) 1)
+  (gen/sample (s/gen :orchestration-invocation/orchestration-invocation) 1)
+  (gen/sample (s/gen :orchestration-execution/process) 1)
 
 
   ;; Re-using the same Operation n times to connect to a different port

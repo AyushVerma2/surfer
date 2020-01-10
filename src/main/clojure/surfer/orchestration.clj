@@ -49,6 +49,38 @@
 (s/def :orchestration/orchestration
   (s/select :orchestration/schema [*]))
 
+
+;; ORCHESTRATION INVOCATION
+
+(s/def :orchestration-invocation/node
+  (s/and string? #(not (str/blank? %))))
+
+(s/def :orchestration-invocation/status
+  keyword?)
+
+(s/def :orchestration-invocation/input
+  (s/map-of keyword? any?))
+
+(s/def :orchestration-invocation/output
+  (s/map-of keyword? any?))
+
+(s/def :orchestration-invocation/schema
+  (s/schema [:orchestration-invocation/node
+             :orchestration-invocation/status
+             :orchestration-invocation/input
+             :orchestration-invocation/output]))
+
+(s/def :orchestration-invocation/orchestration-invocation
+  (s/select :orchestration-invocation/schema [*]))
+
+;; ORCHESTRATION EXECUTION
+
+(s/def :orchestration-execution/topo
+  (s/coll-of string?))
+
+(s/def :orchestration-execution/process
+  (s/map-of (s/and string? #(not (str/blank? %))) :orchestration-invocation/orchestration-invocation))
+
 ;; --
 
 (defn dep13->orchestration
