@@ -124,7 +124,7 @@
                               (reduce
                                 (fn [params {:orchestration-edge/keys [ports]}]
                                   (let [[port-out port-in] ports]
-                                    (assoc params port-in (get-in process [dependency-nid :output port-out]))))
+                                    (assoc params port-in (get-in process [dependency-nid :orchestration-invocation/output port-out]))))
                                 {}
                                 (edges= orchestration #:orchestration-edge{:source dependency-nid
                                                                            :target nid}))))
@@ -140,7 +140,7 @@
        (map
          (fn [{:orchestration-edge/keys [source ports]}]
            (let [[n-out o-out] ports]
-             [o-out (get-in process [source :output n-out])])))
+             [o-out (get-in process [source :orchestration-invocation/output n-out])])))
        (into {})))
 
 (defn execute [app-context orchestration & [params]]
@@ -156,18 +156,18 @@
                           invokable (invoke/invokable-operation app-context metadata)
 
                           invokable-params (invokable-params orchestration params process nid)]
-                      (assoc process nid {:input invokable-params
-                                          :output (sf/invoke-result invokable invokable-params)})))
-                  {"Root" {:input params}}
+                      (assoc process nid {:orchestration-invocation/input invokable-params
+                                          :orchestration-invocation/output (sf/invoke-result invokable invokable-params)})))
+                  {"Root" {:orchestration-invocation/input params}}
                   nodes)
 
         output (output-mapping orchestration process)
 
         ;; Update Orchestration's `output`
         ;; See the process reducer above - `input` is already set for the Orchestration
-        process (assoc-in process ["Root" :output] output)]
-    {:topo nodes
-     :process process}))
+        process (assoc-in process ["Root" :orchestration-invocation/output] output)]
+    {:orchestration-execution/topo nodes
+     :orchestration-execution/process process}))
 
 (defn results [{:keys [process]}]
   {:status "succeeded"

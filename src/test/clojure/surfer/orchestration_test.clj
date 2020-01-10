@@ -91,8 +91,8 @@
                                                 :target "filter-odds"
                                                 :ports [:range :coll]}]}
 
-          process {"make-range" {:input {}
-                                 :output {:range [0 1 2]}}}
+          process {"make-range" {:orchestration-invocation/input {}
+                                 :orchestration-invocation/output {:range [0 1 2]}}}
 
           params (orchestration/invokable-params orchestration {} process "filter-odds")]
       (is (= {:coll [0 1 2]} params))))
@@ -107,8 +107,8 @@
                                                 :target "concatenate"
                                                 :ports [:range :coll2]}]}
 
-          process {"make-range" {:input {}
-                                 :output {:range [0 1 2]}}}
+          process {"make-range" {:orchestration-invocation/input {}
+                                 :orchestration-invocation/output {:range [0 1 2]}}}
 
           params (orchestration/invokable-params orchestration {} process "concatenate")]
       (is (= {:coll1 [0 1 2] :coll2 [0 1 2]} params)))))
@@ -121,8 +121,8 @@
                                                                         :target "Orchestration"
                                                                         :ports [:n1 :n]}]}
 
-                                                {"Foo" {:output {:n1 1
-                                                                 :n2 2}}}))))
+                                                {"Foo" {:orchestration-invocation/output {:n1 1
+                                                                                          :n2 2}}}))))
 
   (testing "Output is the same as Operation's output"
     (is (= {:n1 1 :n2 2} (orchestration/output-mapping {:orchestration/id "Orchestration"
@@ -135,8 +135,8 @@
                                                                                :target "Orchestration"
                                                                                :ports [:n2 :n2]}]}
 
-                                                       {"Foo" {:output {:n1 1
-                                                                        :n2 2}}}))))
+                                                       {"Foo" {:orchestration-invocation/output {:n1 1
+                                                                                                 :n2 2}}}))))
 
   (testing "Remap output"
     (is (= {:n1 1 :n2 1} (orchestration/output-mapping {:orchestration/id "Orchestration"
@@ -149,8 +149,8 @@
                                                                                :target "Orchestration"
                                                                                :ports [:n1 :n2]}]}
 
-                                                       {"Foo" {:output {:n1 1
-                                                                        :n2 2}}})))))
+                                                       {"Foo" {:orchestration-invocation/output {:n1 1
+                                                                                                 :n2 2}}})))))
 
 (deftest execute-test
   (binding [sfa/*resolver* (LocalResolverImpl.)]
@@ -182,10 +182,17 @@
                               #:orchestration-edge {:source "filter-odds"
                                                     :target "Root"
                                                     :ports [:odds :odds]}]}]
-          (is (= {:topo '("make-range" "filter-odds"),
-                  :process {"Root" {:input nil :output {:odds [1 3 5 7 9]}}
-                            "make-range" {:input {}, :output {:range [0 1 2 3 4 5 6 7 8 9]}},
-                            "filter-odds" {:input {:numbers [0 1 2 3 4 5 6 7 8 9]}, :output {:odds [1 3 5 7 9]}}}}
+          (is (= {:orchestration-execution/topo '("make-range" "filter-odds")
+                  :orchestration-execution/process
+                  {"Root" {:orchestration-invocation/input nil
+                           :orchestration-invocation/output {:odds [1 3 5 7 9]}}
+
+                   "make-range" {:orchestration-invocation/input {}
+                                 :orchestration-invocation/output {:range [0 1 2 3 4 5 6 7 8 9]}}
+
+                   "filter-odds" {:orchestration-invocation/input {:numbers [0 1 2 3 4 5 6 7 8 9]}
+                                  :orchestration-invocation/output {:odds [1 3 5 7 9]}}}}
+
                  (orchestration/execute (system/app-context test-system) orchestration)))))
 
       (testing "Nodes (Operations) with dependencies"
@@ -208,12 +215,19 @@
                               #:orchestration-edge {:source "concatenate"
                                                     :target "Root"
                                                     :ports [:coll :coll]}]}]
-          (is (= {:topo '("make-range1" "make-range2" "concatenate"),
-                  :process {"Root" {:input {} :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}
-                            "make-range1" {:input {}, :output {:range [0 1 2 3 4 5 6 7 8 9]}},
-                            "make-range2" {:input {}, :output {:range [0 1 2 3 4 5 6 7 8 9]}},
-                            "concatenate" {:input {:coll2 [0 1 2 3 4 5 6 7 8 9], :coll1 [0 1 2 3 4 5 6 7 8 9]},
-                                           :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}}}
+          (is (= {:orchestration-execution/topo '("make-range1" "make-range2" "concatenate"),
+                  :orchestration-execution/process
+                  {"Root" {:orchestration-invocation/input {}
+                           :orchestration-invocation/output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}
+
+                   "make-range1" {:orchestration-invocation/input {}
+                                  :orchestration-invocation/output {:range [0 1 2 3 4 5 6 7 8 9]}}
+
+                   "make-range2" {:orchestration-invocation/input {}
+                                  :orchestration-invocation/output {:range [0 1 2 3 4 5 6 7 8 9]}}
+
+                   "concatenate" {:orchestration-invocation/input {:coll2 [0 1 2 3 4 5 6 7 8 9] :coll1 [0 1 2 3 4 5 6 7 8 9]}
+                                  :orchestration-invocation/output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}}}
                  (orchestration/execute (system/app-context test-system) orchestration {}))))))))
 
 ;; Add to Backlog - Think about the `additionalInfo` metadata
