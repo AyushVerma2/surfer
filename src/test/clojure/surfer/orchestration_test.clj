@@ -185,8 +185,8 @@
         (let [orchestration {:orchestration/id "Root"
 
                              :orchestration/children
-                             {"make-range" (sf/asset-id make-range)
-                              "filter-odds" (sf/asset-id filter-odds)}
+                             {"make-range" #:orchestration-child {:did (sf/asset-id make-range)}
+                              "filter-odds" #:orchestration-child {:did (sf/asset-id filter-odds)}}
 
                              :orchestration/edges
                              [#:orchestration-edge {:source "make-range"
@@ -197,8 +197,7 @@
                               #:orchestration-edge {:source "filter-odds"
                                                     :source-port :odds
                                                     :target "Root"
-                                                    :target-port :odds
-                                                    :ports [:odds :odds]}]}]
+                                                    :target-port :odds}]}]
           (is (= {:orchestration-execution/topo '("make-range" "filter-odds")
                   :orchestration-execution/process
                   {"Root" {:orchestration-invocation/input nil
@@ -216,9 +215,9 @@
         (let [orchestration {:orchestration/id "Root"
 
                              :orchestration/children
-                             {"make-range1" (sf/asset-id make-range)
-                              "make-range2" (sf/asset-id make-range)
-                              "concatenate" (sf/asset-id concatenate)}
+                             {"make-range1" #:orchestration-child {:did (sf/asset-id make-range)}
+                              "make-range2" #:orchestration-child {:did (sf/asset-id make-range)}
+                              "concatenate" #:orchestration-child {:did (sf/asset-id concatenate)}}
 
                              :orchestration/edges
                              [#:orchestration-edge {:source "make-range1"

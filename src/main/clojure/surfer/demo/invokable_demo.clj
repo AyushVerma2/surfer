@@ -101,28 +101,32 @@
 
         children (reduce
                    (fn [children n]
-                     ;; n nodes (children), but same Operation
-                     (assoc children (child-key n) increment-id))
+                     ;; n nodes (children), same Operation
+                     (assoc children (child-key n) #:orchestration-child {:id (child-key n)
+                                                                          :did increment-id}))
                    {}
                    (range n))
 
         edges (map
                 (fn [n]
-                  {:source (child-key n)
-                   :target (child-key (inc n))
-                   :ports [:n :n]})
+                  {:orchestration-edge/source (child-key n)
+                   :orchestration-edge/source-port :n
+                   :orchestration-edge/target (child-key (inc n))
+                   :orchestration-edge/target-port :n})
                 (range (dec n)))
-        edges (into edges [{:source "Root"
-                            :target (child-key 0)
-                            :ports [:n :n]}
+        edges (into edges [{:orchestration-edge/source "Root"
+                            :orchestration-edge/source-port :n
+                            :orchestration-edge/target (child-key 0)
+                            :orchestration-edge/target-port :n}
 
-                           {:source (child-key (dec n))
-                            :target "Root"
-                            :ports [:n :n]}])
+                           {:orchestration-edge/source (child-key (dec n))
+                            :orchestration-edge/source-port :n
+                            :orchestration-edge/target "Root"
+                            :orchestration-edge/target-port :n}])
 
-        orchestration {:id "Root"
-                       :children children
-                       :edges edges}
+        orchestration {:orchestration/id "Root"
+                       :orchestration/children children
+                       :orchestration/edges edges}
         orchestration-str (json/write-str orchestration)
         orchestration-metadata {:name (str "Orchestration Demo 1 - n " n)
                                 :type "operation"

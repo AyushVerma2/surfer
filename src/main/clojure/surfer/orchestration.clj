@@ -207,7 +207,7 @@
 
         process (reduce
                   (fn [process nid]
-                    (let [aid (get-in orchestration [:orchestration/children nid])
+                    (let [aid (get-in orchestration [:orchestration/children nid :orchestration-child/did])
 
                           metadata (-> (app-context/db app-context)
                                        (store/get-metadata aid {:key-fn keyword}))
