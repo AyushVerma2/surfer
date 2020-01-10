@@ -175,18 +175,16 @@
 
         params (if (seq root-source-edges)
                  (reduce
-                   (fn [params {:orchestration-edge/keys [ports]}]
-                     (let [[o-in n-in] ports]
-                       (assoc params n-in (get parameters o-in))))
+                   (fn [params {:orchestration-edge/keys [source-port target-port]}]
+                     (assoc params target-port (get parameters source-port)))
                    {}
                    root-source-edges)
                  (some->> (get-in (dependency-graph orchestration) [:dependencies nid])
                           (map
                             (fn [dependency-nid]
                               (reduce
-                                (fn [params {:orchestration-edge/keys [ports]}]
-                                  (let [[port-out port-in] ports]
-                                    (assoc params port-in (get-in process [dependency-nid :orchestration-invocation/output port-out]))))
+                                (fn [params {:orchestration-edge/keys [source-port target-port]}]
+                                  (assoc params target-port (get-in process [dependency-nid :orchestration-invocation/output source-port])))
                                 {}
                                 (edges= orchestration #:orchestration-edge{:source dependency-nid
                                                                            :target nid}))))
@@ -198,12 +196,11 @@
 
    Orchestration's output may provide less than Operation's output."
   [orchestration process]
-  (->> (root-target-edges orchestration)
-       (map
-         (fn [{:orchestration-edge/keys [source ports]}]
-           (let [[n-out o-out] ports]
-             [o-out (get-in process [source :orchestration-invocation/output n-out])])))
-       (into {})))
+  (reduce
+    (fn [output {:orchestration-edge/keys [source source-port target-port]}]
+      (assoc output target-port (get-in process [source :orchestration-invocation/output source-port])))
+    {}
+    (root-target-edges orchestration)))
 
 (defn execute [app-context orchestration & [params]]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))

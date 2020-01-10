@@ -94,8 +94,9 @@
   (testing "Single param"
     (let [orchestration {:orchestration/edges
                          [#:orchestration-edge {:source "make-range"
+                                                :source-port :range
                                                 :target "filter-odds"
-                                                :ports [:range :coll]}]}
+                                                :target-port :coll}]}
 
           process {"make-range" {:orchestration-invocation/input {}
                                  :orchestration-invocation/output {:range [0 1 2]}}}
@@ -106,12 +107,14 @@
   (testing "Re-using source"
     (let [orchestration {:orchestration/edges
                          [#:orchestration-edge {:source "make-range"
+                                                :source-port :range
                                                 :target "concatenate"
-                                                :ports [:range :coll1]}
+                                                :target-port :coll1}
 
                           #:orchestration-edge {:source "make-range"
+                                                :source-port :range
                                                 :target "concatenate"
-                                                :ports [:range :coll2]}]}
+                                                :target-port :coll2}]}
 
           process {"make-range" {:orchestration-invocation/input {}
                                  :orchestration-invocation/output {:range [0 1 2]}}}
@@ -124,8 +127,9 @@
     (is (= {:n 1} (orchestration/output-mapping {:orchestration/id "Orchestration"
                                                  :orchestration/edges
                                                  [#:orchestration-edge {:source "Foo"
+                                                                        :source-port :n1
                                                                         :target "Orchestration"
-                                                                        :ports [:n1 :n]}]}
+                                                                        :target-port :n}]}
 
                                                 {"Foo" {:orchestration-invocation/output {:n1 1
                                                                                           :n2 2}}}))))
@@ -134,12 +138,14 @@
     (is (= {:n1 1 :n2 2} (orchestration/output-mapping {:orchestration/id "Orchestration"
                                                         :orchestration/edges
                                                         [#:orchestration-edge {:source "Foo"
+                                                                               :source-port :n1
                                                                                :target "Orchestration"
-                                                                               :ports [:n1 :n1]}
+                                                                               :target-port :n1}
 
                                                          #:orchestration-edge {:source "Foo"
+                                                                               :source-port :n2
                                                                                :target "Orchestration"
-                                                                               :ports [:n2 :n2]}]}
+                                                                               :target-port :n2}]}
 
                                                        {"Foo" {:orchestration-invocation/output {:n1 1
                                                                                                  :n2 2}}}))))
@@ -148,12 +154,14 @@
     (is (= {:n1 1 :n2 1} (orchestration/output-mapping {:orchestration/id "Orchestration"
                                                         :orchestration/edges
                                                         [#:orchestration-edge {:source "Foo"
+                                                                               :source-port :n1
                                                                                :target "Orchestration"
-                                                                               :ports [:n1 :n1]}
+                                                                               :target-port :n1}
 
                                                          #:orchestration-edge {:source "Foo"
+                                                                               :source-port :n1
                                                                                :target "Orchestration"
-                                                                               :ports [:n1 :n2]}]}
+                                                                               :target-port :n2}]}
 
                                                        {"Foo" {:orchestration-invocation/output {:n1 1
                                                                                                  :n2 2}}})))))
@@ -182,11 +190,14 @@
 
                              :orchestration/edges
                              [#:orchestration-edge {:source "make-range"
+                                                    :source-port :range
                                                     :target "filter-odds"
-                                                    :ports [:range :numbers]}
+                                                    :target-port :numbers}
 
                               #:orchestration-edge {:source "filter-odds"
+                                                    :source-port :odds
                                                     :target "Root"
+                                                    :target-port :odds
                                                     :ports [:odds :odds]}]}]
           (is (= {:orchestration-execution/topo '("make-range" "filter-odds")
                   :orchestration-execution/process
@@ -211,16 +222,19 @@
 
                              :orchestration/edges
                              [#:orchestration-edge {:source "make-range1"
+                                                    :source-port :range
                                                     :target "concatenate"
-                                                    :ports [:range :coll1]}
+                                                    :target-port :coll1}
 
                               #:orchestration-edge {:source "make-range2"
+                                                    :source-port :range
                                                     :target "concatenate"
-                                                    :ports [:range :coll2]}
+                                                    :target-port :coll2}
 
                               #:orchestration-edge {:source "concatenate"
+                                                    :source-port :coll
                                                     :target "Root"
-                                                    :ports [:coll :coll]}]}]
+                                                    :target-port :coll}]}]
           (is (= {:orchestration-execution/topo '("make-range1" "make-range2" "concatenate"),
                   :orchestration-execution/process
                   {"Root" {:orchestration-invocation/input {}
