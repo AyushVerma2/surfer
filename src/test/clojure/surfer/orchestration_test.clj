@@ -253,10 +253,9 @@
            {:status "succeeded"
             :results {:odds [1 3]}}}}
 
-         (orchestration/results {:process {"Root" {:output {:odds [1 3]}}
+         (orchestration/results {:orchestration-execution/process
+                                 {"Root" {:orchestration-invocation/output {:odds [1 3]}}
 
-                                           "make-range" {:input {}
-                                                         :output {:range [0 1 2 3]}}
+                                  "make-range" {:orchestration-invocation/output {:range [0 1 2 3]}}
 
-                                           "filter-odds" {:input {:numbers [0 1 2 3]}
-                                                          :output {:odds [1 3]}}}}))))
+                                  "filter-odds" {:orchestration-invocation/output {:odds [1 3]}}}}))))

@@ -230,12 +230,12 @@
     {:orchestration-execution/topo nodes
      :orchestration-execution/process process}))
 
-(defn results [{:keys [process]}]
+(defn results [{:orchestration-execution/keys [process]}]
   {:status "succeeded"
-   :results (get-in process ["Root" :output])
-   :children (->> process
-                  (map
-                    (fn [[k v]]
-                      [k {:status "succeeded"
-                          :results (:output v)}]))
-                  (into {}))})
+   :results (get-in process ["Root" :orchestration-invocation/output])
+   :children (reduce
+               (fn [children [k v]]
+                 (assoc children k {:status "succeeded"
+                                    :results (:orchestration-invocation/output v)}))
+               {}
+               process)})
