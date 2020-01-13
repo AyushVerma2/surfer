@@ -33,8 +33,8 @@
   (is (= 200 (:status (http/get (base-url) auth-headers)))))
 
 (deftest invoke-test
-  (testing "Invoke Sync API - Demo Operations"
-    (testing "Increment n"
+  (testing "Invoke Sync API"
+    (testing "Operation - Increment n"
       (let [invokable-metadata (invokable/invokable-metadata #'invokable-demo/increment)
 
             meta-response (http/post (str (base-url) "api/v1/meta/data")
@@ -48,7 +48,7 @@
             results (json/read-str (:body invoke-response) :key-fn keyword)]
         (is (= {:n 2} results))))
 
-    (testing "Concatenate colls"
+    (testing "Operation - Concatenate colls"
       (let [invokable-metadata (invokable/invokable-metadata #'invokable-demo/concatenate)
 
             meta-response (http/post (str (base-url) "api/v1/meta/data")
@@ -61,7 +61,32 @@
                                                                                    :coll2 [3 4]})}))
 
             results (json/read-str (:body invoke-response) :key-fn keyword)]
-        (is (= {:coll [1 2 3 4]} results))))))
+        (is (= {:coll [1 2 3 4]} results))))
+
+    (testing "Orchestration - Demo 1"
+      (let [invokable-metadata (invokable/invokable-metadata #'invokable-demo/make-orchestration-demo1)
+
+            meta-response (http/post (str (base-url) "api/v1/meta/data")
+                                     (merge auth-headers {:body (json/write-str invokable-metadata)}))
+
+            generated-id (json/read-str (:body meta-response))
+
+            invoke-response (http/post (str (base-url) "api/v1/invoke/sync/" generated-id)
+                                       (merge auth-headers {:body (json/write-str {:n 3})}))
+
+            results (json/read-str (:body invoke-response) :key-fn keyword)
+
+            invoke-orchestration-response (http/post (str (base-url) "api/v1/invoke/sync/" (:id results))
+                                                     (merge auth-headers {:body (json/write-str {:n 10})}))
+
+            {:keys [status results children]} (json/read-str (:body invoke-orchestration-response) :key-fn keyword)]
+        (is (= "succeeded" status))
+        (is (= {:n 13} results))
+        (is (= {:Root {:status "succeeded" :results {:n 13}}
+                :increment-0 {:status "succeeded" :results {:n 11}}
+                :increment-1 {:status "succeeded" :results {:n 12}}
+                :increment-2 {:status "succeeded" :results {:n 13}}}
+               children))))))
 
 (deftest ^:integration test-register-upload
   (let [metadata-str (json/write-str {"name" "test asset 1"
