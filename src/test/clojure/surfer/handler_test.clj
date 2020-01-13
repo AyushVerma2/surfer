@@ -1,17 +1,18 @@
 (ns surfer.handler-test
   (:require
-    [clj-http.client :as client]
     [clojure.data.json :as json]
     [clojure.java.io :as io]
+    [clojure.test :refer :all]
+    [clj-http.client :as http]
     [surfer.utils :as utils]
     [surfer.system :as system]
-    [slingshot.slingshot :refer [try+ throw+]]
-    [clojure.test :refer :all]
     [surfer.env :as env]
     [surfer.test.fixture :as fixture]
+    [surfer.demo.invokable-demo :as invokable-demo]
+    [surfer.invokable :as invokable]
     [starfish.core :as sf]
-    [byte-streams]
-    [clojure.tools.logging :as log])
+    [slingshot.slingshot :refer [try+ throw+]]
+    [byte-streams])
   (:import (clojure.lang ExceptionInfo)))
 
 (set! *warn-on-reflection* true)
@@ -29,7 +30,38 @@
   (str "http://localhost:" (env/web-server-config (system/env test-system) [:port]) "/"))
 
 (deftest ^:integration test-welcome
-  (is (= 200 (:status (client/get (base-url) auth-headers)))))
+  (is (= 200 (:status (http/get (base-url) auth-headers)))))
+
+(deftest invoke-test
+  (testing "Invoke Sync API - Demo Operations"
+    (testing "Increment n"
+      (let [invokable-metadata (invokable/invokable-metadata #'invokable-demo/increment)
+
+            meta-response (http/post (str (base-url) "api/v1/meta/data")
+                                     (merge auth-headers {:body (json/write-str invokable-metadata)}))
+
+            generated-id (json/read-str (:body meta-response))
+
+            invoke-response (http/post (str (base-url) "api/v1/invoke/sync/" generated-id)
+                                       (merge auth-headers {:body (json/write-str {:n 1})}))
+
+            results (json/read-str (:body invoke-response) :key-fn keyword)]
+        (is (= {:n 2} results))))
+
+    (testing "Concatenate colls"
+      (let [invokable-metadata (invokable/invokable-metadata #'invokable-demo/concatenate)
+
+            meta-response (http/post (str (base-url) "api/v1/meta/data")
+                                     (merge auth-headers {:body (json/write-str invokable-metadata)}))
+
+            generated-id (json/read-str (:body meta-response))
+
+            invoke-response (http/post (str (base-url) "api/v1/invoke/sync/" generated-id)
+                                       (merge auth-headers {:body (json/write-str {:coll1 [1 2]
+                                                                                   :coll2 [3 4]})}))
+
+            results (json/read-str (:body invoke-response) :key-fn keyword)]
+        (is (= {:coll [1 2 3 4]} results))))))
 
 (deftest ^:integration test-register-upload
   (let [metadata-str (json/write-str {"name" "test asset 1"
@@ -38,8 +70,8 @@
                                                         (byte-streams/to-byte-array)
                                                         (sf/digest))})
 
-        meta-data-response (client/post (str (base-url) "api/v1/meta/data")
-                                        (merge auth-headers {:body metadata-str}))
+        meta-data-response (http/post (str (base-url) "api/v1/meta/data")
+                                      (merge auth-headers {:body metadata-str}))
 
         generated-id (json/read-str (:body meta-data-response))]
 
@@ -48,8 +80,8 @@
 
     (testing "Bad Asset Metadata Upload - Missing Content Hash"
       (let [ex (try
-                 (client/post (str (base-url) "api/v1/meta/data")
-                              (merge auth-headers {:body (json/write-str {:name "Foo"})}))
+                 (http/post (str (base-url) "api/v1/meta/data")
+                            (merge auth-headers {:body (json/write-str {:name "Foo"})}))
                  (catch ExceptionInfo ex
                    ex))]
         (is (= 400 (-> ex ex-data :status)))
@@ -62,53 +94,53 @@
       (is (= (utils/sha256 metadata-str) generated-id)))
 
     (testing "Get Asset Metadata"
-      (let [response (client/get (str (base-url) "api/v1/meta/data/" generated-id) auth-headers)]
+      (let [response (http/get (str (base-url) "api/v1/meta/data/" generated-id) auth-headers)]
         (is (= 200 (:status response)))))
 
     (testing "Re-upload Asset Metadata"
-      (let [response (client/put (str (base-url) "api/v1/meta/data/" generated-id)
-                                 (merge auth-headers {:body metadata-str}))]
+      (let [response (http/put (str (base-url) "api/v1/meta/data/" generated-id)
+                               (merge auth-headers {:body metadata-str}))]
         (is (= 200 (:status response)))))
 
     (testing "Bad Asset Metadata Request"
       (let [status-code (try
-                          (client/put (str (base-url) "api/v1/meta/data/" generated-id)
-                                      (merge auth-headers {:body (str metadata-str " some extra stuff")}))
+                          (http/put (str (base-url) "api/v1/meta/data/" generated-id)
+                                    (merge auth-headers {:body (str metadata-str " some extra stuff")}))
                           (catch ExceptionInfo ex
                             (:status (ex-data ex))))]
         (is (= 400 status-code))))
 
     (testing "Good Upload: Metadata with Content Hash"
       (let [content (io/input-stream (io/resource "testfile.txt"))
-            response (client/post (str (base-url) "api/v1/assets/" generated-id)
-                                  (merge auth-headers
-                                         {:multipart [{:name "file"
-                                                       :content content}]}))]
+            response (http/post (str (base-url) "api/v1/assets/" generated-id)
+                                (merge auth-headers
+                                       {:multipart [{:name "file"
+                                                     :content content}]}))]
         (is (= 201 (:status response)))))
 
     (testing "Get Asset Data"
-      (let [response (client/get (str (base-url) "api/v1/assets/" generated-id) auth-headers)]
+      (let [response (http/get (str (base-url) "api/v1/assets/" generated-id) auth-headers)]
         (is (= 200 (:status response)))
         (is (= "This is a test file" (:body response)))))))
 
 (deftest ^:integration test-get-purchases
-  (let [r1 (client/get (str (base-url) "api/v1/market/purchases")
-                       (merge auth-headers
-                              {:body nil}))
+  (let [r1 (http/get (str (base-url) "api/v1/market/purchases")
+                     (merge auth-headers
+                            {:body nil}))
         result (json/read-str (:body r1))]
     (is (= 200 (:status r1)))))
 
 (deftest ^:integration test-no-asset
   (is (try+
-        (client/get (str (base-url) "api/v1/meta/data/"
-                         "000011112222333344445556666777788889999aaaabbbbccccddddeeeeffff") auth-headers)
+        (http/get (str (base-url) "api/v1/meta/data/"
+                       "000011112222333344445556666777788889999aaaabbbbccccddddeeeeffff") auth-headers)
         (catch [:status 404] {:keys [request-time headers body]}
           ;; OK, not found expected
           true)))
 
   (is (try+
-        (client/get (str (base-url) "api/v1/meta/data/"
-                         "0000") auth-headers)
+        (http/get (str (base-url) "api/v1/meta/data/"
+                       "0000") auth-headers)
         (catch [:status 404] {:keys [request-time headers body]}
           ;; OK, not found expected
           true))))
