@@ -16,6 +16,14 @@
   [_ {:keys [n]}]
   {:n (inc n)})
 
+(defn bad-increment
+  "Increment number by one"
+  {:operation
+   {:params {:n "json"}
+    :results {:n "json"}}}
+  [_ _]
+  {:n (inc nil)})
+
 (defn make-range
   "Make range 0-9"
   {:operation

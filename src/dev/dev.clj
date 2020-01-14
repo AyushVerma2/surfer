@@ -100,9 +100,14 @@
                      (dep/depend "C" "B")))
 
 
+  (invokable/invoke #'demo.invokable/bad-increment (app-context) {})
 
   (def increment
     (let [metadata (invokable/invokable-metadata #'demo.invokable/increment)]
+      (invokable/register-invokable aladdin metadata)))
+
+  (def bad-increment
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/bad-increment)]
       (invokable/register-invokable aladdin metadata)))
 
   (def make-range
