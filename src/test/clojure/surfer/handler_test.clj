@@ -32,7 +32,7 @@
 (deftest ^:integration test-welcome
   (is (= 200 (:status (http/get (base-url) auth-headers)))))
 
-(deftest invoke-test
+(deftest invoke-sync-test
   (testing "Invoke Sync API"
     (testing "Operation - Increment n"
       (let [invokable-metadata (invokable/invokable-metadata #'invokable-demo/increment)
