@@ -21,10 +21,18 @@
   (let [orchestration (orchestration/dep13->orchestration {:id "Root"
                                                            :children {:A {:did "<DID>"}
                                                                       :B {:did "<DID>"}}
-                                                           :edges [{:source "A"
+                                                           :edges [{:sourcePort "a"
+                                                                    :target "A"
+                                                                    :targetPort "x"}
+
+                                                                   {:source "A"
                                                                     :sourcePort "x"
                                                                     :target "B"
-                                                                    :targetPort "y"}]})]
+                                                                    :targetPort "y"}
+
+                                                                   {:source "B"
+                                                                    :sourcePort "y"
+                                                                    :targetPort "b"}]})]
     (testing "Conversion"
       (is (= #:orchestration{:id "Root"
 
@@ -34,15 +42,25 @@
                                         "B" #:orchestration-child {:id "B"
                                                                    :did "<DID>"}}
 
-                             :edges [#:orchestration-edge{:source "A"
+                             :edges [#:orchestration-edge{:source-port :a
+                                                          :target "A"
+                                                          :target-port :x}
+
+                                     #:orchestration-edge{:source "A"
                                                           :source-port :x
                                                           :target "B"
-                                                          :target-port :y}]}
+                                                          :target-port :y}
+
+                                     #:orchestration-edge{:source "B"
+                                                          :source-port :y
+                                                          :target-port :b}]}
 
              orchestration)))
 
     (testing "Spec"
-      (is (= true (s/valid? :orchestration/orchestration orchestration))))))
+      (is (= true (s/valid? :orchestration-edge/edge #:orchestration-edge{:source "B"
+                                                                          :source-port :y
+                                                                          :target-port :b}))))))
 
 (deftest dependency-graph-test
   (let [orchestration #:orchestration{:id "Root"
@@ -132,6 +150,15 @@
                                                                         :target-port :n}]}
 
                                                 {"Foo" {:orchestration-invocation/output {:n1 1
+                                                                                          :n2 2}}})))
+
+    (is (= {:n 1} (orchestration/output-mapping {:orchestration/id "Orchestration"
+                                                 :orchestration/edges
+                                                 [#:orchestration-edge {:source "Foo"
+                                                                        :source-port :n1
+                                                                        :target-port :n}]}
+
+                                                {"Foo" {:orchestration-invocation/output {:n1 1
                                                                                           :n2 2}}}))))
 
   (testing "Output is the same as Operation's output"
@@ -139,12 +166,10 @@
                                                         :orchestration/edges
                                                         [#:orchestration-edge {:source "Foo"
                                                                                :source-port :n1
-                                                                               :target "Orchestration"
                                                                                :target-port :n1}
 
                                                          #:orchestration-edge {:source "Foo"
                                                                                :source-port :n2
-                                                                               :target "Orchestration"
                                                                                :target-port :n2}]}
 
                                                        {"Foo" {:orchestration-invocation/output {:n1 1
@@ -155,12 +180,10 @@
                                                         :orchestration/edges
                                                         [#:orchestration-edge {:source "Foo"
                                                                                :source-port :n1
-                                                                               :target "Orchestration"
                                                                                :target-port :n1}
 
                                                          #:orchestration-edge {:source "Foo"
                                                                                :source-port :n1
-                                                                               :target "Orchestration"
                                                                                :target-port :n2}]}
 
                                                        {"Foo" {:orchestration-invocation/output {:n1 1

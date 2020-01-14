@@ -30,8 +30,23 @@
              :orchestration-edge/target
              :orchestration-edge/target-port]))
 
-(s/def :orchestration-edge/edge
+(s/def :orchestration-edge/source-root
+  (s/select :orchestration-edge/schema [:orchestration-edge/source-port
+                                        :orchestration-edge/target
+                                        :orchestration-edge/target-port]))
+
+(s/def :orchestration-edge/target-root
+  (s/select :orchestration-edge/schema [:orchestration-edge/source
+                                        :orchestration-edge/source-port
+                                        :orchestration-edge/target-port]))
+
+(s/def :orchestration-edge/node-to-node
   (s/select :orchestration-edge/schema [*]))
+
+(s/def :orchestration-edge/edge
+  (s/or :source-root :orchestration-edge/source-root
+        :target-root :orchestration-edge/target-root
+        :node-to-node :orchestration-edge/node-to-node))
 
 ;; -- ORCHESTRATION CHILD
 
@@ -126,10 +141,12 @@
                              (:children m))
    :orchestration/edges (map
                           (fn [{:keys [source sourcePort target targetPort]}]
-                            {:orchestration-edge/source source
-                             :orchestration-edge/source-port (keyword sourcePort)
-                             :orchestration-edge/target target
-                             :orchestration-edge/target-port (keyword targetPort)})
+                            (merge {:orchestration-edge/source-port (keyword sourcePort)
+                                    :orchestration-edge/target-port (keyword targetPort)}
+                                   (when source
+                                     {:orchestration-edge/source source})
+                                   (when target
+                                     {:orchestration-edge/target target})))
                           (:edges m))})
 
 (defn dependency-graph [orchestration]
@@ -155,30 +172,28 @@
       (= edge (select-keys e (keys edge))))
     (:orchestration/edges orchestration)))
 
-(defn root-source-edges [orchestration]
+(defn source-root-edges [orchestration]
   (filter
     (fn [{:orchestration-edge/keys [source]}]
-      (= (:orchestration/id orchestration) source))
+      (or (nil? source) (= (:orchestration/id orchestration) source)))
     (:orchestration/edges orchestration)))
 
-(defn root-target-edges [orchestration]
+(defn target-root-edges [orchestration]
   (filter
     (fn [{:orchestration-edge/keys [target]}]
-      (= (:orchestration/id orchestration) target))
+      (or (nil? target) (= (:orchestration/id orchestration) target)))
     (:orchestration/edges orchestration)))
 
 (defn invokable-params [orchestration parameters process nid]
-  (let [root-source-edges (filter
-                            (fn [{:orchestration-edge/keys [target]}]
-                              (= nid target))
-                            (root-source-edges orchestration))
+  (let [edges-input-redirect (-> (source-root-edges orchestration)
+                                 (edges= {:orchestration-edge/target nid}))
 
-        params (if (seq root-source-edges)
+        params (if (seq edges-input-redirect)
                  (reduce
                    (fn [params {:orchestration-edge/keys [source-port target-port]}]
                      (assoc params target-port (get parameters source-port)))
                    {}
-                   root-source-edges)
+                   edges-input-redirect)
                  (some->> (get-in (dependency-graph orchestration) [:dependencies nid])
                           (map
                             (fn [dependency-nid]
@@ -200,7 +215,7 @@
     (fn [output {:orchestration-edge/keys [source source-port target-port]}]
       (assoc output target-port (get-in process [source :orchestration-invocation/output source-port])))
     {}
-    (root-target-edges orchestration)))
+    (target-root-edges orchestration)))
 
 (defn execute [app-context orchestration & [params]]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))

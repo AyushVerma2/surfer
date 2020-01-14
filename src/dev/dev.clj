@@ -180,6 +180,19 @@
     (orchestration/execute (app-context) orchestration))
 
 
+  (s/valid? :orchestration-edge/source-root #:orchestration-edge{:source-port :a
+                                                                 :target "A"
+                                                                 :target-port :x})
+
+  (s/valid? :orchestration-edge/node-to-node #:orchestration-edge{:source "A"
+                                                                  :source-port :a
+                                                                  :target "B"
+                                                                  :target-port :b})
+
+  (s/conform :orchestration-edge/edge #:orchestration-edge{:source "Root"
+                                                           :source-port :a
+                                                           :target-port :x})
+
   (gen/sample (s/gen :orchestration/orchestration) 1)
 
   (gen/sample (s/gen :orchestration-invocation/completed) 1)
