@@ -167,21 +167,24 @@
 
         orchestration {:id "Root"
                        :children
-                       {"make-range1" make-range-id
-                        "make-range2" make-range-id
-                        "concatenate" concatenate-id}
+                       {"make-range1" {:did make-range-id}
+                        "make-range2" {:did make-range-id}
+                        "concatenate" {:did concatenate-id}}
                        :edges
                        [{:source "make-range1"
+                         :sourcePort :range
                          :target "concatenate"
-                         :ports [:range :coll1]}
+                         :targetPort :coll1}
 
                         {:source "make-range2"
+                         :sourcePort :range
                          :target "concatenate"
-                         :ports [:range :coll2]}
+                         :targetPort :coll2}
 
                         {:source "concatenate"
+                         :sourcePort :coll
                          :target "Root"
-                         :ports [:coll :coll]}]}
+                         :targetPort :coll}]}
         orchestration-str (json/write-str orchestration)
         orchestration-metadata {:name "Orchestration Demo 2"
                                 :type "operation"
