@@ -149,11 +149,27 @@
                                      {:orchestration-edge/target target})))
                           (:edges m))})
 
+(defn source-root-edge? [orchestration edge]
+  (or (nil? (:orchestration-edge/source edge))
+      (= (:orchestration/id orchestration)
+         (:orchestration-edge/source edge))))
+
+(defn target-root-edge? [orchestration edge]
+  (or (nil? (:orchestration-edge/target edge))
+      (= (:orchestration/id orchestration)
+         (:orchestration-edge/target edge))))
+
+(defn source-root-edges [orchestration]
+  (filter (partial source-root-edge? orchestration) (:orchestration/edges orchestration)))
+
+(defn target-root-edges [orchestration]
+  (filter (partial target-root-edge? orchestration) (:orchestration/edges orchestration)))
+
 (defn dependency-graph [orchestration]
   (let [edges (remove
-                (fn [{:orchestration-edge/keys [source target]}]
-                  (or (= source (:orchestration/id orchestration))
-                      (= target (:orchestration/id orchestration))))
+                (fn [edge]
+                  (or (source-root-edge? orchestration edge)
+                      (target-root-edge? orchestration edge)))
                 (:orchestration/edges orchestration))]
     (reduce
       (fn [graph {:orchestration-edge/keys [source target]}]
@@ -172,21 +188,11 @@
       (= edge (select-keys e (keys edge))))
     (:orchestration/edges orchestration)))
 
-(defn source-root-edges [orchestration]
-  (filter
-    (fn [{:orchestration-edge/keys [source]}]
-      (or (nil? source) (= (:orchestration/id orchestration) source)))
-    (:orchestration/edges orchestration)))
-
-(defn target-root-edges [orchestration]
-  (filter
-    (fn [{:orchestration-edge/keys [target]}]
-      (or (nil? target) (= (:orchestration/id orchestration) target)))
-    (:orchestration/edges orchestration)))
-
 (defn invokable-params [orchestration parameters process nid]
-  (let [edges-input-redirect (-> (source-root-edges orchestration)
-                                 (edges= {:orchestration-edge/target nid}))
+  (let [edges-input-redirect (filter
+                               (fn [edge]
+                                 (= (:orchestration-edge/target edge) nid))
+                               (source-root-edges orchestration))
 
         params (if (seq edges-input-redirect)
                  (reduce

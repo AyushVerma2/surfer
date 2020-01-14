@@ -109,6 +109,41 @@
     (is (= 2 (count (orchestration/edges= orchestration #:orchestration-edge{:target "concatenate"}))))))
 
 (deftest invokable-params-test
+  (testing "Redirect param"
+    (testing "With explicit source and root"
+      (let [orchestration {:orchestration/id "Root"
+                           :orchestration/edges
+                           [#:orchestration-edge {:source "Root"
+                                                  :source-port :n
+                                                  :target "Increment"
+                                                  :target-port :n}
+
+                            #:orchestration-edge {:source "Increment"
+                                                  :source-port :n
+                                                  :target "Root"
+                                                  :target-port :n}]}
+
+            process {"Root" {:orchestration-invocation/input {:n 1}}}
+
+            params (orchestration/invokable-params orchestration {:n 1} process "Increment")]
+        (is (= {:n 1} params))))
+
+    (testing "Without explicit source and root"
+      (let [orchestration {:orchestration/id "Root"
+                           :orchestration/edges
+                           [#:orchestration-edge {:source-port :n
+                                                  :target "Increment"
+                                                  :target-port :n}
+
+                            #:orchestration-edge {:source "Increment"
+                                                  :source-port :n
+                                                  :target-port :n}]}
+
+            process {"Root" {:orchestration-invocation/input {:n 1}}}
+
+            params (orchestration/invokable-params orchestration {:n 1} process "Increment")]
+        (is (= {:n 1} params)))))
+
   (testing "Single param"
     (let [orchestration {:orchestration/edges
                          [#:orchestration-edge {:source "make-range"
@@ -219,7 +254,6 @@
 
                               #:orchestration-edge {:source "filter-odds"
                                                     :source-port :odds
-                                                    :target "Root"
                                                     :target-port :odds}]}]
           (is (= {:orchestration-execution/topo '("make-range" "filter-odds")
                   :orchestration-execution/process
@@ -255,7 +289,6 @@
 
                               #:orchestration-edge {:source "concatenate"
                                                     :source-port :coll
-                                                    :target "Root"
                                                     :target-port :coll}]}]
           (is (= {:orchestration-execution/topo '("make-range1" "make-range2" "concatenate"),
                   :orchestration-execution/process

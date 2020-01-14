@@ -6,8 +6,7 @@
             [surfer.store :as store]
             [surfer.app-context :as app-context]
             [surfer.storage :as storage]
-            [surfer.env :as env])
-  (:import (java.time Instant)))
+            [surfer.env :as env]))
 
 (defn increment
   "Increment number by one"
@@ -113,14 +112,12 @@
                    :target (child-key (inc n))
                    :targetPort "n"})
                 (range (dec n)))
-        edges (into edges [{:source "Root"
-                            :sourcePort "n"
+        edges (into edges [{:sourcePort "n"
                             :target (child-key 0)
                             :targetPort "n"}
 
                            {:source (child-key (dec n))
                             :sourcePort "n"
-                            :target "Root"
                             :targetPort "n"}])
 
         orchestration {:id "Root"
