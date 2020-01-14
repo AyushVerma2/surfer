@@ -16,7 +16,7 @@
     [starfish.core :as sf]
     [surfer.utils :as utils]
     [surfer.env :as env]
-    [surfer.invoke :as invoke]
+    [surfer.invokable :as invokable]
     [surfer.app-context :as app-context]
     [surfer.database :as database]
     [surfer.asset :as asset]
@@ -36,7 +36,9 @@
     [hiccup.page :as hiccup.page]
     [byte-streams]
     [clojure.string :as str]
-    [surfer.migration :as migration])
+    [surfer.migration :as migration]
+    [surfer.orchestration :as orchestration]
+    [clojure.walk :as walk])
   (:import [java.io InputStream StringWriter PrintWriter]
            (clojure.lang ExceptionInfo)))
 
@@ -80,23 +82,23 @@
     (context "/api" []
       :tags ["Status API"]
       (routes {:swagger {:data {:info {:title "Status API"}}}}
-        (GET "/ddo" []
-          :summary "Gets the ddo for this Agent"
-          :return schema/DDO
-          {:status 200
-           :headers {"Content-Type" "application/json"}
-           :body (env/agent-ddo env)})
+              (GET "/ddo" []
+                :summary "Gets the ddo for this Agent"
+                :return schema/DDO
+                {:status 200
+                 :headers {"Content-Type" "application/json"}
+                 :body (env/self-ddo env)})
 
-        (GET "/status" []
-          :summary "Gets the status for this Agent"
-          :return s/Any
-          (let [agent (env/agent-config env)]
-            {:status 200
-             :headers {"Content-Type" "application/json"}
-             :body {:name (or (:name agent) "Unnamed Agent")
-                    :description (or (:description agent) "No description")
-                    :api-versions ["v1"]
-                    :custom {:server-type "Surfer"}}}))))))
+              (GET "/status" []
+                :summary "Gets the status for this Agent"
+                :return s/Any
+                (let [agent (env/agent-config env)]
+                  {:status 200
+                   :headers {"Content-Type" "application/json"}
+                   :body {:name (or (:name agent) "Unnamed Agent")
+                          :description (or (:description agent) "No description")
+                          :api-versions ["v1"]
+                          :custom {:server-type "Surfer"}}}))))))
 
 
 ;; ==========================================
@@ -176,6 +178,7 @@
 
 (defn invoke-api-v1 [app-context]
   (let [database (app-context/database app-context)
+        env (app-context/env app-context)
         db (database/db database)]
     (context "/api/v1/invoke" []
       :tags ["Invoke API v1"]
@@ -192,38 +195,48 @@
           :coercion nil
           :body [body schema/InvokeRequest]
           (let [op-id (get-in request [:params :op-id])
-                op-meta (store/get-metadata db op-id {:key-fn keyword})]
-
-            (log/debug (str "Invoke Sync - " op-id " - " op-meta))
-
+                metadata (store/get-metadata db op-id {:key-fn keyword})
+                ^InputStream body (:body request)
+                params (json/read-str (slurp (doto body (.reset))) :key-fn keyword)]
             (cond
-              (nil? op-meta)
-              (response/not-found (str "Operation (" op-id ") metadata not found."))
+              (nil? metadata)
+              (response/not-found {:error (str "Metadata not found. Did you forget to register Metadata for operation '" op-id "'?")})
 
-              (not= "operation" (:type op-meta))
-              (response/bad-request (str "Operation ( " op-id ") metadata type value is not 'operation': " op-meta))
+              (not= "operation" (:type metadata))
+              (response/bad-request {:error (str "Invalid Metadata. Operation " op-id " metadata type value should be 'operation'.")})
 
-              :else
+              (= "orchestration" (get-in metadata [:operation :class]))
               (try
-                (let [^InputStream body-stream (:body request)
-                      _ (.reset body-stream)
+                (let [orchestration (orchestration/dep13->orchestration
+                                      (with-open [input-stream (storage/asset-input-stream (env/storage-path env) op-id)]
+                                        (asset/read-json-input-stream input-stream)))
 
-                      operation (sf/in-memory-operation op-meta)
+                      result (orchestration/results (orchestration/execute app-context orchestration params))]
 
-                      params (-> (slurp body-stream)
-                                 (json/read-str :key-fn str))
-
-                      result (sf/invoke-result operation params)]
-
-                  (log/debug (str "Invoke Sync Result - " operation " - " params " -> " result))
+                  (log/debug (str "Invoke Sync - Orchestration " op-id " : " params " -> " result))
 
                   {:status 200
                    :body result})
                 (catch Exception e
-                  (log/error e "Failed to invoke operation." op-meta)
+                  (log/error e "Failed to invoke Orchestration." metadata)
 
                   {:status 500
-                   :body "Failed to invoke operation. Please try again."})))))
+                   :body "Failed to invoke Orchestration. Please try again."}))
+
+              :else
+              (try
+                (let [result (-> (invokable/resolve-invokable metadata)
+                                 (invokable/invoke app-context params))]
+
+                  (log/debug (str "Invoke Sync - Operation " op-id " : " params " -> " result))
+
+                  {:status 200
+                   :body result})
+                (catch Exception e
+                  (log/error e "Failed to invoke Operation." metadata)
+
+                  {:status 500
+                   :body "Failed to invoke Operation. Please try again."})))))
 
         (POST "/async/:op-id"
           {{:keys [op-id]} :params :as request}
@@ -239,7 +252,7 @@
               (log/debug (str "POST INVOKE on operation [" op-id "] body=" invoke-req))
               (cond
                 (not (= "operation" (:type md))) (response/bad-request (str "Not a valid operation: " op-id))
-                :else (if-let [jobid (invoke/launch-job db op-id invoke-req)]
+                :else (if-let [jobid (invokable/launch-job db op-id invoke-req)]
                         {:status 201
                          :body (str "{\"jobid\" : \"" jobid "\" , "
                                     "\"status\" : \"scheduled\""
@@ -250,8 +263,8 @@
         (GET "/jobs/:jobid"
              [jobid]
           (log/debug (str "GET JOB on job [" jobid "]"))
-          (if-let [job (invoke/get-job jobid)]
-            (response/response (invoke/job-response app-context jobid))
+          (if-let [job (invokable/get-job jobid)]
+            (response/response (invokable/job-response app-context jobid))
             (response/not-found (str "Job not found: " jobid))))))))
 
 (defn hash-check! [file metadata]
@@ -280,7 +293,7 @@
         (GET "/:id" [id]
           :summary "Gets data for a specified Asset ID"
           (if-let [meta (store/get-metadata db id)]         ;; NOTE meta is JSON (not EDN)!
-            (if-let [body (storage/load-stream (env/storage-path env) id)]
+            (if-let [body (storage/asset-input-stream (env/storage-path env) id)]
 
               (let [ctype (get meta "contentType" "application/octet-stream")
                     ext (utils/ext-for-content-type ctype)
@@ -614,60 +627,60 @@
     (context "/api/v1/admin" []
       :tags ["Admin API v1"]
       (routes {:swagger {:data {:info {:title "Admin API"}}}}
-        (GET "/auth" request
-          :summary "Gets the authentication map for the current user. Useful for debugging."
-          (response/response (friend/current-authentication request)))
+              (GET "/auth" request
+                :summary "Gets the authentication map for the current user. Useful for debugging."
+                (response/response (friend/current-authentication request)))
 
-        (POST "/ckan-import" request
-          :query-params [{userid :- schema/UserID nil},
-                         repo :- String,
-                         {count :- s/Int 10}]
-          :summary "Imports assets from a CKAN repository."
-          (friend/authorize #{:admin}
-                            (let [userid (or userid (get-current-userid app-context request) (throw (IllegalArgumentException. "No valid userid")))]
-                              (let [all-names (ckan/package-list repo)
-                                    names (if count (take count (shuffle all-names)) all-names)]
-                                (binding [ckan/*import-userid* userid]
-                                  (ckan/import-packages db repo names))))))
+              (POST "/ckan-import" request
+                :query-params [{userid :- schema/UserID nil},
+                               repo :- String,
+                               {count :- s/Int 10}]
+                :summary "Imports assets from a CKAN repository."
+                (friend/authorize #{:admin}
+                                  (let [userid (or userid (get-current-userid app-context request) (throw (IllegalArgumentException. "No valid userid")))]
+                                    (let [all-names (ckan/package-list repo)
+                                          names (if count (take count (shuffle all-names)) all-names)]
+                                      (binding [ckan/*import-userid* userid]
+                                        (ckan/import-packages db repo names))))))
 
-        (POST "/clear-db" []
-          :summary "Clear database."
-          (friend/authorize #{:admin}
-                            (store/clear-db db (env/dbtype env))
-                            (response/response {:message "Success"})))
+              (POST "/clear-db" []
+                :summary "Clear database."
+                (friend/authorize #{:admin}
+                                  (store/clear-db db (env/dbtype env))
+                                  (response/response {:message "Success"})))
 
-        (POST "/migrate-db" []
-          :summary "Run database migrations."
-          (friend/authorize #{:admin}
-                            (migration/migrate db (env/user-config env))
-                            (response/response {:message "Success"})))
+              (POST "/migrate-db" []
+                :summary "Run database migrations."
+                (friend/authorize #{:admin}
+                                  (migration/migrate db (env/user-config env))
+                                  (response/response {:message "Success"})))
 
-        (POST "/reset-db" []
-          :summary "Clear database & run migrations."
-          (friend/authorize #{:admin}
-                            (store/clear-db db (env/dbtype env))
-                            (migration/migrate db (env/user-config env))
-                            (response/response {:message "Success"})))
+              (POST "/reset-db" []
+                :summary "Clear database & run migrations."
+                (friend/authorize #{:admin}
+                                  (store/clear-db db (env/dbtype env))
+                                  (migration/migrate db (env/user-config env))
+                                  (response/response {:message "Success"})))
 
-        (POST "/import-sample-datasets" []
-          :summary "Import sample datasets - datasets.edn."
-          (friend/authorize #{:admin}
-                            (let [storage-path (-> (app-context/env app-context)
-                                                   (env/storage-path))]
-                              (response/response (asset/import-edn! db storage-path "datasets.edn")))))
+              (POST "/import-sample-datasets" []
+                :summary "Import sample datasets - datasets.edn."
+                (friend/authorize #{:admin}
+                                  (let [storage-path (-> (app-context/env app-context)
+                                                         (env/storage-path))]
+                                    (response/response (asset/import-edn! db storage-path "datasets.edn")))))
 
-        (GET "/print-config" []
-          :summary "Print config."
-          (friend/authorize #{:admin} (response/response (env/config env))))
+              (GET "/print-config" []
+                :summary "Print config."
+                (friend/authorize #{:admin} (response/response (env/config env))))
 
-        (POST "/config-agent-remote-url" []
-          :summary "Config - Set `[:agent :remote-url]`."
-          :coercion nil
-          :query-params [remote-url :- s/Str]
-          (friend/authorize #{:admin}
-                            (do
-                              (alter-var-root #'env/*agent-remote-url* (constantly remote-url))
-                              (response/response {:remote-url remote-url}))))))))
+              (POST "/config-agent-remote-url" []
+                :summary "Config - Set `[:agent :remote-url]`."
+                :coercion nil
+                :query-params [remote-url :- s/Str]
+                (friend/authorize #{:admin}
+                                  (do
+                                    (alter-var-root #'env/*agent-remote-url* (constantly remote-url))
+                                    (response/response {:remote-url remote-url}))))))))
 
 ;; ==========================================
 ;; Authentication API
@@ -992,8 +1005,7 @@
         (friend/authenticate config))))
 
 (defn make-handler [app-context]
-  (let [db (database/db (app-context/database app-context))
-        config (auth-config db)
+  (let [config (auth-config (app-context/db app-context))
 
         wrap-auth (wrap-auth config)
         wrap-cors (fn [handler]

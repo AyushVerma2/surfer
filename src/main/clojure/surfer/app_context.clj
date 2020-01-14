@@ -18,7 +18,8 @@
    things it needs.
 
    # No component should be aware of the system which contains it Each
-   component receives references only to the components on which it depends.")
+   component receives references only to the components on which it depends."
+  (:require [surfer.database :as database]))
 
 (defn new-context [env database starfish]
   #:app-context{:env env
@@ -28,15 +29,15 @@
 (defn database
   "Database Component
 
-   Abstraction over the concrete database implementation.
-
-   See `surfer.component.web-server` namespace."
+   Abstraction over the concrete database implementation."
   [app-context]
   (:app-context/database app-context))
 
-(defn env
-  "Env component
+(def db
+  "App-context to db spec."
+  (comp database/db database))
 
-   See `surfer.component.web-server` namespace."
+(defn env
+  "Env component"
   [app-context]
   (:app-context/env app-context))

@@ -26,5 +26,5 @@
       (is (thrown-with-msg? ExceptionInfo #"Can't get asset path. Invalid Asset ID." (storage/get-asset-path "~/.surfer/storage" "1234")))
       (is (= (str "~/.surfer/storage/" id ".ocb") (storage/get-asset-path "~/.surfer/storage" id))))
 
-    (is (storage/load-stream storage-path id))
-    (is (= (seq data) (seq (utils/bytes-from-stream (storage/load-stream storage-path id)))))))
+    (is (storage/asset-input-stream storage-path id))
+    (is (= (seq data) (seq (utils/bytes-from-stream (storage/asset-input-stream storage-path id)))))))

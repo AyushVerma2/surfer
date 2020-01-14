@@ -1,13 +1,14 @@
 (ns dev
-  (:require [surfer.demo.invokable :as demo.invokable]
+  (:require [surfer.demo.invokable-demo :as demo.invokable]
             [surfer.store :as store]
             [surfer.env :as env]
             [surfer.system :as system]
-            [surfer.invoke :as invoke]
+            [surfer.invokable :as invokable]
             [surfer.asset :as asset]
             [surfer.storage :as storage]
             [surfer.app-context :as app-context]
             [surfer.migration :as migration]
+            [surfer.orchestration :as orchestration]
             [starfish.core :as sf]
             [starfish.alpha :as sfa]
             [clojure.data.json :as data.json]
@@ -15,9 +16,13 @@
             [clojure.repl :refer :all]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
+            [clojure.alpha.spec :as s]
+            [clojure.alpha.spec.gen :as gen]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
-            [clj-http.client :as http])
-  (:import (sg.dex.starfish.impl.memory LocalResolverImpl)))
+            [clj-http.client :as http]
+            [com.stuartsierra.dependency :as dep]
+            [surfer.database :as database]
+            [clojure.string :as str]))
 
 (set-init (constantly (system/new-system :dev)))
 
@@ -27,12 +32,10 @@
   (system/env system))
 
 (defn app-context []
-  (app-context/new-context (system/env system)
-                           (system/database system)
-                           (system/starfish system)))
+  (system/app-context system))
 
 (defn db []
-  (:db-spec (system/database system)))
+  (database/db (system/database system)))
 
 (defn reset-db []
   (store/clear-db (db) (env/dbtype (env)))
@@ -51,35 +54,13 @@
     (asset/import-edn! (db) storage-path "datasets.edn"))
 
   (def did
-    (env/agent-did (system/env system)))
+    (env/self-did (system/env system)))
 
   (def ddo
-    (env/agent-ddo (system/env system)))
-
-  ;; -- Resolver API
-  (.getDDOString sfa/*resolver* did)
-  (.getDDO sfa/*resolver* did)
+    (env/self-ddo (system/env system)))
 
   (def aladdin
     (sfa/did->agent did))
-
-
-  ;; -- Dynamic *resolver*
-
-  (binding [sfa/*resolver* (LocalResolverImpl.)]
-    (.getDDOString sfa/*resolver* did))
-
-  (binding [sfa/*resolver* (LocalResolverImpl.)]
-    (sfa/did->agent did))
-
-  ;; ---
-
-
-  ;; -- Agent API
-  (.getDID aladdin)
-  (.getDDO aladdin)
-  (.getEndpoint aladdin "Ocean.Meta.v1")
-  (.getMetaEndpoint aladdin)
 
   (def n-asset
     ;; Data must be a JSON-encoded string
@@ -88,53 +69,180 @@
   (def n-asset-did
     (sf/did n-asset))
 
-  (sf/asset-id n-asset-did)
-
 
   ;; -- Invoke
 
-  (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-odd?)
-        operation (demo.invokable/invokable-operation (app-context) metadata)
-        params {"n" 1}]
-    (sf/invoke-result operation params))
+  (invokable/invoke #'demo.invokable/n-odd? (app-context) {:n {:did (str n-asset-did)}})
 
-  (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-odd?)
-        operation (demo.invokable/invokable-operation (app-context) metadata)
-        params {"n" 1}]
-    (sf/invoke-sync operation params))
-
-  (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-asset-odd?)
-        operation (demo.invokable/invokable-operation (app-context) metadata)
-        params {"n" {"did" (str n-asset-did)}}]
-    (sf/invoke-result operation params))
-
-  (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-asset-odd?2)
-        operation (demo.invokable/invokable-operation (app-context) metadata)
-        params {"n" {"did" (str n-asset-did)}}]
-    (sf/invoke-result operation params))
-
-  (def operation-odd?
-    (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-asset-odd?)
-          operation (demo.invokable/invokable-operation (app-context) metadata)]
-      (sf/register aladdin operation)))
+  (invokable/invoke #'demo.invokable/make-range-asset (app-context) {})
 
   ;; Param keys *must be* a string when calling the Java API directly.
   (def job
-    (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (demo.invokable/invokable-operation (app-context) metadata)]
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/invokable-odd?)
+          operation (invokable/invokable-operation (app-context) metadata)]
       (.invoke operation {"n" 1})))
 
   ;; Param keys can be a keyword because `starfish.core/invoke` uses `stringify-keys`.
   (def job
-    (let [metadata (demo.invokable/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (demo.invokable/invokable-operation (app-context) metadata)]
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/invokable-odd?)
+          operation (invokable/invokable-operation (app-context) metadata)]
       (sf/invoke operation {:n 1})))
+
 
   (sf/poll-result job)
 
   (sf/job-status job)
 
   (http/get "https://api.ipify.org")
+
+  (dep/topo-sort (-> (dep/graph)
+                     (dep/depend "B" "A")
+                     (dep/depend "C" "B")))
+
+
+
+  (def increment
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/increment)]
+      (invokable/register-invokable aladdin metadata)))
+
+  (def make-range
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/make-range)]
+      (invokable/register-invokable aladdin metadata)))
+
+  (def make-range-asset
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/make-range-asset)]
+      (invokable/register-invokable aladdin metadata)))
+
+  (def filter-odds
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/filter-odds)]
+      (invokable/register-invokable aladdin metadata)))
+
+  (def concatenate
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/concatenate)]
+      (invokable/register-invokable aladdin metadata)))
+
+
+  ;; -- Orchestration Demo
+  (def make-orchestration-demo1
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/make-orchestration-demo1)]
+      (invokable/register-invokable aladdin metadata)))
+
+  (def make-orchestration-demo2
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/make-orchestration-demo2)]
+      (invokable/register-invokable aladdin metadata)))
+
+  (demo.invokable/make-orchestration-demo1 (app-context) {:n 10})
+  (demo.invokable/make-orchestration-demo2 (app-context) {})
+
+
+  ;; A very basic Orchestration example
+  (let [orchestration {:id "Root"
+
+                       :children
+                       {"make-range" (sf/asset-id make-range)
+                        "filter-odds" (sf/asset-id filter-odds)}
+
+                       :edges
+                       [{:source "make-range"
+                         :target "filter-odds"
+                         :ports [:range :numbers]}
+
+                        {:source "filter-odds"
+                         :target "Root"
+                         :ports [:odds :n]}]}]
+    (orchestration/execute (app-context) orchestration {}))
+
+  ;; Nodes (Operations) with dependencies
+  ;;     :a
+  ;;    / |
+  ;;  :b  |
+  ;;    \ |
+  ;;     :c
+  (let [orchestration {:id "Root"
+
+                       :children
+                       {"make-range1" (sf/asset-id make-range)
+                        "make-range2" (sf/asset-id make-range)
+                        "concatenate" (sf/asset-id concatenate)}
+
+                       :edges
+                       [{:source "make-range1"
+                         :target "concatenate"
+                         :ports [:range :coll1]}
+
+                        {:source "make-range2"
+                         :target "concatenate"
+                         :ports [:range :coll2]}
+
+                        {:source "concatenate"
+                         :target "Root"
+                         :ports [:coll :coll]}]}]
+    (orchestration/execute (app-context) orchestration))
+
+
+  (gen/sample (s/gen :orchestration/orchestration) 1)
+
+  (gen/sample (s/gen :orchestration-invocation/completed) 1)
+  (gen/sample (s/gen :orchestration-invocation/running) 1)
+
+  (gen/sample (s/gen :orchestration-execution/process) 1)
+
+
+  ;; Re-using the same Operation n times to connect to a different port
+  (let [orchestration {:id "Root"
+
+                       :children
+                       {"make-range" (sf/asset-id make-range)
+                        "concatenate" (sf/asset-id concatenate)}
+
+                       :edges
+                       [{:source "make-range"
+                         :target "concatenate"
+                         :ports [:range :coll1]}
+
+                        {:source "make-range"
+                         :target "concatenate"
+                         :ports [:range :coll2]}
+
+                        {:source "concatenate"
+                         :target "Root"
+                         :ports [:coll :coll]}]}]
+    (orchestration/execute (app-context) orchestration))
+
+  ;; TODO
+  (let [orchestration {:id "Root"
+
+                       :children {"Inc-n1" (sf/asset-id increment)}
+
+                       :edges
+                       [{:source "Root"
+                         :target "Inc"
+                         :ports [:n :n]}
+
+                        {:source "Inc"
+                         :target "Root"
+                         :ports [:n :n]}]}]
+    (orchestration/execute (app-context) orchestration {:n 10}))
+
+  (let [orchestration {:id "Orchestration"
+
+                       :children
+                       {"Inc-n1" (sf/asset-id increment)
+                        "Inc-n2" (sf/asset-id increment)}
+
+                       :edges
+                       [{:source "Orchestration"
+                         :target "Inc-n1"
+                         :ports [:n :n]}
+
+                        {:source "Inc-n1"
+                         :target "Inc-n2"
+                         :ports [:n :n]}
+
+                        {:source "Inc-n2"
+                         :target "Orchestration"
+                         :ports [:n :n]}]}]
+    (orchestration/execute (app-context) orchestration {:n 10}))
 
   )
 

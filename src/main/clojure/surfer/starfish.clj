@@ -9,8 +9,8 @@
   component/Lifecycle
 
   (start [component]
-    (let [did (env/agent-did env)
-          ddo (env/agent-ddo env)]
+    (let [did (env/self-did env)
+          ddo (env/self-ddo env)]
       (sfa/register! did ddo))
 
     component)

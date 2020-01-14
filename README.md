@@ -54,18 +54,9 @@ Surfer provides a simple service that:
 
 ### Running Surfer in server mode
 
-Surfer can be executed from the source tree using Maven.
-
-1. Clone / download the surfer repository from GitHub (`git clone https://github.com/DEX-company/surfer` should work)
-2. In the surfer directory run `nohup mvn clean install exec:java &`
-3. Browse to `http://localhost/8080` for the Welcome page
-
-To update the server if already running:
-
-1. Pull the latest source in the surfer directory with `git pull`
-2. Find the currently running surfer process with `ps -ax`. It should be a process with a resonably high CPU usage and maven in the file path.
-3. Kill the currently running process e.g. `kill 18851`
-4. Run the latest version with `nohup mvn clean install exec:java &` as before
+1. Clone / download this repository
+2. In the `surfer` directory run `nohup clojure -M:main &`
+3. Browse to `http://localhost/3030` for the Welcome page
 
 For production usage, the use of a reverse proxy such as nginx for TLS is recommended.
 
@@ -83,7 +74,7 @@ server {
   server_name localhost;
 
   location / {
-    proxy_pass http://localhost:8080;
+    proxy_pass http://localhost:3030;
   }
 }
 
@@ -96,72 +87,15 @@ server {
   ssl_ciphers HIGH:!aNULL:!MD5;
 
   location / {
-    proxy_pass http://localhost:8080;
+    proxy_pass http://localhost:3030;
   }
 }
 ```
 
-
-### Running Surfer as a docker image
-
-1. Clone / download the surfer repository from GitHub.
-2. Build the docker container, it takes a while ( a lot of downloading for ~7 minutes ) so relax and have a nice cup of teh/kopi..
-
-```
-$ docker build -t surfer .
-```
-
-3. After the building the docker container you can then run it by doing the following command:
-
-```
-$ docker run -i -p 8080:8080 surfer
-```
-
-4. Browse to `http://localhost/8080` for the Welcome page.
-
-5. To stop the docker container, *control-c* does not seem to work, so you will need to call `docker stop` by doing the following:
-```
-$ docker ps
-
-CONTAINER ID        IMAGE               COMMAND                  CREATED              STATUS              PORTS                    NAMES
-449fe0ec6cda        surfer              "/bin/sh -c 'mvn ins…"   About a minute ago   Up About a minute   0.0.0.0:8080->8080/tcp   wonderful_ardinghelli
-
-$ docker stop 449fe0ec6cda
-```
-
 ### Interactive REPL use
 
-Surfer may be used interactively at a Clojure REPL. Open a REPL in the 'surfer.core' namespace.
+Surfer may be used interactively at a Clojure REPL. Run `clj -A:dev:test` to launch Surfer with the extra `dev` and `test` aliases. Once the REPL is ready, start the system `(go)` - `(go)` will switch to the `dev` namespace and start the system.
 
-```clojure
-(ns surfer.core)
-
-;; first, launch the server
-;; By default this runs on http://localhost:8080/
-(-main)
-
-;; Query a ckan repository (gets a list of all packages in the repo)
-(def all (package-list "https://data.gov.uk"))
-
-;; Randomly select 10 sample packages to import
-;; We could use them all, but it would be a lot of requests, so keeping small for test purposes
-(def packs (take 10 (shuffle all)))
-
-;; We get something like:
-;; ("financial-transactions-data-darlington-primary-care-trust" "payment-recalls"
-;; "local-air-quality-monitoring-stations1" "organogram-nhs-greater-east-midlands-csu"
-;; "water-body-status-classification-south-west-awb" "bathymetric-survey-2002-07-31-liverpool-stages"
-;; "bathymetric-survey-2003-12-10-heysham-entrance"
-;; "distribution-of-ash-trees-in-woody-linear-features-in-great-britain"
-;; "bathymetric-survey-2001-03-30-eyemouth-to-berwick-upon-tweed"
-;; "2004-2007-university-of-exeter-cornwall-and-the-isles-of-scilly-grey-seal-survey1")
-
-;; Import the metadata for the CKAN packages and convert to ocean format
-(import-packages "https://data.gov.uk" packs)
-
-;; Now go to http://localhost:8080/assets and explore your new Ocean assets!
-
-```
 
 ### Running the CLI tests
 

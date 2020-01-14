@@ -102,12 +102,13 @@
 (defn dbtype
   "Database type. e.g., postgresql, h2, h2:mem."
   [env]
+  ;; FIXME: Database config can be a string.
   (database-config env [:dbtype]))
 
 (defn agent-remote-url [env]
   (or *agent-remote-url* (agent-config env [:remote-url])))
 
-(defn agent-did
+(defn self-did
   "Surfer's DID."
   [env]
   (let [x (agent-config env [:did])]
@@ -118,7 +119,7 @@
       (string? x)
       (sf/did x))))
 
-(defn agent-ddo
+(defn self-ddo
   "Surfer's DDO."
   [env]
   (let [endpoint #(str (agent-remote-url env) %)]
