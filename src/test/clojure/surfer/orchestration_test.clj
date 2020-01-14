@@ -76,6 +76,20 @@
     (is (= false (orchestration/source-root-edge? {:orchestration/id "Root"} #:orchestration-edge {:source "A"})))
     (is (= false (orchestration/source-root-edge? {:orchestration/id "Root"} #:orchestration-edge {:source "A" :target "B"})))))
 
+(deftest target-root-edge?-test
+  (testing "Target root"
+    (is (= true (orchestration/target-root-edge? nil #:orchestration-edge {})))
+    (is (= true (orchestration/target-root-edge? {} #:orchestration-edge {})))
+    (is (= true (orchestration/target-root-edge? {:orchestration/id "Root"} #:orchestration-edge {})))
+    (is (= true (orchestration/target-root-edge? {:orchestration/id "Root"} #:orchestration-edge {:target nil})))
+    (is (= true (orchestration/target-root-edge? {:orchestration/id "Root"} #:orchestration-edge {:target "Root"}))))
+
+  (testing "Not target root"
+    (is (= false (orchestration/target-root-edge? nil #:orchestration-edge {:target "A"})))
+    (is (= false (orchestration/target-root-edge? {} #:orchestration-edge {:target "A"})))
+    (is (= false (orchestration/target-root-edge? {:orchestration/id "Root"} #:orchestration-edge {:target "A"})))
+    (is (= false (orchestration/target-root-edge? {:orchestration/id "Root"} #:orchestration-edge {:source "A" :target "B"})))))
+
 (deftest dependency-graph-test
   (let [orchestration #:orchestration{:id "Root"
                                       :edges
