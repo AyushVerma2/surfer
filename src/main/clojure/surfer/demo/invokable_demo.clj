@@ -1,7 +1,6 @@
 (ns surfer.demo.invokable-demo
   (:require [clojure.data.json :as json]
             [starfish.core :as sf]
-            [surfer.orchestration :as orchestration]
             [surfer.asset :as asset]
             [surfer.invokable :as invokable]
             [surfer.store :as store]
@@ -102,24 +101,27 @@
 
         children (reduce
                    (fn [children n]
-                     ;; n nodes (children), but same Operation
-                     (assoc children (child-key n) increment-id))
+                     ;; n nodes (children), same Operation
+                     (assoc children (child-key n) {:did increment-id}))
                    {}
                    (range n))
 
         edges (map
                 (fn [n]
                   {:source (child-key n)
+                   :sourcePort "n"
                    :target (child-key (inc n))
-                   :ports [:n :n]})
+                   :targetPort "n"})
                 (range (dec n)))
         edges (into edges [{:source "Root"
+                            :sourcePort "n"
                             :target (child-key 0)
-                            :ports [:n :n]}
+                            :targetPort "n"}
 
                            {:source (child-key (dec n))
+                            :sourcePort "n"
                             :target "Root"
-                            :ports [:n :n]}])
+                            :targetPort "n"}])
 
         orchestration {:id "Root"
                        :children children
@@ -165,21 +167,24 @@
 
         orchestration {:id "Root"
                        :children
-                       {"make-range1" make-range-id
-                        "make-range2" make-range-id
-                        "concatenate" concatenate-id}
+                       {"make-range1" {:did make-range-id}
+                        "make-range2" {:did make-range-id}
+                        "concatenate" {:did concatenate-id}}
                        :edges
                        [{:source "make-range1"
+                         :sourcePort :range
                          :target "concatenate"
-                         :ports [:range :coll1]}
+                         :targetPort :coll1}
 
                         {:source "make-range2"
+                         :sourcePort :range
                          :target "concatenate"
-                         :ports [:range :coll2]}
+                         :targetPort :coll2}
 
                         {:source "concatenate"
+                         :sourcePort :coll
                          :target "Root"
-                         :ports [:coll :coll]}]}
+                         :targetPort :coll}]}
         orchestration-str (json/write-str orchestration)
         orchestration-metadata {:name "Orchestration Demo 2"
                                 :type "operation"
