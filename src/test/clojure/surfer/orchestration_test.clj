@@ -416,8 +416,6 @@
             (is (= "java.lang.NullPointerException" (.getMessage bad-increment-error)))
             (is (= root-error (get-in execution [:orchestration-execution/process "BadIncrement"])))))))))
 
-;; Add to Backlog - Think about the `additionalInfo` metadata
-
 (deftest results-test
   (is (= {:status "succeeded"
           :results {:odds [1 3]}
