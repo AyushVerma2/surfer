@@ -82,8 +82,7 @@
             {:keys [status results children]} (json/read-str (:body invoke-orchestration-response) :key-fn keyword)]
         (is (= "succeeded" status))
         (is (= {:n 13} results))
-        (is (= {:Root {:status "succeeded" :results {:n 13}}
-                :increment-0 {:status "succeeded" :results {:n 11}}
+        (is (= {:increment-0 {:status "succeeded" :results {:n 11}}
                 :increment-1 {:status "succeeded" :results {:n 12}}
                 :increment-2 {:status "succeeded" :results {:n 13}}}
                children))))))
