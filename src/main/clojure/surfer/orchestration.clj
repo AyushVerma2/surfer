@@ -90,9 +90,11 @@
   (s/and string? #(not (str/blank? %))))
 
 (s/def :orchestration-invocation/status
-  #{:orchestration-invocation.status/running
-    :orchestration-invocation.status/success
-    :orchestration-invocation.status/failure})
+  #{:orchestration-invocation.status/scheduled
+    :orchestration-invocation.status/running
+    :orchestration-invocation.status/succeeded
+    :orchestration-invocation.status/failed
+    :orchestration-invocation.status/cancelled})
 
 (s/def :orchestration-invocation/input
   (s/map-of keyword? any?))
@@ -100,11 +102,21 @@
 (s/def :orchestration-invocation/output
   (s/map-of keyword? any?))
 
+(s/def :orchestration-invocation/error
+  (s/or :exception #(instance? Exception %)
+        :failed map?))
+
 (s/def :orchestration-invocation/schema
   (s/schema [:orchestration-invocation/node
              :orchestration-invocation/status
              :orchestration-invocation/input
-             :orchestration-invocation/output]))
+             :orchestration-invocation/output
+             :orchestration-invocation/error]))
+
+(s/def :orchestration-invocation/scheduled
+  (s/and (s/select :orchestration-invocation/schema [:orchestration-invocation/node
+                                                     :orchestration-invocation/status])
+         #(= :orchestration-invocation.status/scheduled (:orchestration-invocation/status %))))
 
 (s/def :orchestration-invocation/running
   (s/and (s/select :orchestration-invocation/schema [:orchestration-invocation/node
@@ -112,10 +124,29 @@
                                                      :orchestration-invocation/input])
          #(= :orchestration-invocation.status/running (:orchestration-invocation/status %))))
 
+(s/def :orchestration-invocation/cancelled
+  (s/and (s/select :orchestration-invocation/schema [:orchestration-invocation/node
+                                                     :orchestration-invocation/status])
+         #(= :orchestration-invocation.status/cancelled (:orchestration-invocation/status %))))
+
+(s/def :orchestration-invocation/succeeded
+  (s/and (s/select :orchestration-invocation/schema [:orchestration-invocation/node
+                                                     :orchestration-invocation/status
+                                                     :orchestration-invocation/input
+                                                     :orchestration-invocation/output])
+         #(= :orchestration-invocation.status/succeeded (:orchestration-invocation/status %))))
+
+(s/def :orchestration-invocation/failed
+  (s/and (s/select :orchestration-invocation/schema [:orchestration-invocation/node
+                                                     :orchestration-invocation/status
+                                                     :orchestration-invocation/input
+                                                     :orchestration-invocation/error])
+         #(= :orchestration-invocation.status/failed (:orchestration-invocation/status %))))
+
 (s/def :orchestration-invocation/completed
-  (s/and (s/select :orchestration-invocation/schema [*])
-         (s/or :success #(= :orchestration-invocation.status/success (:orchestration-invocation/status %))
-               :failure #(= :orchestration-invocation.status/failure (:orchestration-invocation/status %)))))
+  (s/or :cancelled :orchestration-invocation/cancelled
+        :succeeded :orchestration-invocation/succeeded
+        :failed :orchestration-invocation/failed))
 
 ;; ORCHESTRATION EXECUTION
 
@@ -223,8 +254,47 @@
     {}
     (target-root-edges orchestration)))
 
-(defn execute [app-context orchestration & [params]]
+(defn prepare [nodes]
+  (reduce
+    (fn [process nid]
+      (assoc process nid {:orchestration-invocation/node nid
+                          :orchestration-invocation/status :orchestration-invocation.status/scheduled}))
+    {"Root" {:orchestration-invocation/node "Root"
+             :orchestration-invocation/status :orchestration-invocation.status/scheduled}}
+    nodes))
+
+(defn update-to-running [process nid input]
+  (update process nid (fn [orchestration-invocation]
+                        (merge orchestration-invocation #:orchestration-invocation {:status :orchestration-invocation.status/running
+                                                                                    :input input}))))
+
+(defn update-to-succeeded [process nid output]
+  (update process nid (fn [orchestration-invocation]
+                        (merge orchestration-invocation #:orchestration-invocation {:status :orchestration-invocation.status/succeeded
+                                                                                    :output output}))))
+
+(defn update-to-failed [process nid error]
+  (update process nid (fn [orchestration-invocation]
+                        (merge orchestration-invocation #:orchestration-invocation {:status :orchestration-invocation.status/failed
+                                                                                    :error error}))))
+
+(defn cancel-scheduled [process]
+  (reduce-kv
+    (fn [process nid {:orchestration-invocation/keys [status] :as orchestration-invocation}]
+      (let [status (if (= :orchestration-invocation.status/scheduled status)
+                     :orchestration-invocation.status/cancelled
+                     status)]
+        (assoc process nid (assoc orchestration-invocation :orchestration-invocation/status status))))
+    {}
+    process))
+
+(defn execute-sync [app-context orchestration & [params]]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))
+
+        root-nid "Root"
+
+        root-process (-> (prepare nodes)
+                         (update-to-running root-nid params))
 
         process (reduce
                   (fn [process nid]
@@ -235,26 +305,46 @@
 
                           invokable (invoke/invokable-operation app-context metadata)
 
-                          invokable-params (invokable-params orchestration params process nid)]
-                      (assoc process nid {:orchestration-invocation/input invokable-params
-                                          :orchestration-invocation/output (sf/invoke-result invokable invokable-params)})))
-                  {"Root" {:orchestration-invocation/input params}}
+                          invokable-params (invokable-params orchestration params process nid)
+
+                          process (update-to-running process nid invokable-params)]
+                      (try
+                        (update-to-succeeded process nid (sf/invoke-result invokable invokable-params))
+                        (catch Exception e
+                          (let [process (update-to-failed process nid e)]
+                            ;; Root error is a copy of the failed node.
+                            (reduced (-> process
+                                         (update-to-failed root-nid (get process nid))
+                                         (cancel-scheduled))))))))
+                  root-process
                   nodes)
 
-        output (output-mapping orchestration process)
+        root-failed? (= :orchestration-invocation.status/failed
+                        (get-in process [root-nid :orchestration-invocation/status]))
 
-        ;; Update Orchestration's `output`
-        ;; See the process reducer above - `input` is already set for the Orchestration
-        process (assoc-in process ["Root" :orchestration-invocation/output] output)]
+        process (if root-failed?
+                  process
+                  (update-to-succeeded process root-nid (output-mapping orchestration process)))]
     {:orchestration-execution/topo nodes
      :orchestration-execution/process process}))
 
 (defn results [{:orchestration-execution/keys [process]}]
-  {:status "succeeded"
-   :results (get-in process ["Root" :orchestration-invocation/output])
-   :children (reduce
-               (fn [children [k v]]
-                 (assoc children k {:status "succeeded"
-                                    :results (:orchestration-invocation/output v)}))
-               {}
-               process)})
+  (let [root (get process "Root")]
+    (merge {:status (name (:orchestration-invocation/status root))
+            :children (reduce-kv
+                        (fn [children k v]
+                          (assoc children k (merge {:status (name (:orchestration-invocation/status v))}
+
+                                                   (when-let [output (:orchestration-invocation/output v)]
+                                                     {:results output})
+
+                                                   (when-let [error (:orchestration-invocation/error v)]
+                                                     {:error (.getMessage error)}))))
+                        {}
+                        (dissoc process "Root"))}
+
+           (when-let [output (:orchestration-invocation/output root)]
+             {:results output})
+
+           (when-let [error (:orchestration-invocation/error root)]
+             {:error (str "Failed to execute Operation '" (:orchestration-invocation/node error) "'.")}))))

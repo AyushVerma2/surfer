@@ -252,7 +252,7 @@
                                                        {"Foo" {:orchestration-invocation/output {:n1 1
                                                                                                  :n2 2}}})))))
 
-(deftest execute-test
+(deftest execute-sync-test
   (binding [sfa/*resolver* (LocalResolverImpl.)]
 
     (sfa/register! fixture/test-agent-did (env/self-ddo (system/env test-system)))
@@ -266,7 +266,13 @@
                            (invoke/register-invokable test-agent))
 
           concatenate (->> (invoke/invokable-metadata #'demo.invokable/concatenate)
-                           (invoke/register-invokable test-agent))]
+                           (invoke/register-invokable test-agent))
+
+          increment (->> (invoke/invokable-metadata #'demo.invokable/increment)
+                         (invoke/register-invokable test-agent))
+
+          bad-increment (->> (invoke/invokable-metadata #'demo.invokable/bad-increment)
+                             (invoke/register-invokable test-agent))]
       (testing "A very basic Orchestration example"
         (let [orchestration {:orchestration/id "Root"
 
@@ -285,16 +291,22 @@
                                                     :target-port :odds}]}]
           (is (= {:orchestration-execution/topo '("make-range" "filter-odds")
                   :orchestration-execution/process
-                  {"Root" {:orchestration-invocation/input nil
-                           :orchestration-invocation/output {:odds [1 3 5 7 9]}}
+                  {"Root" #:orchestration-invocation {:node "Root"
+                                                      :input nil
+                                                      :output {:odds [1 3 5 7 9]}
+                                                      :status :orchestration-invocation.status/succeeded}
 
-                   "make-range" {:orchestration-invocation/input {}
-                                 :orchestration-invocation/output {:range [0 1 2 3 4 5 6 7 8 9]}}
+                   "make-range" #:orchestration-invocation {:node "make-range"
+                                                            :input {}
+                                                            :output {:range [0 1 2 3 4 5 6 7 8 9]}
+                                                            :status :orchestration-invocation.status/succeeded}
 
-                   "filter-odds" {:orchestration-invocation/input {:numbers [0 1 2 3 4 5 6 7 8 9]}
-                                  :orchestration-invocation/output {:odds [1 3 5 7 9]}}}}
+                   "filter-odds" #:orchestration-invocation {:node "filter-odds"
+                                                             :input {:numbers [0 1 2 3 4 5 6 7 8 9]}
+                                                             :output {:odds [1 3 5 7 9]}
+                                                             :status :orchestration-invocation.status/succeeded}}}
 
-                 (orchestration/execute (system/app-context test-system) orchestration)))))
+                 (orchestration/execute-sync (system/app-context test-system) orchestration)))))
 
       (testing "Nodes (Operations) with dependencies"
         (let [orchestration {:orchestration/id "Root"
@@ -320,30 +332,95 @@
                                                     :target-port :coll}]}]
           (is (= {:orchestration-execution/topo '("make-range1" "make-range2" "concatenate"),
                   :orchestration-execution/process
-                  {"Root" {:orchestration-invocation/input {}
-                           :orchestration-invocation/output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}
+                  {"Root" #:orchestration-invocation {:node "Root"
+                                                      :input {}
+                                                      :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}
+                                                      :status :orchestration-invocation.status/succeeded}
 
-                   "make-range1" {:orchestration-invocation/input {}
-                                  :orchestration-invocation/output {:range [0 1 2 3 4 5 6 7 8 9]}}
+                   "make-range1" #:orchestration-invocation {:node "make-range1"
+                                                             :input {}
+                                                             :output {:range [0 1 2 3 4 5 6 7 8 9]}
+                                                             :status :orchestration-invocation.status/succeeded}
 
-                   "make-range2" {:orchestration-invocation/input {}
-                                  :orchestration-invocation/output {:range [0 1 2 3 4 5 6 7 8 9]}}
+                   "make-range2" #:orchestration-invocation {:node "make-range2"
+                                                             :input {}
+                                                             :output {:range [0 1 2 3 4 5 6 7 8 9]}
+                                                             :status :orchestration-invocation.status/succeeded}
 
-                   "concatenate" {:orchestration-invocation/input {:coll2 [0 1 2 3 4 5 6 7 8 9] :coll1 [0 1 2 3 4 5 6 7 8 9]}
-                                  :orchestration-invocation/output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}}}
-                 (orchestration/execute (system/app-context test-system) orchestration {}))))))))
+                   "concatenate" #:orchestration-invocation {:node "concatenate"
+                                                             :input {:coll2 [0 1 2 3 4 5 6 7 8 9] :coll1 [0 1 2 3 4 5 6 7 8 9]}
+                                                             :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}
+                                                             :status :orchestration-invocation.status/succeeded}}}
+                 (orchestration/execute-sync (system/app-context test-system) orchestration {})))))
 
-;; Add to Backlog - Think about the `additionalInfo` metadata
+      (testing "Intermediary Operation fails"
+        (let [orchestration #:orchestration {:id "Root"
+
+                                             :children
+                                             {"Increment1" {:orchestration-child/did (sf/asset-id increment)}
+                                              "BadIncrement" {:orchestration-child/did (sf/asset-id bad-increment)}
+                                              "Increment2" {:orchestration-child/did (sf/asset-id increment)}}
+
+                                             :edges
+                                             [#:orchestration-edge {:source "Root"
+                                                                    :source-port :n
+                                                                    :target "Increment1"
+                                                                    :target-port :n}
+
+                                              #:orchestration-edge {:source "Increment1"
+                                                                    :source-port :n
+                                                                    :target "BadIncrement"
+                                                                    :target-port :n}
+
+                                              #:orchestration-edge {:source "BadIncrement"
+                                                                    :source-port :n
+                                                                    :target "Increment2"
+                                                                    :target-port :n}
+
+                                              #:orchestration-edge {:source "Increment2"
+                                                                    :source-port :n
+                                                                    :target "Root"
+                                                                    :target-port :n}]}
+
+              execution (orchestration/execute-sync (system/app-context test-system) orchestration {:n 1})]
+          (is (= '("Increment1" "BadIncrement" "Increment2" (:orchestration-execution/topo execution))))
+          (is (= {"Root" #:orchestration-invocation {:node "Root"
+                                                     :input {:n 1}
+                                                     :status :orchestration-invocation.status/failed}
+
+                  "Increment1" #:orchestration-invocation {:node "Increment1"
+                                                           :input {:n 1}
+                                                           :output {:n 2}
+                                                           :status :orchestration-invocation.status/succeeded}
+
+                  "BadIncrement" #:orchestration-invocation {:node "BadIncrement"
+                                                             :input {:n 2}
+                                                             :status :orchestration-invocation.status/failed}
+
+                  "Increment2" #:orchestration-invocation {:node "Increment2"
+                                                           :status :orchestration-invocation.status/cancelled}}
+                 (reduce-kv
+                   (fn [process k v]
+                     (assoc process k (dissoc v :orchestration-invocation/error)))
+                   {}
+                   (:orchestration-execution/process execution))))
+          (let [root-error (get-in execution [:orchestration-execution/process "Root" :orchestration-invocation/error])
+                bad-increment-error (get-in execution [:orchestration-execution/process "BadIncrement" :orchestration-invocation/error])
+
+                [failed-spec-key] (s/conform :orchestration-invocation/error root-error)
+                [exception-spec-key] (s/conform :orchestration-invocation/error bad-increment-error)]
+
+            (is (= :failed failed-spec-key))
+            (is (= :exception exception-spec-key))
+
+            (is (= "java.lang.NullPointerException" (.getMessage bad-increment-error)))
+            (is (= root-error (get-in execution [:orchestration-execution/process "BadIncrement"])))))))))
 
 (deftest results-test
   (is (= {:status "succeeded"
           :results {:odds [1 3]}
           :children
-          {"Root"
-           {:status "succeeded"
-            :results {:odds [1 3]}}
-
-           "make-range"
+          {"make-range"
            {:status "succeeded"
             :results {:range [0 1 2 3]}}
 
@@ -352,8 +429,38 @@
             :results {:odds [1 3]}}}}
 
          (orchestration/results {:orchestration-execution/process
-                                 {"Root" {:orchestration-invocation/output {:odds [1 3]}}
+                                 {"Root" #:orchestration-invocation {:output {:odds [1 3]}
+                                                                     :status :orchestration-invocation.status/succeeded}
 
-                                  "make-range" {:orchestration-invocation/output {:range [0 1 2 3]}}
+                                  "make-range" #:orchestration-invocation {:output {:range [0 1 2 3]}
+                                                                           :status :orchestration-invocation.status/succeeded}
 
-                                  "filter-odds" {:orchestration-invocation/output {:odds [1 3]}}}}))))
+                                  "filter-odds" #:orchestration-invocation {:output {:odds [1 3]}
+                                                                            :status :orchestration-invocation.status/succeeded}}})))
+
+  (let [increment1-invocation #:orchestration-invocation {:node "Increment1"
+                                                          :status :orchestration-invocation.status/failed
+                                                          :input {:n nil}
+                                                          :error (NullPointerException. "Missing 'n'.")}
+
+        increment2-invocation #:orchestration-invocation {:node "Increment2"
+                                                          :status :orchestration-invocation.status/cancelled}
+
+        root-invocation #:orchestration-invocation {:node "Root"
+                                                    :status :orchestration-invocation.status/failed
+                                                    :input {:n 1}
+                                                    :error increment1-invocation}]
+    (is (= {:status "failed"
+            :error "Failed to execute Operation 'Increment1'."
+            :children
+            {"Increment1"
+             {:status "failed"
+              :error "Missing 'n'."}
+
+             "Increment2"
+             {:status "cancelled"}}}
+
+           (orchestration/results {:orchestration-execution/process
+                                   {"Root" root-invocation
+                                    "Increment1" increment1-invocation
+                                    "Increment2" increment2-invocation}})))))

@@ -100,9 +100,14 @@
                      (dep/depend "C" "B")))
 
 
+  (invokable/invoke #'demo.invokable/bad-increment (app-context) {})
 
   (def increment
     (let [metadata (invokable/invokable-metadata #'demo.invokable/increment)]
+      (invokable/register-invokable aladdin metadata)))
+
+  (def bad-increment
+    (let [metadata (invokable/invokable-metadata #'demo.invokable/bad-increment)]
       (invokable/register-invokable aladdin metadata)))
 
   (def make-range
@@ -133,51 +138,35 @@
 
   (demo.invokable/make-orchestration-demo1 (app-context) {:n 10})
   (demo.invokable/make-orchestration-demo2 (app-context) {})
+  
+  (let [orchestration #:orchestration {:id "Root"
 
+                                       :children
+                                       {"Increment1" {:orchestration-child/did (sf/asset-id increment)}
+                                        "BadIncrement" {:orchestration-child/did (sf/asset-id bad-increment)}
+                                        "Increment2" {:orchestration-child/did (sf/asset-id increment)}}
 
-  ;; A very basic Orchestration example
-  (let [orchestration {:id "Root"
+                                       :edges
+                                       [#:orchestration-edge {:source "Root"
+                                                              :source-port :n
+                                                              :target "Increment1"
+                                                              :target-port :n}
 
-                       :children
-                       {"make-range" (sf/asset-id make-range)
-                        "filter-odds" (sf/asset-id filter-odds)}
+                                        #:orchestration-edge {:source "Increment1"
+                                                              :source-port :n
+                                                              :target "BadIncrement"
+                                                              :target-port :n}
 
-                       :edges
-                       [{:source "make-range"
-                         :target "filter-odds"
-                         :ports [:range :numbers]}
+                                        #:orchestration-edge {:source "BadIncrement"
+                                                              :source-port :n
+                                                              :target "Increment2"
+                                                              :target-port :n}
 
-                        {:source "filter-odds"
-                         :target "Root"
-                         :ports [:odds :n]}]}]
-    (orchestration/execute (app-context) orchestration {}))
-
-  ;; Nodes (Operations) with dependencies
-  ;;     :a
-  ;;    / |
-  ;;  :b  |
-  ;;    \ |
-  ;;     :c
-  (let [orchestration {:id "Root"
-
-                       :children
-                       {"make-range1" (sf/asset-id make-range)
-                        "make-range2" (sf/asset-id make-range)
-                        "concatenate" (sf/asset-id concatenate)}
-
-                       :edges
-                       [{:source "make-range1"
-                         :target "concatenate"
-                         :ports [:range :coll1]}
-
-                        {:source "make-range2"
-                         :target "concatenate"
-                         :ports [:range :coll2]}
-
-                        {:source "concatenate"
-                         :target "Root"
-                         :ports [:coll :coll]}]}]
-    (orchestration/execute (app-context) orchestration))
+                                        #:orchestration-edge {:source "Increment2"
+                                                              :source-port :n
+                                                              :target "Root"
+                                                              :target-port :n}]}]
+    (orchestration/execute-sync (app-context) orchestration {:n 1}))
 
 
   (s/valid? :orchestration-edge/source-root #:orchestration-edge{:source-port :a
@@ -220,7 +209,7 @@
                         {:source "concatenate"
                          :target "Root"
                          :ports [:coll :coll]}]}]
-    (orchestration/execute (app-context) orchestration))
+    (orchestration/execute-sync (app-context) orchestration))
 
   ;; TODO
   (let [orchestration {:id "Root"
@@ -235,7 +224,7 @@
                         {:source "Inc"
                          :target "Root"
                          :ports [:n :n]}]}]
-    (orchestration/execute (app-context) orchestration {:n 10}))
+    (orchestration/execute-sync (app-context) orchestration {:n 10}))
 
   (let [orchestration {:id "Orchestration"
 
@@ -255,7 +244,7 @@
                         {:source "Inc-n2"
                          :target "Orchestration"
                          :ports [:n :n]}]}]
-    (orchestration/execute (app-context) orchestration {:n 10}))
+    (orchestration/execute-sync (app-context) orchestration {:n 10}))
 
   )
 
