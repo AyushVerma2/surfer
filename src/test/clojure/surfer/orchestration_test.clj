@@ -353,7 +353,7 @@
                                                              :status :orchestration-invocation.status/succeeded}}}
                  (orchestration/execute-sync (system/app-context test-system) orchestration {})))))
 
-      (testing "Failure"
+      (testing "Intermediary Operation fails"
         (let [orchestration #:orchestration {:id "Root"
 
                                              :children
