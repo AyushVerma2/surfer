@@ -90,9 +90,11 @@
   (s/and string? #(not (str/blank? %))))
 
 (s/def :orchestration-invocation/status
-  #{:orchestration-invocation.status/running
-    :orchestration-invocation.status/success
-    :orchestration-invocation.status/failure})
+  #{:orchestration-invocation.status/scheduled
+    :orchestration-invocation.status/running
+    :orchestration-invocation.status/succeeded
+    :orchestration-invocation.status/failed
+    :orchestration-invocation.status/cancelled})
 
 (s/def :orchestration-invocation/input
   (s/map-of keyword? any?))
@@ -106,6 +108,11 @@
              :orchestration-invocation/input
              :orchestration-invocation/output]))
 
+(s/def :orchestration-invocation/scheduled
+  (s/and (s/select :orchestration-invocation/schema [:orchestration-invocation/node
+                                                     :orchestration-invocation/status])
+         #(= :orchestration-invocation.status/scheduled (:orchestration-invocation/status %))))
+
 (s/def :orchestration-invocation/running
   (s/and (s/select :orchestration-invocation/schema [:orchestration-invocation/node
                                                      :orchestration-invocation/status
@@ -114,8 +121,9 @@
 
 (s/def :orchestration-invocation/completed
   (s/and (s/select :orchestration-invocation/schema [*])
-         (s/or :success #(= :orchestration-invocation.status/success (:orchestration-invocation/status %))
-               :failure #(= :orchestration-invocation.status/failure (:orchestration-invocation/status %)))))
+         (s/or :cancelled #(= :orchestration-invocation.status/cancelled (:orchestration-invocation/status %))
+               :succeeded #(= :orchestration-invocation.status/succeeded (:orchestration-invocation/status %))
+               :failed #(= :orchestration-invocation.status/failed (:orchestration-invocation/status %)))))
 
 ;; ORCHESTRATION EXECUTION
 
