@@ -104,7 +104,7 @@
 
 (s/def :orchestration-invocation/error
   (s/or :exception #(instance? Exception %)
-        :failed :orchestration-invocation/failed))
+        :failed map?))
 
 (s/def :orchestration-invocation/schema
   (s/schema [:orchestration-invocation/node
@@ -329,11 +329,22 @@
      :orchestration-execution/process process}))
 
 (defn results [{:orchestration-execution/keys [process]}]
-  {:status (name (get-in process ["Root" :orchestration-invocation/status]))
-   :results (get-in process ["Root" :orchestration-invocation/output])
-   :children (reduce-kv
-               (fn [children k v]
-                 (assoc children k {:status (name (:orchestration-invocation/status v))
-                                    :results (:orchestration-invocation/output v)}))
-               {}
-               (dissoc process "Root"))})
+  (let [root (get process "Root")]
+    (merge {:status (name (:orchestration-invocation/status root))
+            :children (reduce-kv
+                        (fn [children k v]
+                          (assoc children k (merge {:status (name (:orchestration-invocation/status v))}
+
+                                                   (when-let [output (:orchestration-invocation/output v)]
+                                                     {:results output})
+
+                                                   (when-let [error (:orchestration-invocation/error v)]
+                                                     {:error (.getMessage error)}))))
+                        {}
+                        (dissoc process "Root"))}
+
+           (when-let [output (:orchestration-invocation/output root)]
+             {:results output})
+
+           (when-let [error (:orchestration-invocation/error root)]
+             {:error (str "Failed to execute Operation '" (:orchestration-invocation/node error) "'.")}))))

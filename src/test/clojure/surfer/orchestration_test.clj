@@ -438,4 +438,31 @@
                                                                            :status :orchestration-invocation.status/succeeded}
 
                                   "filter-odds" #:orchestration-invocation {:output {:odds [1 3]}
-                                                                            :status :orchestration-invocation.status/succeeded}}}))))
+                                                                            :status :orchestration-invocation.status/succeeded}}})))
+
+  (let [increment1-invocation #:orchestration-invocation {:node "Increment1"
+                                                          :status :orchestration-invocation.status/failed
+                                                          :input {:n nil}
+                                                          :error (NullPointerException. "Missing 'n'.")}
+
+        increment2-invocation #:orchestration-invocation {:node "Increment2"
+                                                          :status :orchestration-invocation.status/cancelled}
+
+        root-invocation #:orchestration-invocation {:node "Root"
+                                                    :status :orchestration-invocation.status/failed
+                                                    :input {:n 1}
+                                                    :error increment1-invocation}]
+    (is (= {:status "failed"
+            :error "Failed to execute Operation 'Increment1'."
+            :children
+            {"Increment1"
+             {:status "failed"
+              :error "Missing 'n'."}
+
+             "Increment2"
+             {:status "cancelled"}}}
+
+           (orchestration/results {:orchestration-execution/process
+                                   {"Root" root-invocation
+                                    "Increment1" increment1-invocation
+                                    "Increment2" increment2-invocation}})))))
