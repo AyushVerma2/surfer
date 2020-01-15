@@ -155,7 +155,7 @@
                         {:source "filter-odds"
                          :target "Root"
                          :ports [:odds :n]}]}]
-    (orchestration/execute (app-context) orchestration {}))
+    (orchestration/execute-sync (app-context) orchestration {}))
 
   ;; Nodes (Operations) with dependencies
   ;;     :a
@@ -182,7 +182,7 @@
                         {:source "concatenate"
                          :target "Root"
                          :ports [:coll :coll]}]}]
-    (orchestration/execute (app-context) orchestration))
+    (orchestration/execute-sync (app-context) orchestration))
 
 
   (s/valid? :orchestration-edge/source-root #:orchestration-edge{:source-port :a
@@ -225,7 +225,7 @@
                         {:source "concatenate"
                          :target "Root"
                          :ports [:coll :coll]}]}]
-    (orchestration/execute (app-context) orchestration))
+    (orchestration/execute-sync (app-context) orchestration))
 
   ;; TODO
   (let [orchestration {:id "Root"
@@ -240,7 +240,7 @@
                         {:source "Inc"
                          :target "Root"
                          :ports [:n :n]}]}]
-    (orchestration/execute (app-context) orchestration {:n 10}))
+    (orchestration/execute-sync (app-context) orchestration {:n 10}))
 
   (let [orchestration {:id "Orchestration"
 
@@ -260,7 +260,7 @@
                         {:source "Inc-n2"
                          :target "Orchestration"
                          :ports [:n :n]}]}]
-    (orchestration/execute (app-context) orchestration {:n 10}))
+    (orchestration/execute-sync (app-context) orchestration {:n 10}))
 
   )
 

@@ -252,7 +252,7 @@
                                                        {"Foo" {:orchestration-invocation/output {:n1 1
                                                                                                  :n2 2}}})))))
 
-(deftest execute-test
+(deftest execute-sync-test
   (binding [sfa/*resolver* (LocalResolverImpl.)]
 
     (sfa/register! fixture/test-agent-did (env/self-ddo (system/env test-system)))
@@ -285,16 +285,22 @@
                                                     :target-port :odds}]}]
           (is (= {:orchestration-execution/topo '("make-range" "filter-odds")
                   :orchestration-execution/process
-                  {"Root" {:orchestration-invocation/input nil
-                           :orchestration-invocation/output {:odds [1 3 5 7 9]}}
+                  {"Root" #:orchestration-invocation {:node "Root"
+                                                      :input nil
+                                                      :output {:odds [1 3 5 7 9]}
+                                                      :status :orchestration-invocation.status/succeeded}
 
-                   "make-range" {:orchestration-invocation/input {}
-                                 :orchestration-invocation/output {:range [0 1 2 3 4 5 6 7 8 9]}}
+                   "make-range" #:orchestration-invocation {:node "make-range"
+                                                            :input {}
+                                                            :output {:range [0 1 2 3 4 5 6 7 8 9]}
+                                                            :status :orchestration-invocation.status/succeeded}
 
-                   "filter-odds" {:orchestration-invocation/input {:numbers [0 1 2 3 4 5 6 7 8 9]}
-                                  :orchestration-invocation/output {:odds [1 3 5 7 9]}}}}
+                   "filter-odds" #:orchestration-invocation {:node "filter-odds"
+                                                             :input {:numbers [0 1 2 3 4 5 6 7 8 9]}
+                                                             :output {:odds [1 3 5 7 9]}
+                                                             :status :orchestration-invocation.status/succeeded}}}
 
-                 (orchestration/execute (system/app-context test-system) orchestration)))))
+                 (orchestration/execute-sync (system/app-context test-system) orchestration)))))
 
       (testing "Nodes (Operations) with dependencies"
         (let [orchestration {:orchestration/id "Root"
@@ -320,18 +326,26 @@
                                                     :target-port :coll}]}]
           (is (= {:orchestration-execution/topo '("make-range1" "make-range2" "concatenate"),
                   :orchestration-execution/process
-                  {"Root" {:orchestration-invocation/input {}
-                           :orchestration-invocation/output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}
+                  {"Root" #:orchestration-invocation {:node "Root"
+                                                      :input {}
+                                                      :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}
+                                                      :status :orchestration-invocation.status/succeeded}
 
-                   "make-range1" {:orchestration-invocation/input {}
-                                  :orchestration-invocation/output {:range [0 1 2 3 4 5 6 7 8 9]}}
+                   "make-range1" #:orchestration-invocation {:node "make-range1"
+                                                             :input {}
+                                                             :output {:range [0 1 2 3 4 5 6 7 8 9]}
+                                                             :status :orchestration-invocation.status/succeeded}
 
-                   "make-range2" {:orchestration-invocation/input {}
-                                  :orchestration-invocation/output {:range [0 1 2 3 4 5 6 7 8 9]}}
+                   "make-range2" #:orchestration-invocation {:node "make-range2"
+                                                             :input {}
+                                                             :output {:range [0 1 2 3 4 5 6 7 8 9]}
+                                                             :status :orchestration-invocation.status/succeeded}
 
-                   "concatenate" {:orchestration-invocation/input {:coll2 [0 1 2 3 4 5 6 7 8 9] :coll1 [0 1 2 3 4 5 6 7 8 9]}
-                                  :orchestration-invocation/output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}}}}
-                 (orchestration/execute (system/app-context test-system) orchestration {}))))))))
+                   "concatenate" #:orchestration-invocation {:node "concatenate"
+                                                             :input {:coll2 [0 1 2 3 4 5 6 7 8 9] :coll1 [0 1 2 3 4 5 6 7 8 9]}
+                                                             :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}
+                                                             :status :orchestration-invocation.status/succeeded}}}
+                 (orchestration/execute-sync (system/app-context test-system) orchestration {}))))))))
 
 ;; Add to Backlog - Think about the `additionalInfo` metadata
 

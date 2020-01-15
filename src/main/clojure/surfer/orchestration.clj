@@ -231,8 +231,51 @@
     {}
     (target-root-edges orchestration)))
 
-(defn execute [app-context orchestration & [params]]
+(defn prepare [nodes]
+  (reduce
+    (fn [process nid]
+      (assoc process nid {:orchestration-invocation/node nid
+                          :orchestration-invocation/status :orchestration-invocation.status/scheduled}))
+    {"Root" {:orchestration-invocation/node "Root"
+             :orchestration-invocation/status :orchestration-invocation.status/scheduled}}
+    nodes))
+
+(defn update-to-running [process nid input]
+  (update process nid (fn [orchestration-invocation]
+                        (merge orchestration-invocation #:orchestration-invocation {:status :orchestration-invocation.status/running
+                                                                                    :input input}))))
+
+(defn update-to-succeeded [process nid output]
+  (update process nid (fn [orchestration-invocation]
+                        (merge orchestration-invocation #:orchestration-invocation {:status :orchestration-invocation.status/succeeded
+                                                                                    :output output}))))
+
+(defn update-to-failed [process nid error]
+  (update process nid (fn [orchestration-invocation]
+                        (merge orchestration-invocation #:orchestration-invocation {:status :orchestration-invocation.status/failed
+                                                                                    :error error}))))
+
+(defn update-to-cancelled [process nid]
+  (update process nid (fn [orchestration-invocation]
+                        (merge orchestration-invocation #:orchestration-invocation {:status :orchestration-invocation.status/cancelled}))))
+
+(defn cancel-scheduled [process]
+  (reduce-kv
+    (fn [process nid {:orchestration-invocation/keys [status] :as orchestration-invocation}]
+      (let [status (if (= :orchestration-invocation.status/scheduled)
+                     :orchestration-invocation.status/cancelled
+                     status)]
+        (assoc process nid (assoc orchestration-invocation :orchestration-invocation/status status))))
+    {}
+    process))
+
+(defn execute-sync [app-context orchestration & [params]]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))
+
+        root-nid "Root"
+
+        root-process (-> (prepare nodes)
+                         (update-to-running root-nid params))
 
         process (reduce
                   (fn [process nid]
@@ -244,16 +287,24 @@
                           invokable (invoke/invokable-operation app-context metadata)
 
                           invokable-params (invokable-params orchestration params process nid)]
-                      (assoc process nid {:orchestration-invocation/input invokable-params
-                                          :orchestration-invocation/output (sf/invoke-result invokable invokable-params)})))
-                  {"Root" {:orchestration-invocation/input params}}
+                      (try
+                        (-> process
+                            (update-to-running nid invokable-params)
+                            (update-to-succeeded nid (sf/invoke-result invokable invokable-params)))
+                        (catch Exception e
+                          (reduced (-> process
+                                       (update-to-failed nid e)
+                                       (update-to-failed root-nid e)
+                                       (cancel-scheduled)))))))
+                  root-process
                   nodes)
 
-        output (output-mapping orchestration process)
+        root-failed? (= :orchestration-invocation.status/failed
+                        (get-in process [root-nid :orchestration-invocation/status]))
 
-        ;; Update Orchestration's `output`
-        ;; See the process reducer above - `input` is already set for the Orchestration
-        process (assoc-in process ["Root" :orchestration-invocation/output] output)]
+        process (if root-failed?
+                  process
+                  (update-to-succeeded process root-nid (output-mapping orchestration process)))]
     {:orchestration-execution/topo nodes
      :orchestration-execution/process process}))
 

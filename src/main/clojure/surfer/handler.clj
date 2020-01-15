@@ -211,7 +211,7 @@
                                       (with-open [input-stream (storage/asset-input-stream (env/storage-path env) op-id)]
                                         (asset/read-json-input-stream input-stream)))
 
-                      result (orchestration/results (orchestration/execute app-context orchestration params))]
+                      result (orchestration/results (orchestration/execute-sync app-context orchestration params))]
 
                   (log/debug (str "Invoke Sync - Orchestration " op-id " : " params " -> " result))
 
