@@ -138,52 +138,7 @@
 
   (demo.invokable/make-orchestration-demo1 (app-context) {:n 10})
   (demo.invokable/make-orchestration-demo2 (app-context) {})
-
-
-  ;; A very basic Orchestration example
-  (let [orchestration {:id "Root"
-
-                       :children
-                       {"make-range" (sf/asset-id make-range)
-                        "filter-odds" (sf/asset-id filter-odds)}
-
-                       :edges
-                       [{:source "make-range"
-                         :target "filter-odds"
-                         :ports [:range :numbers]}
-
-                        {:source "filter-odds"
-                         :target "Root"
-                         :ports [:odds :n]}]}]
-    (orchestration/execute-sync (app-context) orchestration {}))
-
-  ;; Nodes (Operations) with dependencies
-  ;;     :a
-  ;;    / |
-  ;;  :b  |
-  ;;    \ |
-  ;;     :c
-  (let [orchestration {:id "Root"
-
-                       :children
-                       {"make-range1" (sf/asset-id make-range)
-                        "make-range2" (sf/asset-id make-range)
-                        "concatenate" (sf/asset-id concatenate)}
-
-                       :edges
-                       [{:source "make-range1"
-                         :target "concatenate"
-                         :ports [:range :coll1]}
-
-                        {:source "make-range2"
-                         :target "concatenate"
-                         :ports [:range :coll2]}
-
-                        {:source "concatenate"
-                         :target "Root"
-                         :ports [:coll :coll]}]}]
-    (orchestration/execute-sync (app-context) orchestration))
-
+  
   (let [orchestration #:orchestration {:id "Root"
 
                                        :children
