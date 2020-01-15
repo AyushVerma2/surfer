@@ -366,8 +366,11 @@
             :results {:odds [1 3]}}}}
 
          (orchestration/results {:orchestration-execution/process
-                                 {"Root" {:orchestration-invocation/output {:odds [1 3]}}
+                                 {"Root" #:orchestration-invocation {:output {:odds [1 3]}
+                                                                     :status :orchestration-invocation.status/succeeded}
 
-                                  "make-range" {:orchestration-invocation/output {:range [0 1 2 3]}}
+                                  "make-range" #:orchestration-invocation {:output {:range [0 1 2 3]}
+                                                                           :status :orchestration-invocation.status/succeeded}
 
-                                  "filter-odds" {:orchestration-invocation/output {:odds [1 3]}}}}))))
+                                  "filter-odds" #:orchestration-invocation {:output {:odds [1 3]}
+                                                                            :status :orchestration-invocation.status/succeeded}}}))))

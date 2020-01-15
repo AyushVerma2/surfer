@@ -313,7 +313,7 @@
    :results (get-in process ["Root" :orchestration-invocation/output])
    :children (reduce
                (fn [children [k v]]
-                 (assoc children k {:status "succeeded"
+                 (assoc children k {:status (name (:orchestration-invocation/status v))
                                     :results (:orchestration-invocation/output v)}))
                {}
                process)})
