@@ -102,11 +102,16 @@
 (s/def :orchestration-invocation/output
   (s/map-of keyword? any?))
 
+(s/def :orchestration-invocation/error
+  (fn [x]
+    (instance? Exception x)))
+
 (s/def :orchestration-invocation/schema
   (s/schema [:orchestration-invocation/node
              :orchestration-invocation/status
              :orchestration-invocation/input
-             :orchestration-invocation/output]))
+             :orchestration-invocation/output
+             :orchestration-invocation/error]))
 
 (s/def :orchestration-invocation/scheduled
   (s/and (s/select :orchestration-invocation/schema [:orchestration-invocation/node
@@ -119,11 +124,29 @@
                                                      :orchestration-invocation/input])
          #(= :orchestration-invocation.status/running (:orchestration-invocation/status %))))
 
+(s/def :orchestration-invocation/cancelled
+  (s/and (s/select :orchestration-invocation/schema [:orchestration-invocation/node
+                                                     :orchestration-invocation/status])
+         #(= :orchestration-invocation.status/cancelled (:orchestration-invocation/status %))))
+
+(s/def :orchestration-invocation/succeeded
+  (s/and (s/select :orchestration-invocation/schema [:orchestration-invocation/node
+                                                     :orchestration-invocation/status
+                                                     :orchestration-invocation/input
+                                                     :orchestration-invocation/output])
+         #(= :orchestration-invocation.status/succeeded (:orchestration-invocation/status %))))
+
+(s/def :orchestration-invocation/failed
+  (s/and (s/select :orchestration-invocation/schema [:orchestration-invocation/node
+                                                     :orchestration-invocation/status
+                                                     :orchestration-invocation/input
+                                                     :orchestration-invocation/error])
+         #(= :orchestration-invocation.status/failed (:orchestration-invocation/status %))))
+
 (s/def :orchestration-invocation/completed
-  (s/and (s/select :orchestration-invocation/schema [*])
-         (s/or :cancelled #(= :orchestration-invocation.status/cancelled (:orchestration-invocation/status %))
-               :succeeded #(= :orchestration-invocation.status/succeeded (:orchestration-invocation/status %))
-               :failed #(= :orchestration-invocation.status/failed (:orchestration-invocation/status %)))))
+  (s/or :cancelled :orchestration-invocation/cancelled
+        :succeeded :orchestration-invocation/succeeded
+        :failed :orchestration-invocation/failed))
 
 ;; ORCHESTRATION EXECUTION
 
