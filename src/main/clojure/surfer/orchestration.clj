@@ -339,4 +339,4 @@
                  (assoc children k {:status (name (:orchestration-invocation/status v))
                                     :results (:orchestration-invocation/output v)}))
                {}
-               process)})
+               (dissoc process "Root"))})

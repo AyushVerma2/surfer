@@ -415,11 +415,7 @@
   (is (= {:status "succeeded"
           :results {:odds [1 3]}
           :children
-          {"Root"
-           {:status "succeeded"
-            :results {:odds [1 3]}}
-
-           "make-range"
+          {"make-range"
            {:status "succeeded"
             :results {:range [0 1 2 3]}}
 
