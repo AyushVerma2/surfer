@@ -383,7 +383,7 @@
                                                                     :target-port :n}]}
 
               execution (orchestration/execute-sync (system/app-context test-system) orchestration {:n 1})]
-          (is (= '("Increment1" "BadIncrement" "Increment2" (:orchestration-execution/topo execution))))
+          (is (= '("Increment1" "BadIncrement" "Increment2") (:orchestration-execution/topo execution)))
           (is (= {"Root" #:orchestration-invocation {:node "Root"
                                                      :input {:n 1}
                                                      :status :orchestration-invocation.status/failed}
