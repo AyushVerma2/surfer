@@ -250,10 +250,9 @@
                         (merge orchestration-invocation #:orchestration-invocation {:status :orchestration-invocation.status/succeeded
                                                                                     :output output}))))
 
-(defn update-to-failed [process nid input error]
+(defn update-to-failed [process nid error]
   (update process nid (fn [orchestration-invocation]
                         (merge orchestration-invocation #:orchestration-invocation {:status :orchestration-invocation.status/failed
-                                                                                    :input input
                                                                                     :error error}))))
 
 (defn update-to-cancelled [process nid]
@@ -287,15 +286,15 @@
 
                           invokable (invoke/invokable-operation app-context metadata)
 
-                          invokable-params (invokable-params orchestration params process nid)]
+                          invokable-params (invokable-params orchestration params process nid)
+
+                          process (update-to-running process nid invokable-params)]
                       (try
-                        (-> process
-                            (update-to-running nid invokable-params)
-                            (update-to-succeeded nid (sf/invoke-result invokable invokable-params)))
+                        (update-to-succeeded process nid (sf/invoke-result invokable invokable-params))
                         (catch Exception e
                           (reduced (-> process
-                                       (update-to-failed nid invokable-params e)
-                                       (update-to-failed root-nid params e)
+                                       (update-to-failed nid e)
+                                       (update-to-failed root-nid e)
                                        (cancel-scheduled)))))))
                   root-process
                   nodes)
