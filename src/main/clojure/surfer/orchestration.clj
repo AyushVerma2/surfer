@@ -309,10 +309,10 @@
      :orchestration-execution/process process}))
 
 (defn results [{:orchestration-execution/keys [process]}]
-  {:status "succeeded"
+  {:status (name (get-in process ["Root" :orchestration-invocation/status]))
    :results (get-in process ["Root" :orchestration-invocation/output])
-   :children (reduce
-               (fn [children [k v]]
+   :children (reduce-kv
+               (fn [children k v]
                  (assoc children k {:status (name (:orchestration-invocation/status v))
                                     :results (:orchestration-invocation/output v)}))
                {}
