@@ -278,10 +278,6 @@
                         (merge orchestration-invocation #:orchestration-invocation {:status :orchestration-invocation.status/failed
                                                                                     :error error}))))
 
-(defn update-to-cancelled [process nid]
-  (update process nid (fn [orchestration-invocation]
-                        (merge orchestration-invocation #:orchestration-invocation {:status :orchestration-invocation.status/cancelled}))))
-
 (defn cancel-scheduled [process]
   (reduce-kv
     (fn [process nid {:orchestration-invocation/keys [status] :as orchestration-invocation}]
