@@ -184,6 +184,35 @@
                          :ports [:coll :coll]}]}]
     (orchestration/execute-sync (app-context) orchestration))
 
+  (let [orchestration #:orchestration {:id "Root"
+
+                                       :children
+                                       {"Increment1" {:orchestration-child/did (sf/asset-id increment)}
+                                        "BadIncrement" {:orchestration-child/did (sf/asset-id bad-increment)}
+                                        "Increment2" {:orchestration-child/did (sf/asset-id increment)}}
+
+                                       :edges
+                                       [#:orchestration-edge {:source "Root"
+                                                              :source-port :n
+                                                              :target "Increment1"
+                                                              :target-port :n}
+
+                                        #:orchestration-edge {:source "Increment1"
+                                                              :source-port :n
+                                                              :target "BadIncrement"
+                                                              :target-port :n}
+
+                                        #:orchestration-edge {:source "BadIncrement"
+                                                              :source-port :n
+                                                              :target "Increment2"
+                                                              :target-port :n}
+
+                                        #:orchestration-edge {:source "Increment2"
+                                                              :source-port :n
+                                                              :target "Root"
+                                                              :target-port :n}]}]
+    (orchestration/execute-sync (app-context) orchestration {:n 1}))
+
 
   (s/valid? :orchestration-edge/source-root #:orchestration-edge{:source-port :a
                                                                  :target "A"

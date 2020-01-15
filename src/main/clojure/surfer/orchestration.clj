@@ -262,7 +262,7 @@
 (defn cancel-scheduled [process]
   (reduce-kv
     (fn [process nid {:orchestration-invocation/keys [status] :as orchestration-invocation}]
-      (let [status (if (= :orchestration-invocation.status/scheduled)
+      (let [status (if (= :orchestration-invocation.status/scheduled status)
                      :orchestration-invocation.status/cancelled
                      status)]
         (assoc process nid (assoc orchestration-invocation :orchestration-invocation/status status))))
