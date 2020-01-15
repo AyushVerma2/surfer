@@ -103,8 +103,8 @@
   (s/map-of keyword? any?))
 
 (s/def :orchestration-invocation/error
-  (fn [x]
-    (instance? Exception x)))
+  (s/or :exception #(instance? Exception %)
+        :failed :orchestration-invocation/failed))
 
 (s/def :orchestration-invocation/schema
   (s/schema [:orchestration-invocation/node
@@ -315,10 +315,11 @@
                       (try
                         (update-to-succeeded process nid (sf/invoke-result invokable invokable-params))
                         (catch Exception e
-                          (reduced (-> process
-                                       (update-to-failed nid e)
-                                       (update-to-failed root-nid e)
-                                       (cancel-scheduled)))))))
+                          (let [process (update-to-failed process nid e)]
+                            ;; Root error is a copy of the failed node.
+                            (reduced (-> process
+                                         (update-to-failed root-nid (get process nid))
+                                         (cancel-scheduled))))))))
                   root-process
                   nodes)
 

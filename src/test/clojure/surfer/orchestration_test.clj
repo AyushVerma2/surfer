@@ -405,9 +405,16 @@
                    {}
                    (:orchestration-execution/process execution))))
           (let [root-error (get-in execution [:orchestration-execution/process "Root" :orchestration-invocation/error])
-                bad-increment-error (get-in execution [:orchestration-execution/process "BadIncrement" :orchestration-invocation/error])]
-            (is (= "java.lang.NullPointerException" (.getMessage root-error)))
-            (is (= root-error bad-increment-error))))))))
+                bad-increment-error (get-in execution [:orchestration-execution/process "BadIncrement" :orchestration-invocation/error])
+
+                [failed-spec-key] (s/conform :orchestration-invocation/error root-error)
+                [exception-spec-key] (s/conform :orchestration-invocation/error bad-increment-error)]
+
+            (is (= :failed failed-spec-key))
+            (is (= :exception exception-spec-key))
+
+            (is (= "java.lang.NullPointerException" (.getMessage bad-increment-error)))
+            (is (= root-error (get-in execution [:orchestration-execution/process "BadIncrement"])))))))))
 
 ;; Add to Backlog - Think about the `additionalInfo` metadata
 
