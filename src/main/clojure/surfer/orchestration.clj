@@ -295,7 +295,7 @@
                         (catch Exception e
                           (reduced (-> process
                                        (update-to-failed nid invokable-params e)
-                                       (update-to-failed root-nid invokable-params e)
+                                       (update-to-failed root-nid params e)
                                        (cancel-scheduled)))))))
                   root-process
                   nodes)

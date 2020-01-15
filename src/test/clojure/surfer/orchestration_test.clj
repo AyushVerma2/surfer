@@ -380,25 +380,30 @@
                                               #:orchestration-edge {:source "Increment2"
                                                                     :source-port :n
                                                                     :target "Root"
-                                                                    :target-port :n}]}]
-          (is (= {:orchestration-execution/topo '("Increment1" "BadIncrement" "Increment2"),
-                  :orchestration-execution/process
-                  {"Root" #:orchestration-invocation {:node "Root"
-                                                      :input {:n 1}
-                                                      :status :orchestration-invocation.status/failed}
+                                                                    :target-port :n}]}
 
-                   "Increment1" #:orchestration-invocation {:node "Increment1"
-                                                            :input {:n 1}
-                                                            :output {:n 2}
-                                                            :status :orchestration-invocation.status/succeeded}
+              execution (orchestration/execute-sync (system/app-context test-system) orchestration {:n 1})]
+          (is (= '("Increment1" "BadIncrement" "Increment2" (:orchestration-execution/topo execution))))
+          (is (= {"Root" #:orchestration-invocation {:node "Root"
+                                                     :input {:n 1}
+                                                     :status :orchestration-invocation.status/failed}
 
-                   "BadIncrement" #:orchestration-invocation {:node "BadIncrement"
-                                                              :input {:n 2}
-                                                              :status :orchestration-invocation.status/failed}
+                  "Increment1" #:orchestration-invocation {:node "Increment1"
+                                                           :input {:n 1}
+                                                           :output {:n 2}
+                                                           :status :orchestration-invocation.status/succeeded}
 
-                   "Increment2" #:orchestration-invocation {:node "Increment2"
-                                                            :status :orchestration-invocation.status/cancelled}}}
-                 (orchestration/execute-sync (system/app-context test-system) orchestration {:n 1}))))))))
+                  "BadIncrement" #:orchestration-invocation {:node "BadIncrement"
+                                                             :input {:n 2}
+                                                             :status :orchestration-invocation.status/failed}
+
+                  "Increment2" #:orchestration-invocation {:node "Increment2"
+                                                           :status :orchestration-invocation.status/cancelled}}
+                 (reduce-kv
+                   (fn [process k v]
+                     (assoc process k (dissoc v :orchestration-invocation/error)))
+                   {}
+                   (:orchestration-execution/process execution)))))))))
 
 ;; Add to Backlog - Think about the `additionalInfo` metadata
 
