@@ -62,6 +62,6 @@
                "-d" "src/test/clojure"]}
 
   :kaocha
-  {:extra-deps {lambdaisland/kaocha {:mvn/version "0.0-554"}}
+  {:extra-deps {lambdaisland/kaocha {:mvn/version "0.0-573"}}
 
    :jvm-opts ["-Dlog4j.configurationFile=src/test/resources/log4j2-continuous-integration.xml"]}}}
