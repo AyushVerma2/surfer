@@ -41,7 +41,8 @@
     [surfer.orchestration :as orchestration]
     [clojure.walk :as walk])
   (:import [java.io InputStream StringWriter PrintWriter]
-           (clojure.lang ExceptionInfo)))
+           (clojure.lang ExceptionInfo)
+           (java.time LocalDateTime)))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -253,14 +254,12 @@
 
               (= "orchestration" (get-in metadata [:operation :class]))
               (try
-                (log/debug (str "Invoke Async - Orchestration " oid params))
+                (log/debug (str "Invoke Async - Orchestration " oid " " params))
 
-                (let [job-id (job/new db oid)
+                (let [job-id (job/new-job db {:operation oid
+                                              :created_at (LocalDateTime/now)})
 
-                      watch (fn [process]
-                              (log/debug (orchestration/pretty-status process))
-
-                              (job/set-results db job-id (str process)))]
+                      watch (orchestration/database-watch db job-id)]
 
                   (as-> (orchestration/get-orchestration app-context oid) orchestration
                         (orchestration/execute-async app-context orchestration params {:watch watch}))

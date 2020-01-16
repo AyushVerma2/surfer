@@ -1,10 +1,9 @@
 (ns surfer.job
-  (:require [clojure.java.jdbc :as jdbc])
-  (:import (java.time LocalDateTime)))
+  (:require [clojure.java.jdbc :as jdbc]))
 
-(defn new [db oid]
-  (let [m (first (jdbc/insert! db "JOBS" {:operation oid :created_at (LocalDateTime/now)}))]
+(defn new-job [db job]
+  (let [m (first (jdbc/insert! db "JOBS" job))]
     (:id m)))
 
-(defn set-results [db id results]
-  (jdbc/update! db "JOBS" {:results results :updated_at (LocalDateTime/now)} ["id = ?" id]))
+(defn update-job [db job]
+  (jdbc/update! db "JOBS" job ["id = ?" (:id job)]))

@@ -9,7 +9,10 @@
             [surfer.asset :as asset]
             [surfer.storage :as storage]
             [surfer.env :as env]
-            [clojure.pprint :as pprint]))
+            [clojure.pprint :as pprint]
+            [clojure.tools.logging :as log]
+            [surfer.job :as job])
+  (:import (java.time LocalDateTime)))
 
 ;; -- ORCHESTRATION EDGE
 
@@ -368,3 +371,12 @@
                         [nid (name (:orchestration-invocation/status invocation))]))
                     (into {}))]
     (with-out-str (pprint/print-table [status]))))
+
+(defn database-watch [db job-id]
+  (fn [process]
+    (log/debug (str "JOB-ID " job-id (pretty-status process)))
+
+    (job/update-job db {:id job-id
+                        :status (name (get-in process ["Root" :orchestration-invocation/status]))
+                        :results (str process)
+                        :updated_at (LocalDateTime/now)})))

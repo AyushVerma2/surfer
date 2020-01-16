@@ -24,7 +24,8 @@
             [com.stuartsierra.dependency :as dep]
             [surfer.database :as database]
             [clojure.string :as str]
-            [clojure.pprint :as pprint]))
+            [clojure.pprint :as pprint]
+            [surfer.job :as job]))
 
 (set-init (constantly (system/new-system :dev)))
 
