@@ -315,7 +315,17 @@
 
                           process (doto (update-to-running process nid invokable-params) (watch))]
                       (try
-                        (doto (update-to-succeeded process nid (sf/invoke-result invokable invokable-params)) (watch))
+                        (let [process (update-to-succeeded process nid (sf/invoke-result invokable invokable-params))
+
+                              every-succeeded? (every?
+                                                 #(= :orchestration-invocation.status/succeeded
+                                                     (:orchestration-invocation/status %))
+                                                 (vals (dissoc process root-nid)))
+
+                              process (if every-succeeded?
+                                        (update-to-succeeded process root-nid (output-mapping orchestration process))
+                                        process)]
+                          (doto process (watch)))
                         (catch Exception e
                           (let [process (update-to-failed process nid e)]
                             ;; Root error is a copy of the failed node.
@@ -324,14 +334,7 @@
                                                (cancel-scheduled))
                                        (watch))))))))
                   process
-                  nodes)
-
-        root-failed? (= :orchestration-invocation.status/failed
-                        (get-in process [root-nid :orchestration-invocation/status]))
-
-        process (if root-failed?
-                  process
-                  (doto (update-to-succeeded process root-nid (output-mapping orchestration process)) (watch)))]
+                  nodes)]
     {:orchestration-execution/topo nodes
      :orchestration-execution/process process}))
 
