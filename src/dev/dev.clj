@@ -180,7 +180,7 @@
                                                               :source-port :n
                                                               :target "Root"
                                                               :target-port :n}]}]
-    (orchestration/execute-sync (app-context) orchestration {:n 1} {:watch dev-watch}))
+    (orchestration/execute-async (app-context) orchestration {:n 1} {:watch dev-watch}))
 
   (s/valid? :orchestration-edge/source-root #:orchestration-edge{:source-port :a
                                                                  :target "A"

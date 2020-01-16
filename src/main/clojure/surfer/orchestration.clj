@@ -328,6 +328,10 @@
     {:orchestration-execution/topo nodes
      :orchestration-execution/process process}))
 
+(defn execute-async [app-context orchestration params & [watch]]
+  (let [^Runnable f #(execute-sync app-context orchestration params watch)]
+    (doto (Thread. f) (.start))))
+
 (defn results [{:orchestration-execution/keys [process]}]
   (let [root (get process "Root")]
     (merge {:status (name (:orchestration-invocation/status root))
