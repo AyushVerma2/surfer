@@ -188,9 +188,8 @@
                  resp)]
       resp)))
 
-(defn insert-job [db oid body]
+(defn new-job [db oid]
   (let [[{:keys [id]}] (jdbc/insert! db "JOBS" {:operation_id oid
-                                                :body (str body)
                                                 :created_at (LocalDateTime/now)})]
     id))
 

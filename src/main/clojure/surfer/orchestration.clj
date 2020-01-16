@@ -5,7 +5,10 @@
             [starfish.core :as sf]
             [surfer.invokable :as invokable]
             [surfer.app-context :as app-context]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [surfer.asset :as asset]
+            [surfer.storage :as storage]
+            [surfer.env :as env]))
 
 ;; -- ORCHESTRATION EDGE
 
@@ -351,3 +354,8 @@
 
            (when-let [error (:orchestration-invocation/error root)]
              {:error (str "Failed to execute Operation '" (:orchestration-invocation/node error) "'.")}))))
+
+(defn get-orchestration [app-context id]
+  (dep13->orchestration
+    (with-open [input-stream (storage/asset-input-stream (env/storage-path (app-context/env app-context)) id)]
+      (asset/read-json-input-stream input-stream))))

@@ -58,9 +58,6 @@
 
   (reset-db)
 
-  (invokable/insert-job (db) "1" "")
-  (invokable/update-job (db) 1 "")
-
   ;; -- Import Datasets
   (let [database (system/database system)
         storage-path (env/storage-path (env))]

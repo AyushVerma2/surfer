@@ -194,29 +194,26 @@
         (POST "/sync/:op-id" request
           :coercion nil
           :body [body schema/InvokeRequest]
-          (let [op-id (get-in request [:params :op-id])
-                metadata (store/get-metadata db op-id {:key-fn keyword})
+          (let [id (get-in request [:params :op-id])
+                metadata (store/get-metadata db id {:key-fn keyword})
                 ^InputStream body (:body request)
                 params (json/read-str (slurp (doto body (.reset))) :key-fn keyword)]
             (cond
               (nil? metadata)
-              (response/not-found {:error (str "Metadata not found. Did you forget to register Metadata for operation '" op-id "'?")})
+              (response/not-found {:error (str "Metadata not found. Did you forget to register Metadata for operation '" id "'?")})
 
               (not= "operation" (:type metadata))
-              (response/bad-request {:error (str "Invalid Metadata. Operation " op-id " metadata type value should be 'operation'.")})
+              (response/bad-request {:error (str "Invalid Metadata. Operation " id " metadata type value should be 'operation'.")})
 
               (= "orchestration" (get-in metadata [:operation :class]))
               (try
-                (let [orchestration (orchestration/dep13->orchestration
-                                      (with-open [input-stream (storage/asset-input-stream (env/storage-path env) op-id)]
-                                        (asset/read-json-input-stream input-stream)))
+                (let [orchestration (orchestration/get-orchestration app-context id)
+                      results (orchestration/results (orchestration/execute-sync app-context orchestration params))]
 
-                      result (orchestration/results (orchestration/execute-sync app-context orchestration params))]
-
-                  (log/debug (str "Invoke Sync - Orchestration " op-id " : " params " -> " result))
+                  (log/debug (str "Invoke Sync - Orchestration " id " : " params " -> " results))
 
                   {:status 200
-                   :body result})
+                   :body results})
                 (catch Exception e
                   (log/error e "Failed to invoke Orchestration." metadata)
 
@@ -228,7 +225,7 @@
                 (let [result (-> (invokable/resolve-invokable metadata)
                                  (invokable/invoke app-context params))]
 
-                  (log/debug (str "Invoke Sync - Operation " op-id " : " params " -> " result))
+                  (log/debug (str "Invoke Sync - Operation " id " : " params " -> " result))
 
                   {:status 200
                    :body result})
@@ -240,25 +237,45 @@
 
         (POST "/async/:op-id"
           {{:keys [op-id]} :params :as request}
-          :coercion nil                                     ;; prevents coercion so we get the original input stream
+          :coercion nil
           :body [body schema/InvokeRequest]
-          ;; (println (:body request))
-          (if-let [op-meta (store/get-metadata-str db op-id)]
-            (let [md (sf/read-json-string op-meta)
-                  ^InputStream body-stream (:body request)
-                  _ (.reset body-stream)
-                  ^String body-string (slurp body-stream)
-                  invoke-req (sf/read-json-string body-string)]
-              (log/debug (str "POST INVOKE on operation [" op-id "] body=" invoke-req))
-              (cond
-                (not (= "operation" (:type md))) (response/bad-request (str "Not a valid operation: " op-id))
-                :else (if-let [jobid (invokable/launch-job db op-id invoke-req)]
-                        {:status 201
-                         :body (str "{\"jobid\" : \"" jobid "\" , "
-                                    "\"status\" : \"scheduled\""
-                                    "}")}
-                        (response/not-found "Operation not invokable."))))
-            (response/not-found "Operation metadata not available.")))
+          (let [oid (get-in request [:params :op-id])
+                metadata (store/get-metadata db oid {:key-fn keyword})
+                ^InputStream body (:body request)
+                params (json/read-str (slurp (doto body (.reset))) :key-fn keyword)]
+            (cond
+              (nil? metadata)
+              (response/not-found {:error (str "Metadata not found. Did you forget to register Metadata for operation '" oid "'?")})
+
+              (not= "operation" (:type metadata))
+              (response/bad-request {:error (str "Invalid Metadata. Operation " oid " metadata type value should be 'operation'.")})
+
+              (= "orchestration" (get-in metadata [:operation :class]))
+              (try
+                (log/debug (str "Invoke Async - Orchestration " oid " : " params))
+
+                (let [job-id (invokable/new-job db oid)
+
+                      watch (fn [process]
+                              (invokable/update-job db job-id (str process)))]
+
+                  (as-> (orchestration/get-orchestration app-context oid) orchestration
+                        (orchestration/execute-async app-context orchestration params {:watch watch}))
+
+                  {:status 200
+                   :body {:jobid job-id}})
+                (catch Exception e
+                  (log/error e "Failed to invoke Orchestration." metadata)
+
+                  {:status 500
+                   :body "Failed to invoke Orchestration. Please try again."}))
+
+              :else
+              (if-let [jobid (invokable/launch-job db op-id params)]
+                {:status 201
+                 :body {:jobid jobid
+                        :status "scheduled"}}
+                (response/not-found "Operation not invokable.")))))
 
         (GET "/jobs/:jobid"
              [jobid]
