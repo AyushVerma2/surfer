@@ -12,11 +12,7 @@
 
 (defn migrate [db & [users]]
   (ragtime.repl/migrate {:datastore (ragtime.jdbc/sql-database db)
-                         :migrations (#'ragtime.jdbc/load-all-files [(io/resource "migrations/001-users.edn")
-                                                                     (io/resource "migrations/002-metadata.edn")
-                                                                     (io/resource "migrations/003-listings.edn")
-                                                                     (io/resource "migrations/004-purchases.edn")
-                                                                     (io/resource "migrations/005-tokens.edn")])
+                         :migrations (ragtime.jdbc/load-resources "migrations")
                          :strategy ragtime.strategy/rebase})
 
   (doseq [user users]
