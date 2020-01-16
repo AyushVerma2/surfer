@@ -291,7 +291,7 @@
     {}
     process))
 
-(defn execute-sync [app-context orchestration params & [{:keys [watch] :or {watch identity}}]]
+(defn execute [app-context orchestration params & [{:keys [watch] :or {watch identity}}]]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))
 
         root-nid "Root"
@@ -332,7 +332,7 @@
      :orchestration-execution/process process}))
 
 (defn execute-async [app-context orchestration params & [watch]]
-  (future (execute-sync app-context orchestration params watch)))
+  (future (execute app-context orchestration params watch)))
 
 (defn results [{:orchestration-execution/keys [process]}]
   (let [root (get process "Root")]

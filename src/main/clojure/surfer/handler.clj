@@ -208,7 +208,7 @@
               (= "orchestration" (get-in metadata [:operation :class]))
               (try
                 (let [orchestration (orchestration/get-orchestration app-context id)
-                      results (orchestration/results (orchestration/execute-sync app-context orchestration params))]
+                      results (orchestration/results (orchestration/execute app-context orchestration params))]
 
                   (log/debug (str "Invoke Sync - Orchestration " id " : " params " -> " results))
 

@@ -218,7 +218,7 @@
                         {:source "concatenate"
                          :target "Root"
                          :ports [:coll :coll]}]}]
-    (orchestration/execute-sync (app-context) orchestration {}))
+    (orchestration/execute (app-context) orchestration {}))
 
   ;; TODO
   (let [orchestration {:id "Root"
@@ -233,7 +233,7 @@
                         {:source "Inc"
                          :target "Root"
                          :ports [:n :n]}]}]
-    (orchestration/execute-sync (app-context) orchestration {:n 10}))
+    (orchestration/execute (app-context) orchestration {:n 10}))
 
   (let [orchestration {:id "Orchestration"
 
@@ -253,7 +253,7 @@
                         {:source "Inc-n2"
                          :target "Orchestration"
                          :ports [:n :n]}]}]
-    (orchestration/execute-sync (app-context) orchestration {:n 10}))
+    (orchestration/execute (app-context) orchestration {:n 10}))
 
   )
 
