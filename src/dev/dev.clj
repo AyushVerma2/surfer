@@ -18,11 +18,13 @@
             [clojure.edn :as edn]
             [clojure.alpha.spec :as s]
             [clojure.alpha.spec.gen :as gen]
+            [clojure.pprint]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
             [clj-http.client :as http]
             [com.stuartsierra.dependency :as dep]
             [surfer.database :as database]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.pprint :as pprint]))
 
 (set-init (constantly (system/new-system :dev)))
 
@@ -48,12 +50,9 @@
   (let [status (->> process
                     (map
                       (fn [[nid invocation]]
-                        (str nid " " (:orchestration-invocation/status invocation))))
-                    (str/join "\n"))]
-    (println "-- STATUS\n"
-             status "\n"
-             "-- DATA\n"
-             process "\n")))
+                        [nid (name (:orchestration-invocation/status invocation))]))
+                    (into {}))]
+    (pprint/print-table [status])))
 
 (comment
 

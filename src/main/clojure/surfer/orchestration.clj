@@ -294,7 +294,7 @@
         root-nid "Root"
 
         process (doto (prepare nodes) (watch))
-        process (doto (update-to-running process root-nid params) (watch))
+        process (update-to-running process root-nid params)
         process (reduce
                   (fn [process nid]
                     (let [aid (get-in orchestration [:orchestration/children nid :orchestration-child/did])
@@ -306,7 +306,7 @@
 
                           invokable-params (invokable-params orchestration params process nid)
 
-                          process (update-to-running process nid invokable-params)]
+                          process (doto (update-to-running process nid invokable-params) (watch))]
                       (try
                         (doto (update-to-succeeded process nid (sf/invoke-result invokable invokable-params)) (watch))
                         (catch Exception e
