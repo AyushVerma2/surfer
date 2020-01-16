@@ -8,7 +8,8 @@
             [clojure.string :as str]
             [surfer.asset :as asset]
             [surfer.storage :as storage]
-            [surfer.env :as env]))
+            [surfer.env :as env]
+            [clojure.pprint :as pprint]))
 
 ;; -- ORCHESTRATION EDGE
 
@@ -359,3 +360,11 @@
   (dep13->orchestration
     (with-open [input-stream (storage/asset-input-stream (env/storage-path (app-context/env app-context)) id)]
       (asset/read-json-input-stream input-stream))))
+
+(defn pretty-status [process]
+  (let [status (->> process
+                    (map
+                      (fn [[nid invocation]]
+                        [nid (name (:orchestration-invocation/status invocation))]))
+                    (into {}))]
+    (with-out-str (pprint/print-table [status]))))

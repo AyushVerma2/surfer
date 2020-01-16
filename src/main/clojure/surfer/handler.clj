@@ -257,6 +257,8 @@
                 (let [job-id (invokable/new-job db oid)
 
                       watch (fn [process]
+                              (log/debug (orchestration/pretty-status process))
+
                               (invokable/update-job db job-id (str process)))]
 
                   (as-> (orchestration/get-orchestration app-context oid) orchestration
