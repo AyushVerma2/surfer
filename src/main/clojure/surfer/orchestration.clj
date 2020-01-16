@@ -226,7 +226,7 @@
       (= edge (select-keys e (keys edge))))
     (:orchestration/edges orchestration)))
 
-(defn invokable-params [orchestration parameters process nid]
+(defn invokable-params [orchestration orchestration-params process nid]
   (let [edges-input-redirect (filter
                                (fn [edge]
                                  (= (:orchestration-edge/target edge) nid))
@@ -235,7 +235,7 @@
         params (if (seq edges-input-redirect)
                  (reduce
                    (fn [params {:orchestration-edge/keys [source-port target-port]}]
-                     (assoc params target-port (get parameters source-port)))
+                     (assoc params target-port (get orchestration-params source-port)))
                    {}
                    edges-input-redirect)
                  (some->> (get-in (dependency-graph orchestration) [:dependencies nid])
