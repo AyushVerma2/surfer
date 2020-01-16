@@ -187,11 +187,3 @@
                                            (catch Throwable t (.getMessage t))))
                  resp)]
       resp)))
-
-(defn new-job [db oid]
-  (let [[{:keys [id]}] (jdbc/insert! db "JOBS" {:operation oid
-                                                :created_at (LocalDateTime/now)})]
-    id))
-
-(defn update-job [db id body]
-  (jdbc/update! db "JOBS" {:body (str body) :updated_at (LocalDateTime/now)} ["id = ?" id]))
