@@ -7,10 +7,12 @@
     [surfer.app-context :as app-context]
     [clojure.data.json :as json]
     [starfish.alpha :as sfa]
-    [clojure.walk :as walk])
+    [clojure.walk :as walk]
+    [clojure.java.jdbc :as jdbc]
+    [clojure.edn :as edn])
   (:import (sg.dex.starfish.util DID)
            (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation MemoryAsset)
-           (java.time Instant)))
+           (java.time Instant LocalDateTime)))
 
 (defn- wrapped-params [metadata params]
   (let [params (walk/keywordize-keys params)]
@@ -185,3 +187,12 @@
                                            (catch Throwable t (.getMessage t))))
                  resp)]
       resp)))
+
+(defn insert-job [db oid body]
+  (let [[{:keys [id]}] (jdbc/insert! db "JOBS" {:operation_id oid
+                                                :body (str body)
+                                                :created_at (LocalDateTime/now)})]
+    id))
+
+(defn update-job [db id body]
+  (jdbc/update! db "JOBS" {:body (str body) :updated_at (LocalDateTime/now)} ["id = ?" id]))

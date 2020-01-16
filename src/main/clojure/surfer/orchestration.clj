@@ -3,7 +3,7 @@
             [com.stuartsierra.dependency :as dep]
             [surfer.store :as store]
             [starfish.core :as sf]
-            [surfer.invokable :as invoke]
+            [surfer.invokable :as invokable]
             [surfer.app-context :as app-context]
             [clojure.string :as str]))
 
@@ -288,14 +288,13 @@
     {}
     process))
 
-(defn execute-sync [app-context orchestration & [params]]
+(defn execute-sync [app-context orchestration params & [{:keys [watch] :or {watch identity}}]]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))
 
         root-nid "Root"
 
-        root-process (-> (prepare nodes)
-                         (update-to-running root-nid params))
-
+        process (doto (prepare nodes) (watch))
+        process (doto (update-to-running process root-nid params) (watch))
         process (reduce
                   (fn [process nid]
                     (let [aid (get-in orchestration [:orchestration/children nid :orchestration-child/did])
@@ -303,20 +302,21 @@
                           metadata (-> (app-context/db app-context)
                                        (store/get-metadata aid {:key-fn keyword}))
 
-                          invokable (invoke/invokable-operation app-context metadata)
+                          invokable (invokable/invokable-operation app-context metadata)
 
                           invokable-params (invokable-params orchestration params process nid)
 
                           process (update-to-running process nid invokable-params)]
                       (try
-                        (update-to-succeeded process nid (sf/invoke-result invokable invokable-params))
+                        (doto (update-to-succeeded process nid (sf/invoke-result invokable invokable-params)) (watch))
                         (catch Exception e
                           (let [process (update-to-failed process nid e)]
                             ;; Root error is a copy of the failed node.
-                            (reduced (-> process
-                                         (update-to-failed root-nid (get process nid))
-                                         (cancel-scheduled))))))))
-                  root-process
+                            (reduced (doto (-> process
+                                               (update-to-failed root-nid (get process nid))
+                                               (cancel-scheduled))
+                                       (watch))))))))
+                  process
                   nodes)
 
         root-failed? (= :orchestration-invocation.status/failed
@@ -324,7 +324,7 @@
 
         process (if root-failed?
                   process
-                  (update-to-succeeded process root-nid (output-mapping orchestration process)))]
+                  (doto (update-to-succeeded process root-nid (output-mapping orchestration process)) (watch)))]
     {:orchestration-execution/topo nodes
      :orchestration-execution/process process}))
 

@@ -44,9 +44,23 @@
 (defn query [& sql-params]
   (jdbc/query (db) sql-params))
 
+(defn dev-watch [process]
+  (let [status (->> process
+                    (map
+                      (fn [[nid invocation]]
+                        (str nid " " (:orchestration-invocation/status invocation))))
+                    (str/join "\n"))]
+    (println "-- STATUS\n"
+             status "\n"
+             "-- DATA\n"
+             process "\n")))
+
 (comment
 
   (reset-db)
+
+  (invokable/insert-job (db) "1" "")
+  (invokable/update-job (db) 1 "")
 
   ;; -- Import Datasets
   (let [database (system/database system)
@@ -138,7 +152,7 @@
 
   (demo.invokable/make-orchestration-demo1 (app-context) {:n 10})
   (demo.invokable/make-orchestration-demo2 (app-context) {})
-  
+
   (let [orchestration #:orchestration {:id "Root"
 
                                        :children
@@ -166,8 +180,7 @@
                                                               :source-port :n
                                                               :target "Root"
                                                               :target-port :n}]}]
-    (orchestration/execute-sync (app-context) orchestration {:n 1}))
-
+    (orchestration/execute-sync (app-context) orchestration {:n 1} {:watch dev-watch}))
 
   (s/valid? :orchestration-edge/source-root #:orchestration-edge{:source-port :a
                                                                  :target "A"
@@ -209,7 +222,7 @@
                         {:source "concatenate"
                          :target "Root"
                          :ports [:coll :coll]}]}]
-    (orchestration/execute-sync (app-context) orchestration))
+    (orchestration/execute-sync (app-context) orchestration {}))
 
   ;; TODO
   (let [orchestration {:id "Root"

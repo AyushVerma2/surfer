@@ -306,7 +306,7 @@
                                                              :output {:odds [1 3 5 7 9]}
                                                              :status :orchestration-invocation.status/succeeded}}}
 
-                 (orchestration/execute-sync (system/app-context test-system) orchestration)))))
+                 (orchestration/execute-sync (system/app-context test-system) orchestration nil)))))
 
       (testing "Nodes (Operations) with dependencies"
         (let [orchestration {:orchestration/id "Root"
