@@ -46,22 +46,13 @@
 (defn query [& sql-params]
   (jdbc/query (db) sql-params))
 
-(defn dev-watch [process]
-  (let [status (->> process
-                    (map
-                      (fn [[nid invocation]]
-                        [nid (name (:orchestration-invocation/status invocation))]))
-                    (into {}))]
-    (pprint/print-table [status])))
+(defn print-pretty-status [process]
+  (println (orchestration/pretty-status process)))
 
 (comment
 
   (reset-db)
 
-  ;; -- Import Datasets
-  (let [database (system/database system)
-        storage-path (env/storage-path (env))]
-    (asset/import-edn! (db) storage-path "datasets.edn"))
 
   (def did
     (env/self-did (system/env system)))
@@ -71,6 +62,7 @@
 
   (def aladdin
     (sfa/did->agent did))
+
 
   (def n-asset
     ;; Data must be a JSON-encoded string
@@ -102,8 +94,6 @@
   (sf/poll-result job)
 
   (sf/job-status job)
-
-  (http/get "https://api.ipify.org")
 
   (dep/topo-sort (-> (dep/graph)
                      (dep/depend "B" "A")
@@ -176,7 +166,7 @@
                                                               :source-port :n
                                                               :target "Root"
                                                               :target-port :n}]}]
-    (orchestration/execute-async (app-context) orchestration {:n 1} {:watch dev-watch}))
+    (orchestration/execute-async (app-context) orchestration {:n 1} {:watch print-pretty-status}))
 
   (s/valid? :orchestration-edge/source-root #:orchestration-edge{:source-port :a
                                                                  :target "A"
@@ -193,67 +183,30 @@
 
   (gen/sample (s/gen :orchestration/orchestration) 1)
 
-  (gen/sample (s/gen :orchestration-invocation/completed) 1)
-  (gen/sample (s/gen :orchestration-invocation/running) 1)
-
-  (gen/sample (s/gen :orchestration-execution/process) 1)
-
 
   ;; Re-using the same Operation n times to connect to a different port
-  (let [orchestration {:id "Root"
+  (let [orchestration (orchestration/dep13->orchestration {:id "Root"
 
-                       :children
-                       {"make-range" (sf/asset-id make-range)
-                        "concatenate" (sf/asset-id concatenate)}
+                                                           :children
+                                                           {"make-range" {:did (sf/asset-id make-range)}
+                                                            "concatenate" {:did (sf/asset-id concatenate)}}
 
-                       :edges
-                       [{:source "make-range"
-                         :target "concatenate"
-                         :ports [:range :coll1]}
+                                                           :edges
+                                                           [{:source "make-range"
+                                                             :sourcePort "range"
+                                                             :target "concatenate"
+                                                             :targetPort "coll1"}
 
-                        {:source "make-range"
-                         :target "concatenate"
-                         :ports [:range :coll2]}
+                                                            {:source "make-range"
+                                                             :sourcePort "range"
+                                                             :target "concatenate"
+                                                             :targetPort "coll1"}
 
-                        {:source "concatenate"
-                         :target "Root"
-                         :ports [:coll :coll]}]}]
-    (orchestration/execute (app-context) orchestration {}))
-
-  ;; TODO
-  (let [orchestration {:id "Root"
-
-                       :children {"Inc-n1" (sf/asset-id increment)}
-
-                       :edges
-                       [{:source "Root"
-                         :target "Inc"
-                         :ports [:n :n]}
-
-                        {:source "Inc"
-                         :target "Root"
-                         :ports [:n :n]}]}]
-    (orchestration/execute (app-context) orchestration {:n 10}))
-
-  (let [orchestration {:id "Orchestration"
-
-                       :children
-                       {"Inc-n1" (sf/asset-id increment)
-                        "Inc-n2" (sf/asset-id increment)}
-
-                       :edges
-                       [{:source "Orchestration"
-                         :target "Inc-n1"
-                         :ports [:n :n]}
-
-                        {:source "Inc-n1"
-                         :target "Inc-n2"
-                         :ports [:n :n]}
-
-                        {:source "Inc-n2"
-                         :target "Orchestration"
-                         :ports [:n :n]}]}]
-    (orchestration/execute (app-context) orchestration {:n 10}))
+                                                            {:source "concatenate"
+                                                             :sourcePort "coll"
+                                                             :target "Root"
+                                                             :targetPort "coll"}]})]
+    (orchestration/execute (app-context) orchestration {} {:watch print-pretty-status}))
 
   )
 
