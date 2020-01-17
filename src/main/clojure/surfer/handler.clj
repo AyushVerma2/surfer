@@ -85,23 +85,23 @@
     (context "/api" []
       :tags ["Status API"]
       (routes {:swagger {:data {:info {:title "Status API"}}}}
-        (GET "/ddo" []
-          :summary "Gets the ddo for this Agent"
-          :return schema/DDO
-          {:status 200
-           :headers {"Content-Type" "application/json"}
-           :body (env/self-ddo env)})
+              (GET "/ddo" []
+                :summary "Gets the ddo for this Agent"
+                :return schema/DDO
+                {:status 200
+                 :headers {"Content-Type" "application/json"}
+                 :body (env/self-ddo env)})
 
-        (GET "/status" []
-          :summary "Gets the status for this Agent"
-          :return s/Any
-          (let [agent (env/agent-config env)]
-            {:status 200
-             :headers {"Content-Type" "application/json"}
-             :body {:name (or (:name agent) "Unnamed Agent")
-                    :description (or (:description agent) "No description")
-                    :api-versions ["v1"]
-                    :custom {:server-type "Surfer"}}}))))))
+              (GET "/status" []
+                :summary "Gets the status for this Agent"
+                :return s/Any
+                (let [agent (env/agent-config env)]
+                  {:status 200
+                   :headers {"Content-Type" "application/json"}
+                   :body {:name (or (:name agent) "Unnamed Agent")
+                          :description (or (:description agent) "No description")
+                          :api-versions ["v1"]
+                          :custom {:server-type "Surfer"}}}))))))
 
 
 ;; ==========================================
@@ -180,7 +180,10 @@
            :body (store/metadata-index db)})))))
 
 (defn invoke-api-v1 [app-context]
-  (let [db (app-context/db app-context)]
+  (let [db (app-context/db app-context)
+
+        params (fn [request]
+                 (json/read-str (slurp (doto ^InputStream (:body request) (.reset))) :key-fn keyword))]
     (context "/api/v1/invoke" []
       :tags ["Invoke API v1"]
       (routes
@@ -196,7 +199,7 @@
           :coercion nil
           :body [_ schema/InvokeRequest]
           (let [oid (get-in request [:params :op-id])
-                params (json/read-str (slurp (doto ^InputStream (:body request) (.reset))) :key-fn keyword)]
+                params (params request)]
 
             (log/debug (str "Invoke Sync " oid " " params))
 
@@ -204,50 +207,31 @@
               {:status 200
                :body (job/run-job app-context oid params)}
               (catch Exception e
-                (log/error e "Failed to invoke Operation.")
+                (log/error e "Failed to (sync) invoke Operation.")
+
+                ;; TODO Handle other error codes
 
                 {:status 500
                  :body "Failed to invoke Operation. Please try again."}))))
 
-        (POST "/async/:op-id"
-          {{:keys [op-id]} :params :as request}
+        (POST "/async/:op-id" request
           :coercion nil
-          :body [body schema/InvokeRequest]
+          :body [_ schema/InvokeRequest]
           (let [oid (get-in request [:params :op-id])
-                metadata (store/get-metadata db oid {:key-fn keyword})
-                ^InputStream body (:body request)
-                params (json/read-str (slurp (doto body (.reset))) :key-fn keyword)]
-            (cond
-              (nil? metadata)
-              (response/not-found {:error (str "Metadata not found. Did you forget to register Metadata for operation '" oid "'?")})
+                params (params request)]
 
-              (not= "operation" (:type metadata))
-              (response/bad-request {:error (str "Invalid Metadata. Operation " oid " metadata type value should be 'operation'.")})
+            (log/debug (str "Invoke Async " oid " " params))
 
-              (= "orchestration" (get-in metadata [:operation :class]))
-              (try
-                (log/debug (str "Invoke Async - Orchestration " oid " " params))
+            (try
+              {:status 200
+               :body (job/run-job-async app-context oid params)}
+              (catch Exception e
+                (log/error e "Failed to (async) invoke Operation.")
 
-                (let [job-id (job/new-job db {:operation oid
-                                              :created_at (LocalDateTime/now)})]
+                ;; TODO Handle other error codes
 
-                  (as-> (orchestration/get-orchestration app-context oid) orchestration
-                        (orchestration/execute-async app-context orchestration params {:watch nil}))
-
-                  {:status 200
-                   :body {:jobid job-id}})
-                (catch Exception e
-                  (log/error e "Failed to invoke Orchestration." metadata)
-
-                  {:status 500
-                   :body "Failed to invoke Orchestration. Please try again."}))
-
-              :else
-              (if-let [jobid (invokable/launch-job db op-id params)]
-                {:status 201
-                 :body {:jobid jobid
-                        :status "scheduled"}}
-                (response/not-found "Operation not invokable.")))))
+                {:status 500
+                 :body "Failed to invoke Operation. Please try again."}))))
 
         (GET "/jobs/:jobid" [jobid]
           (cond
@@ -620,60 +604,60 @@
     (context "/api/v1/admin" []
       :tags ["Admin API v1"]
       (routes {:swagger {:data {:info {:title "Admin API"}}}}
-        (GET "/auth" request
-          :summary "Gets the authentication map for the current user. Useful for debugging."
-          (response/response (friend/current-authentication request)))
+              (GET "/auth" request
+                :summary "Gets the authentication map for the current user. Useful for debugging."
+                (response/response (friend/current-authentication request)))
 
-        (POST "/ckan-import" request
-          :query-params [{userid :- schema/UserID nil},
-                         repo :- String,
-                         {count :- s/Int 10}]
-          :summary "Imports assets from a CKAN repository."
-          (friend/authorize #{:admin}
-                            (let [userid (or userid (get-current-userid app-context request) (throw (IllegalArgumentException. "No valid userid")))]
-                              (let [all-names (ckan/package-list repo)
-                                    names (if count (take count (shuffle all-names)) all-names)]
-                                (binding [ckan/*import-userid* userid]
-                                  (ckan/import-packages db repo names))))))
+              (POST "/ckan-import" request
+                :query-params [{userid :- schema/UserID nil},
+                               repo :- String,
+                               {count :- s/Int 10}]
+                :summary "Imports assets from a CKAN repository."
+                (friend/authorize #{:admin}
+                                  (let [userid (or userid (get-current-userid app-context request) (throw (IllegalArgumentException. "No valid userid")))]
+                                    (let [all-names (ckan/package-list repo)
+                                          names (if count (take count (shuffle all-names)) all-names)]
+                                      (binding [ckan/*import-userid* userid]
+                                        (ckan/import-packages db repo names))))))
 
-        (POST "/clear-db" []
-          :summary "Clear database."
-          (friend/authorize #{:admin}
-                            (store/clear-db db (env/dbtype env))
-                            (response/response {:message "Success"})))
+              (POST "/clear-db" []
+                :summary "Clear database."
+                (friend/authorize #{:admin}
+                                  (store/clear-db db (env/dbtype env))
+                                  (response/response {:message "Success"})))
 
-        (POST "/migrate-db" []
-          :summary "Run database migrations."
-          (friend/authorize #{:admin}
-                            (migration/migrate db (env/user-config env))
-                            (response/response {:message "Success"})))
+              (POST "/migrate-db" []
+                :summary "Run database migrations."
+                (friend/authorize #{:admin}
+                                  (migration/migrate db (env/user-config env))
+                                  (response/response {:message "Success"})))
 
-        (POST "/reset-db" []
-          :summary "Clear database & run migrations."
-          (friend/authorize #{:admin}
-                            (store/clear-db db (env/dbtype env))
-                            (migration/migrate db (env/user-config env))
-                            (response/response {:message "Success"})))
+              (POST "/reset-db" []
+                :summary "Clear database & run migrations."
+                (friend/authorize #{:admin}
+                                  (store/clear-db db (env/dbtype env))
+                                  (migration/migrate db (env/user-config env))
+                                  (response/response {:message "Success"})))
 
-        (POST "/import-sample-datasets" []
-          :summary "Import sample datasets - datasets.edn."
-          (friend/authorize #{:admin}
-                            (let [storage-path (-> (app-context/env app-context)
-                                                   (env/storage-path))]
-                              (response/response (asset/import-edn! db storage-path "datasets.edn")))))
+              (POST "/import-sample-datasets" []
+                :summary "Import sample datasets - datasets.edn."
+                (friend/authorize #{:admin}
+                                  (let [storage-path (-> (app-context/env app-context)
+                                                         (env/storage-path))]
+                                    (response/response (asset/import-edn! db storage-path "datasets.edn")))))
 
-        (GET "/print-config" []
-          :summary "Print config."
-          (friend/authorize #{:admin} (response/response (env/config env))))
+              (GET "/print-config" []
+                :summary "Print config."
+                (friend/authorize #{:admin} (response/response (env/config env))))
 
-        (POST "/config-agent-remote-url" []
-          :summary "Config - Set `[:agent :remote-url]`."
-          :coercion nil
-          :query-params [remote-url :- s/Str]
-          (friend/authorize #{:admin}
-                            (do
-                              (alter-var-root #'env/*agent-remote-url* (constantly remote-url))
-                              (response/response {:remote-url remote-url}))))))))
+              (POST "/config-agent-remote-url" []
+                :summary "Config - Set `[:agent :remote-url]`."
+                :coercion nil
+                :query-params [remote-url :- s/Str]
+                (friend/authorize #{:admin}
+                                  (do
+                                    (alter-var-root #'env/*agent-remote-url* (constantly remote-url))
+                                    (response/response {:remote-url remote-url}))))))))
 
 ;; ==========================================
 ;; Authentication API

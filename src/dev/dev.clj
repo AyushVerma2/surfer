@@ -91,7 +91,6 @@
       (invokable/register-invokable aladdin metadata)))
 
   ;; -- Run Job
-  (job/run-job (app-context) "Foo" {:n 1})
   (job/run-job (app-context) (sf/asset-id increment) {:n 1})
   (job/run-job (app-context) (sf/asset-id bad-increment) {})
 
