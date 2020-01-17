@@ -167,6 +167,9 @@
 
 ;; --
 
+(def root-nid
+  "Root")
+
 (defn dep13->orchestration
   "Returns an Orchestration entity from a DEP 13 format."
   [m]
@@ -266,7 +269,7 @@
     (fn [process nid]
       (assoc process nid {:orchestration-invocation/node nid
                           :orchestration-invocation/status :orchestration-invocation.status/scheduled}))
-    {"Root" {:orchestration-invocation/node "Root"
+    {root-nid {:orchestration-invocation/node root-nid
              :orchestration-invocation/status :orchestration-invocation.status/scheduled}}
     nodes))
 
@@ -295,10 +298,14 @@
     {}
     process))
 
+(defn every-succeeded? [process]
+  (every?
+    #(= :orchestration-invocation.status/succeeded
+        (:orchestration-invocation/status %))
+    (vals (dissoc process root-nid))))
+
 (defn execute [app-context orchestration params & [{:keys [watch] :or {watch identity}}]]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))
-
-        root-nid "Root"
 
         process (doto (prepare nodes) (watch))
         process (update-to-running process root-nid params)
@@ -316,12 +323,6 @@
                           process (doto (update-to-running process nid invokable-params) (watch))]
                       (try
                         (let [process (update-to-succeeded process nid (sf/invoke-result invokable invokable-params))
-
-                              every-succeeded? (every?
-                                                 #(= :orchestration-invocation.status/succeeded
-                                                     (:orchestration-invocation/status %))
-                                                 (vals (dissoc process root-nid)))
-
                               process (if every-succeeded?
                                         (update-to-succeeded process root-nid (output-mapping orchestration process))
                                         process)]
@@ -342,7 +343,7 @@
   (future (execute app-context orchestration params watch)))
 
 (defn results [{:orchestration-execution/keys [process]}]
-  (let [root (get process "Root")]
+  (let [root (get process root-nid)]
     (merge {:status (name (:orchestration-invocation/status root))
             :children (reduce-kv
                         (fn [children k v]
@@ -354,7 +355,7 @@
                                                    (when-let [error (:orchestration-invocation/error v)]
                                                      {:error (.getMessage error)}))))
                         {}
-                        (dissoc process "Root"))}
+                        (dissoc process root-nid))}
 
            (when-let [output (:orchestration-invocation/output root)]
              {:results output})
@@ -380,6 +381,6 @@
     (log/debug (str "JOB-ID " job-id (pretty-status process)))
 
     (job/update-job db {:id job-id
-                        :status (name (get-in process ["Root" :orchestration-invocation/status]))
+                        :status (name (get-in process [root-nid :orchestration-invocation/status]))
                         :results (str process)
                         :updated_at (LocalDateTime/now)})))
