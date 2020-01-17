@@ -2,6 +2,7 @@
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.pprint :as pprint]
             [clojure.tools.logging :as log]
+            [clojure.datafy :as datafy]
             [surfer.app-context :as app-context]
             [surfer.orchestration :as orchestration]
             [surfer.store :as store]
@@ -38,6 +39,7 @@
     (catch Exception e
       (update-job (app-context/db app-context) {:id job-id
                                                 :status (name :orchestration-invocation.status/failed)
+                                                :error (str (datafy/datafy e))
                                                 :updated_at (LocalDateTime/now)})
 
       (throw e))))
