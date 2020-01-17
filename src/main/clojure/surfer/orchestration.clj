@@ -270,7 +270,7 @@
       (assoc process nid {:orchestration-invocation/node nid
                           :orchestration-invocation/status :orchestration-invocation.status/scheduled}))
     {root-nid {:orchestration-invocation/node root-nid
-             :orchestration-invocation/status :orchestration-invocation.status/scheduled}}
+               :orchestration-invocation/status :orchestration-invocation.status/scheduled}}
     nodes))
 
 (defn update-to-running [process nid input]
@@ -308,6 +308,7 @@
   (let [nodes (dep/topo-sort (dependency-graph orchestration))
 
         process (doto (prepare nodes) (watch))
+        ;; Don't watch here, wait until the first Operation is running.
         process (update-to-running process root-nid params)
         process (reduce
                   (fn [process nid]
@@ -323,12 +324,15 @@
                           process (doto (update-to-running process nid invokable-params) (watch))]
                       (try
                         (let [process (update-to-succeeded process nid (sf/invoke-result invokable invokable-params))
+                              ;; The Orchestration is succeeded whenever the last Operation is succeeded.
                               process (if (every-succeeded? process)
                                         (update-to-succeeded process root-nid (output-mapping orchestration process))
                                         process)]
                           (doto process (watch)))
                         (catch Exception e
                           (let [process (update-to-failed process nid e)]
+                            ;; The whole Orchestration fails if a single Operation fails.
+                            ;; Whenever an Operation fails, all the scheduled Operations are canceled.
                             ;; Root error is a copy of the failed node.
                             (reduced (doto (-> process
                                                (update-to-failed root-nid (get process nid))
