@@ -180,9 +180,7 @@
            :body (store/metadata-index db)})))))
 
 (defn invoke-api-v1 [app-context]
-  (let [database (app-context/database app-context)
-        env (app-context/env app-context)
-        db (database/db database)]
+  (let [db (app-context/db app-context)]
     (context "/api/v1/invoke" []
       :tags ["Invoke API v1"]
       (routes
@@ -196,47 +194,20 @@
 
         (POST "/sync/:op-id" request
           :coercion nil
-          :body [body schema/InvokeRequest]
-          (let [id (get-in request [:params :op-id])
-                metadata (store/get-metadata db id {:key-fn keyword})
-                ^InputStream body (:body request)
-                params (json/read-str (slurp (doto body (.reset))) :key-fn keyword)]
-            (cond
-              (nil? metadata)
-              (response/not-found {:error (str "Metadata not found. Did you forget to register Metadata for operation '" id "'?")})
+          :body [_ schema/InvokeRequest]
+          (let [oid (get-in request [:params :op-id])
+                params (json/read-str (slurp (doto ^InputStream (:body request) (.reset))) :key-fn keyword)]
 
-              (not= "operation" (:type metadata))
-              (response/bad-request {:error (str "Invalid Metadata. Operation " id " metadata type value should be 'operation'.")})
+            (log/debug (str "Invoke Sync " oid " " params))
 
-              (= "orchestration" (get-in metadata [:operation :class]))
-              (try
-                (let [orchestration (orchestration/get-orchestration app-context id)
-                      results (orchestration/results (orchestration/execute app-context orchestration params))]
+            (try
+              {:status 200
+               :body (job/run-job app-context oid params)}
+              (catch Exception e
+                (log/error e "Failed to invoke Operation.")
 
-                  (log/debug (str "Invoke Sync - Orchestration " id " : " params " -> " results))
-
-                  {:status 200
-                   :body results})
-                (catch Exception e
-                  (log/error e "Failed to invoke Orchestration." metadata)
-
-                  {:status 500
-                   :body "Failed to invoke Orchestration. Please try again."}))
-
-              :else
-              (try
-                (let [result (-> (invokable/resolve-invokable metadata)
-                                 (invokable/invoke app-context params))]
-
-                  (log/debug (str "Invoke Sync - Operation " id " : " params " -> " result))
-
-                  {:status 200
-                   :body result})
-                (catch Exception e
-                  (log/error e "Failed to invoke Operation." metadata)
-
-                  {:status 500
-                   :body "Failed to invoke Operation. Please try again."})))))
+                {:status 500
+                 :body "Failed to invoke Operation. Please try again."}))))
 
         (POST "/async/:op-id"
           {{:keys [op-id]} :params :as request}
@@ -258,12 +229,10 @@
                 (log/debug (str "Invoke Async - Orchestration " oid " " params))
 
                 (let [job-id (job/new-job db {:operation oid
-                                              :created_at (LocalDateTime/now)})
-
-                      watch (orchestration/database-watch db job-id)]
+                                              :created_at (LocalDateTime/now)})]
 
                   (as-> (orchestration/get-orchestration app-context oid) orchestration
-                        (orchestration/execute-async app-context orchestration params {:watch watch}))
+                        (orchestration/execute-async app-context orchestration params {:watch nil}))
 
                   {:status 200
                    :body {:jobid job-id}})

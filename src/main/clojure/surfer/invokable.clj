@@ -7,12 +7,10 @@
     [surfer.app-context :as app-context]
     [clojure.data.json :as json]
     [starfish.alpha :as sfa]
-    [clojure.walk :as walk]
-    [clojure.java.jdbc :as jdbc]
-    [clojure.edn :as edn])
+    [clojure.walk :as walk])
   (:import (sg.dex.starfish.util DID)
            (sg.dex.starfish.impl.memory MemoryAgent ClojureOperation MemoryAsset)
-           (java.time Instant LocalDateTime)))
+           (java.time Instant)))
 
 (defn- wrapped-params [metadata params]
   (let [params (walk/keywordize-keys params)]

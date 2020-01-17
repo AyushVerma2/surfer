@@ -8,11 +8,7 @@
             [clojure.string :as str]
             [surfer.asset :as asset]
             [surfer.storage :as storage]
-            [surfer.env :as env]
-            [clojure.pprint :as pprint]
-            [clojure.tools.logging :as log]
-            [surfer.job :as job])
-  (:import (java.time LocalDateTime)))
+            [surfer.env :as env]))
 
 ;; -- ORCHESTRATION EDGE
 
@@ -371,20 +367,3 @@
   (dep13->orchestration
     (with-open [input-stream (storage/asset-input-stream (env/storage-path (app-context/env app-context)) id)]
       (asset/read-json-input-stream input-stream))))
-
-(defn pretty-status [process]
-  (let [status (->> process
-                    (map
-                      (fn [[nid invocation]]
-                        [nid (name (:orchestration-invocation/status invocation))]))
-                    (into {}))]
-    (with-out-str (pprint/print-table [status]))))
-
-(defn database-watch [db job-id]
-  (fn [process]
-    (log/debug (str "JOB-ID " job-id (pretty-status process)))
-
-    (job/update-job db {:id job-id
-                        :status (name (get-in process [root-nid :orchestration-invocation/status]))
-                        :results (str (results {:orchestration-execution/process process}))
-                        :updated_at (LocalDateTime/now)})))

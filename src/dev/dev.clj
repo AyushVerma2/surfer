@@ -48,7 +48,7 @@
   (jdbc/query (db) sql-params))
 
 (defn print-pretty-status [process]
-  (println (orchestration/pretty-status process)))
+  (println (job/pretty-status process)))
 
 (comment
 
@@ -65,44 +65,7 @@
     (sfa/did->agent did))
 
 
-  (def n-asset
-    ;; Data must be a JSON-encoded string
-    (sf/upload aladdin (sf/memory-asset (data.json/write-str {:n 2}))))
-
-  (def n-asset-did
-    (sf/did n-asset))
-
-
-  ;; -- Invoke
-
-  (invokable/invoke #'demo.invokable/n-odd? (app-context) {:n {:did (str n-asset-did)}})
-
-  (invokable/invoke #'demo.invokable/make-range-asset (app-context) {})
-
-  ;; Param keys *must be* a string when calling the Java API directly.
-  (def job
-    (let [metadata (invokable/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (invokable/invokable-operation (app-context) metadata)]
-      (.invoke operation {"n" 1})))
-
-  ;; Param keys can be a keyword because `starfish.core/invoke` uses `stringify-keys`.
-  (def job
-    (let [metadata (invokable/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (invokable/invokable-operation (app-context) metadata)]
-      (sf/invoke operation {:n 1})))
-
-
-  (sf/poll-result job)
-
-  (sf/job-status job)
-
-  (dep/topo-sort (-> (dep/graph)
-                     (dep/depend "B" "A")
-                     (dep/depend "C" "B")))
-
-
-  (invokable/invoke #'demo.invokable/bad-increment (app-context) {})
-
+  ;; -- Invokables
   (def increment
     (let [metadata (invokable/invokable-metadata #'demo.invokable/increment)]
       (invokable/register-invokable aladdin metadata)))
@@ -127,18 +90,29 @@
     (let [metadata (invokable/invokable-metadata #'demo.invokable/concatenate)]
       (invokable/register-invokable aladdin metadata)))
 
+  ;; -- Run Job
+  (job/run-job (app-context) "Foo" {:n 1})
+  (job/run-job (app-context) (sf/asset-id increment) {:n 1})
+  (job/run-job (app-context) (sf/asset-id bad-increment) {})
+
 
   ;; -- Orchestration Demo
+  ;; 1. Register this Operation
+  ;; 2. Invoke the Operation to create an Orchestration
+  ;; 3. Invoke the Orchestration (the previous step should return the ID of the Orchestration)
   (def make-orchestration-demo1
     (let [metadata (invokable/invokable-metadata #'demo.invokable/make-orchestration-demo1)]
       (invokable/register-invokable aladdin metadata)))
+
+  ;; Step 2 - Invoke the Operation
+  (as-> (job/run-job (app-context) (sf/asset-id make-orchestration-demo1) {:n 2}) orchestration
+        ;; Step 3 - Invoke the Orchestration
+        (job/run-job (app-context) (:id orchestration) {:n 0}))
 
   (def make-orchestration-demo2
     (let [metadata (invokable/invokable-metadata #'demo.invokable/make-orchestration-demo2)]
       (invokable/register-invokable aladdin metadata)))
 
-  (demo.invokable/make-orchestration-demo1 (app-context) {:n 10})
-  (demo.invokable/make-orchestration-demo2 (app-context) {})
 
   (let [orchestration #:orchestration {:id "Root"
 
@@ -169,22 +143,6 @@
                                                               :target-port :n}]}]
     (orchestration/execute-async (app-context) orchestration {:n 1} {:watch print-pretty-status}))
 
-  (s/valid? :orchestration-edge/source-root #:orchestration-edge{:source-port :a
-                                                                 :target "A"
-                                                                 :target-port :x})
-
-  (s/valid? :orchestration-edge/node-to-node #:orchestration-edge{:source "A"
-                                                                  :source-port :a
-                                                                  :target "B"
-                                                                  :target-port :b})
-
-  (s/conform :orchestration-edge/edge #:orchestration-edge{:source "Root"
-                                                           :source-port :a
-                                                           :target-port :x})
-
-  (gen/sample (s/gen :orchestration/orchestration) 1)
-
-
   ;; Re-using the same Operation n times to connect to a different port
   (let [orchestration (orchestration/dep13->orchestration {:id "Root"
 
@@ -208,6 +166,23 @@
                                                              :target "Root"
                                                              :targetPort "coll"}]})]
     (orchestration/execute (app-context) orchestration {} {:watch print-pretty-status}))
+
+
+  ;; -- Specs
+  (s/valid? :orchestration-edge/source-root #:orchestration-edge{:source-port :a
+                                                                 :target "A"
+                                                                 :target-port :x})
+
+  (s/valid? :orchestration-edge/node-to-node #:orchestration-edge{:source "A"
+                                                                  :source-port :a
+                                                                  :target "B"
+                                                                  :target-port :b})
+
+  (s/conform :orchestration-edge/edge #:orchestration-edge{:source "Root"
+                                                           :source-port :a
+                                                           :target-port :x})
+
+  (gen/sample (s/gen :orchestration/orchestration) 1)
 
   )
 
