@@ -386,5 +386,5 @@
 
     (job/update-job db {:id job-id
                         :status (name (get-in process [root-nid :orchestration-invocation/status]))
-                        :results (str process)
+                        :results (str (results {:orchestration-execution/process process}))
                         :updated_at (LocalDateTime/now)})))

@@ -39,7 +39,8 @@
     [clojure.string :as str]
     [surfer.migration :as migration]
     [surfer.orchestration :as orchestration]
-    [clojure.walk :as walk])
+    [clojure.walk :as walk]
+    [clojure.edn :as edn])
   (:import [java.io InputStream StringWriter PrintWriter]
            (clojure.lang ExceptionInfo)
            (java.time LocalDateTime)))
@@ -279,11 +280,15 @@
                         :status "scheduled"}}
                 (response/not-found "Operation not invokable.")))))
 
-        (GET "/jobs/:jobid"
-             [jobid]
-          (log/debug (str "GET JOB on job [" jobid "]"))
-          (if-let [job (invokable/get-job jobid)]
-            (response/response (invokable/job-response app-context jobid))
+        (GET "/jobs/:jobid" [jobid]
+          (cond
+            (invokable/get-job jobid)
+            (response/response (invokable/job-response app-context (invokable/get-job jobid)))
+
+            (job/get-job db jobid)
+            (response/response (edn/read-string (:results (job/get-job db jobid))))
+
+            :else
             (response/not-found (str "Job not found: " jobid))))))))
 
 (defn hash-check! [file metadata]

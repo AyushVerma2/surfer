@@ -7,3 +7,6 @@
 
 (defn update-job [db job]
   (jdbc/update! db "JOBS" job ["id = ?" (:id job)]))
+
+(defn get-job [db id]
+  (first (jdbc/query db ["SELECT * FROM JOBS WHERE ID = ?" id])))

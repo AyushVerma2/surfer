@@ -169,21 +169,20 @@
 
 (defn job-response
   "Gets the appropriate response map for a job result, or null if the job does not exist."
-  [app-context jobid]
-  (when-let [job (get-job jobid)]
-    (let [agent-did (env/self-did (app-context/env app-context))
+  [app-context job]
+  (let [agent-did (env/self-did (app-context/env app-context))
 
-          _ (try
-              (sf/poll-result job)
-              (catch Throwable _))
+        _ (try
+            (sf/poll-result job)
+            (catch Throwable _))
 
-          status (sf/job-status job)
-          resp {:status status}
-          resp (if (= status :succeeded)
-                 (assoc resp :results (format-results agent-did (sf/get-result job)))
-                 resp)
-          resp (if (= status :failed)
-                 (assoc resp :message (try (sf/get-result job)
-                                           (catch Throwable t (.getMessage t))))
-                 resp)]
-      resp)))
+        status (sf/job-status job)
+        resp {:status status}
+        resp (if (= status :succeeded)
+               (assoc resp :results (format-results agent-did (sf/get-result job)))
+               resp)
+        resp (if (= status :failed)
+               (assoc resp :message (try (sf/get-result job)
+                                         (catch Throwable t (.getMessage t))))
+               resp)]
+    resp))
