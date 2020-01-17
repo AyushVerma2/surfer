@@ -323,7 +323,7 @@
                           process (doto (update-to-running process nid invokable-params) (watch))]
                       (try
                         (let [process (update-to-succeeded process nid (sf/invoke-result invokable invokable-params))
-                              process (if every-succeeded?
+                              process (if (every-succeeded? process)
                                         (update-to-succeeded process root-nid (output-mapping orchestration process))
                                         process)]
                           (doto process (watch)))
