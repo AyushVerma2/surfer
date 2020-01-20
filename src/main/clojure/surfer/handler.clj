@@ -223,11 +223,11 @@
               {:status 200
                :body (job/run-job app-context oid params)}
               (catch ExceptionInfo e
-                (log/error e "Invoke error.")
+                (log/error e "Job error.")
 
                 (error-response (ex-data e)))
               (catch Exception e
-                (log/error e "Server error.")
+                (log/error e "Unknown error.")
 
                 {:status 500
                  :body "Failed to invoke Operation. Please try again."}))))
@@ -244,11 +244,11 @@
               {:status 200
                :body {:jobid (:job/id (job/run-job-async app-context oid params))}}
               (catch ExceptionInfo e
-                (log/error e "Invoke error.")
+                (log/error e "Job error.")
 
                 (error-response (ex-data e)))
               (catch Exception e
-                (log/error e "Server error.")
+                (log/error e "Unknown error.")
 
                 {:status 500
                  :body "Failed to invoke Operation. Please try again."}))))
