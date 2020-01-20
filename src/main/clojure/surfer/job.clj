@@ -9,14 +9,6 @@
             [surfer.invokable :as invokable])
   (:import (java.time LocalDateTime)))
 
-(defn pretty-status [process]
-  (let [status (->> process
-                    (map
-                      (fn [[nid invocation]]
-                        [nid (name (:orchestration-invocation/status invocation))]))
-                    (into {}))]
-    (with-out-str (pprint/print-table [status]))))
-
 (defn new-job [db job]
   (let [m (first (jdbc/insert! db "JOBS" job))]
     (:id m)))
@@ -26,6 +18,23 @@
 
 (defn get-job [db id]
   (first (jdbc/query db ["SELECT * FROM JOBS WHERE ID = ?" id])))
+
+(defn pretty-status [process]
+  (let [status (->> process
+                    (map
+                      (fn [[nid invocation]]
+                        [nid (name (:orchestration-invocation/status invocation))]))
+                    (into {}))]
+    (with-out-str (pprint/print-table [status]))))
+
+(defn watch-job [db id]
+  (fn [process]
+    (log/debug (str "JOB-ID " id (pretty-status process)))
+
+    (update-job db {:id id
+                    :status (name (get-in process [orchestration/root-nid :orchestration-invocation/status]))
+                    :results (str (orchestration/results {:orchestration-execution/process process}))
+                    :updated_at (LocalDateTime/now)})))
 
 (defn- run-operation* [invokable app-context params job-id]
   (try
@@ -58,14 +67,7 @@
       (= "orchestration" (get-in metadata [:operation :class]))
       (try
         (let [orchestration (orchestration/get-orchestration app-context oid)
-
-              watch (fn [process]
-                      (log/debug (str "JOB-ID " job-id (pretty-status process)))
-
-                      (update-job db {:id job-id
-                                      :status (name (get-in process [orchestration/root-nid :orchestration-invocation/status]))
-                                      :results (str (orchestration/results {:orchestration-execution/process process}))
-                                      :updated_at (LocalDateTime/now)}))]
+              watch (watch-job db job-id)]
           (if async?
             (do
               (orchestration/execute-async app-context orchestration params {:watch watch})
@@ -76,7 +78,8 @@
 
       (= "operation" (:type metadata))
       (try
-        (let [f #(run-operation* (invokable/resolve-invokable metadata) app-context params job-id)]
+        (let [invokable (invokable/resolve-invokable metadata)
+              f #(run-operation* invokable app-context params job-id)]
           (if async?
             (do
               (future (f))
