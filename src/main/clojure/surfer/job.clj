@@ -73,7 +73,7 @@
             (if async?
               (do
                 (orchestration/execute-async app-context orchestration params {:watch watch})
-                {:jobid job-id})
+                {:job/id job-id})
               (orchestration/results (orchestration/execute app-context orchestration params {:watch watch}))))
           (catch Exception e
             (throw (ex-info (.getMessage e) {:job/error :job.error/orchestration-failed} e))))
@@ -85,7 +85,7 @@
             (if async?
               (do
                 (future (f))
-                {:jobid job-id})
+                {:job/id job-id})
               (f)))
           (catch Exception e
             (throw (ex-info (.getMessage e) {:job/error :job.error/operation-failed} e))))))))

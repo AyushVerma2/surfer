@@ -242,7 +242,7 @@
 
             (try
               {:status 200
-               :body (job/run-job-async app-context oid params)}
+               :body {:jobid (:job/id (job/run-job-async app-context oid params))}}
               (catch ExceptionInfo e
                 (log/error e "Invoke error.")
 
