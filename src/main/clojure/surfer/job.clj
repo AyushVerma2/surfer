@@ -44,8 +44,6 @@
 
       (throw e))))
 
-;;(invokable/launch-job db op-id params)
-
 (defn- run-job* [app-context oid params & [{:keys [async?] :or {async? false}}]]
   (let [db (app-context/db app-context)
 
@@ -78,11 +76,12 @@
 
       (= "operation" (:type metadata))
       (try
-        (if async?
-          (do
-            ;; TODO
-            {:jobid job-id})
-          (run-operation* (invokable/resolve-invokable metadata) app-context params job-id))
+        (let [f #(run-operation* (invokable/resolve-invokable metadata) app-context params job-id)]
+          (if async?
+            (do
+              (future (f))
+              {:jobid job-id})
+            (f)))
         (catch Exception e
           (throw (ex-info (.getMessage e) {:error :operation-failed} e)))))))
 

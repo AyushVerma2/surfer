@@ -85,23 +85,23 @@
     (context "/api" []
       :tags ["Status API"]
       (routes {:swagger {:data {:info {:title "Status API"}}}}
-              (GET "/ddo" []
-                :summary "Gets the ddo for this Agent"
-                :return schema/DDO
-                {:status 200
-                 :headers {"Content-Type" "application/json"}
-                 :body (env/self-ddo env)})
+        (GET "/ddo" []
+          :summary "Gets the ddo for this Agent"
+          :return schema/DDO
+          {:status 200
+           :headers {"Content-Type" "application/json"}
+           :body (env/self-ddo env)})
 
-              (GET "/status" []
-                :summary "Gets the status for this Agent"
-                :return s/Any
-                (let [agent (env/agent-config env)]
-                  {:status 200
-                   :headers {"Content-Type" "application/json"}
-                   :body {:name (or (:name agent) "Unnamed Agent")
-                          :description (or (:description agent) "No description")
-                          :api-versions ["v1"]
-                          :custom {:server-type "Surfer"}}}))))))
+        (GET "/status" []
+          :summary "Gets the status for this Agent"
+          :return s/Any
+          (let [agent (env/agent-config env)]
+            {:status 200
+             :headers {"Content-Type" "application/json"}
+             :body {:name (or (:name agent) "Unnamed Agent")
+                    :description (or (:description agent) "No description")
+                    :api-versions ["v1"]
+                    :custom {:server-type "Surfer"}}}))))))
 
 
 ;; ==========================================
@@ -234,14 +234,8 @@
                  :body "Failed to invoke Operation. Please try again."}))))
 
         (GET "/jobs/:jobid" [jobid]
-          (cond
-            (invokable/get-job jobid)
-            (response/response (invokable/job-response app-context (invokable/get-job jobid)))
-
-            (job/get-job db jobid)
-            (response/response (edn/read-string (:results (job/get-job db jobid))))
-
-            :else
+          (if-let [job (job/get-job db jobid)]
+            (response/response (edn/read-string (:results job)))
             (response/not-found (str "Job not found: " jobid))))))))
 
 (defn hash-check! [file metadata]
@@ -604,60 +598,60 @@
     (context "/api/v1/admin" []
       :tags ["Admin API v1"]
       (routes {:swagger {:data {:info {:title "Admin API"}}}}
-              (GET "/auth" request
-                :summary "Gets the authentication map for the current user. Useful for debugging."
-                (response/response (friend/current-authentication request)))
+        (GET "/auth" request
+          :summary "Gets the authentication map for the current user. Useful for debugging."
+          (response/response (friend/current-authentication request)))
 
-              (POST "/ckan-import" request
-                :query-params [{userid :- schema/UserID nil},
-                               repo :- String,
-                               {count :- s/Int 10}]
-                :summary "Imports assets from a CKAN repository."
-                (friend/authorize #{:admin}
-                                  (let [userid (or userid (get-current-userid app-context request) (throw (IllegalArgumentException. "No valid userid")))]
-                                    (let [all-names (ckan/package-list repo)
-                                          names (if count (take count (shuffle all-names)) all-names)]
-                                      (binding [ckan/*import-userid* userid]
-                                        (ckan/import-packages db repo names))))))
+        (POST "/ckan-import" request
+          :query-params [{userid :- schema/UserID nil},
+                         repo :- String,
+                         {count :- s/Int 10}]
+          :summary "Imports assets from a CKAN repository."
+          (friend/authorize #{:admin}
+                            (let [userid (or userid (get-current-userid app-context request) (throw (IllegalArgumentException. "No valid userid")))]
+                              (let [all-names (ckan/package-list repo)
+                                    names (if count (take count (shuffle all-names)) all-names)]
+                                (binding [ckan/*import-userid* userid]
+                                  (ckan/import-packages db repo names))))))
 
-              (POST "/clear-db" []
-                :summary "Clear database."
-                (friend/authorize #{:admin}
-                                  (store/clear-db db (env/dbtype env))
-                                  (response/response {:message "Success"})))
+        (POST "/clear-db" []
+          :summary "Clear database."
+          (friend/authorize #{:admin}
+                            (store/clear-db db (env/dbtype env))
+                            (response/response {:message "Success"})))
 
-              (POST "/migrate-db" []
-                :summary "Run database migrations."
-                (friend/authorize #{:admin}
-                                  (migration/migrate db (env/user-config env))
-                                  (response/response {:message "Success"})))
+        (POST "/migrate-db" []
+          :summary "Run database migrations."
+          (friend/authorize #{:admin}
+                            (migration/migrate db (env/user-config env))
+                            (response/response {:message "Success"})))
 
-              (POST "/reset-db" []
-                :summary "Clear database & run migrations."
-                (friend/authorize #{:admin}
-                                  (store/clear-db db (env/dbtype env))
-                                  (migration/migrate db (env/user-config env))
-                                  (response/response {:message "Success"})))
+        (POST "/reset-db" []
+          :summary "Clear database & run migrations."
+          (friend/authorize #{:admin}
+                            (store/clear-db db (env/dbtype env))
+                            (migration/migrate db (env/user-config env))
+                            (response/response {:message "Success"})))
 
-              (POST "/import-sample-datasets" []
-                :summary "Import sample datasets - datasets.edn."
-                (friend/authorize #{:admin}
-                                  (let [storage-path (-> (app-context/env app-context)
-                                                         (env/storage-path))]
-                                    (response/response (asset/import-edn! db storage-path "datasets.edn")))))
+        (POST "/import-sample-datasets" []
+          :summary "Import sample datasets - datasets.edn."
+          (friend/authorize #{:admin}
+                            (let [storage-path (-> (app-context/env app-context)
+                                                   (env/storage-path))]
+                              (response/response (asset/import-edn! db storage-path "datasets.edn")))))
 
-              (GET "/print-config" []
-                :summary "Print config."
-                (friend/authorize #{:admin} (response/response (env/config env))))
+        (GET "/print-config" []
+          :summary "Print config."
+          (friend/authorize #{:admin} (response/response (env/config env))))
 
-              (POST "/config-agent-remote-url" []
-                :summary "Config - Set `[:agent :remote-url]`."
-                :coercion nil
-                :query-params [remote-url :- s/Str]
-                (friend/authorize #{:admin}
-                                  (do
-                                    (alter-var-root #'env/*agent-remote-url* (constantly remote-url))
-                                    (response/response {:remote-url remote-url}))))))))
+        (POST "/config-agent-remote-url" []
+          :summary "Config - Set `[:agent :remote-url]`."
+          :coercion nil
+          :query-params [remote-url :- s/Str]
+          (friend/authorize #{:admin}
+                            (do
+                              (alter-var-root #'env/*agent-remote-url* (constantly remote-url))
+                              (response/response {:remote-url remote-url}))))))))
 
 ;; ==========================================
 ;; Authentication API
