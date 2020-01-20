@@ -55,38 +55,40 @@
 
 (defn- run-job* [app-context oid params & [{:keys [async?] :or {async? false}}]]
   (let [db (app-context/db app-context)
-
-        job-id (new-job db {:operation oid
-                            :created_at (LocalDateTime/now)})
-
         metadata (store/get-metadata db oid {:key-fn keyword})]
     (cond
       (nil? metadata)
-      (throw (ex-info "Can't find metadata." {:error :missing-metadata}))
+      (throw (ex-info "Metadata not found." {:job/error :job.error/missing-metadata}))
 
-      (= "orchestration" (get-in metadata [:operation :class]))
-      (try
-        (let [orchestration (orchestration/get-orchestration app-context oid)
-              watch (watch-job db job-id)]
-          (if async?
-            (do
-              (orchestration/execute-async app-context orchestration params {:watch watch})
-              {:jobid job-id})
-            (orchestration/results (orchestration/execute app-context orchestration params {:watch watch}))))
-        (catch Exception e
-          (throw (ex-info (.getMessage e) {:error :orchestration-failed} e))))
+      (not= "operation" (:type metadata))
+      (throw (ex-info "Metadata type must be 'operation'." {:job/error :job.error/invalid-type})))
 
-      (= "operation" (:type metadata))
-      (try
-        (let [invokable (invokable/resolve-invokable metadata)
-              f #(run-operation* invokable app-context params job-id)]
-          (if async?
-            (do
-              (future (f))
-              {:jobid job-id})
-            (f)))
-        (catch Exception e
-          (throw (ex-info (.getMessage e) {:error :operation-failed} e)))))))
+    (let [job-id (new-job db {:operation oid
+                              :created_at (LocalDateTime/now)})]
+      (cond
+        (= "orchestration" (get-in metadata [:operation :class]))
+        (try
+          (let [orchestration (orchestration/get-orchestration app-context oid)
+                watch (watch-job db job-id)]
+            (if async?
+              (do
+                (orchestration/execute-async app-context orchestration params {:watch watch})
+                {:jobid job-id})
+              (orchestration/results (orchestration/execute app-context orchestration params {:watch watch}))))
+          (catch Exception e
+            (throw (ex-info (.getMessage e) {:job/error :job.error/orchestration-failed} e))))
+
+        (= "operation" (:type metadata))
+        (try
+          (let [invokable (invokable/resolve-invokable metadata)
+                f #(run-operation* invokable app-context params job-id)]
+            (if async?
+              (do
+                (future (f))
+                {:jobid job-id})
+              (f)))
+          (catch Exception e
+            (throw (ex-info (.getMessage e) {:job/error :job.error/operation-failed} e))))))))
 
 (defn run-job [app-context oid params]
   (run-job* app-context oid params {:async? false}))
