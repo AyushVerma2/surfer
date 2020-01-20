@@ -18,11 +18,14 @@
             [clojure.edn :as edn]
             [clojure.alpha.spec :as s]
             [clojure.alpha.spec.gen :as gen]
+            [clojure.pprint]
             [com.stuartsierra.component.repl :refer [set-init reset start stop system]]
             [clj-http.client :as http]
             [com.stuartsierra.dependency :as dep]
             [surfer.database :as database]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.pprint :as pprint]
+            [surfer.job :as job]))
 
 (set-init (constantly (system/new-system :dev)))
 
@@ -44,14 +47,13 @@
 (defn query [& sql-params]
   (jdbc/query (db) sql-params))
 
+(defn print-pretty-status [process]
+  (println (job/pretty-status process)))
+
 (comment
 
   (reset-db)
 
-  ;; -- Import Datasets
-  (let [database (system/database system)
-        storage-path (env/storage-path (env))]
-    (asset/import-edn! (db) storage-path "datasets.edn"))
 
   (def did
     (env/self-did (system/env system)))
@@ -62,46 +64,8 @@
   (def aladdin
     (sfa/did->agent did))
 
-  (def n-asset
-    ;; Data must be a JSON-encoded string
-    (sf/upload aladdin (sf/memory-asset (data.json/write-str {:n 2}))))
 
-  (def n-asset-did
-    (sf/did n-asset))
-
-
-  ;; -- Invoke
-
-  (invokable/invoke #'demo.invokable/n-odd? (app-context) {:n {:did (str n-asset-did)}})
-
-  (invokable/invoke #'demo.invokable/make-range-asset (app-context) {})
-
-  ;; Param keys *must be* a string when calling the Java API directly.
-  (def job
-    (let [metadata (invokable/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (invokable/invokable-operation (app-context) metadata)]
-      (.invoke operation {"n" 1})))
-
-  ;; Param keys can be a keyword because `starfish.core/invoke` uses `stringify-keys`.
-  (def job
-    (let [metadata (invokable/invokable-metadata #'demo.invokable/invokable-odd?)
-          operation (invokable/invokable-operation (app-context) metadata)]
-      (sf/invoke operation {:n 1})))
-
-
-  (sf/poll-result job)
-
-  (sf/job-status job)
-
-  (http/get "https://api.ipify.org")
-
-  (dep/topo-sort (-> (dep/graph)
-                     (dep/depend "B" "A")
-                     (dep/depend "C" "B")))
-
-
-  (invokable/invoke #'demo.invokable/bad-increment (app-context) {})
-
+  ;; -- Invokables
   (def increment
     (let [metadata (invokable/invokable-metadata #'demo.invokable/increment)]
       (invokable/register-invokable aladdin metadata)))
@@ -126,19 +90,29 @@
     (let [metadata (invokable/invokable-metadata #'demo.invokable/concatenate)]
       (invokable/register-invokable aladdin metadata)))
 
+  ;; -- Run Job
+  (job/run-job (app-context) (sf/asset-id increment) {:n 1})
+  (job/run-job (app-context) (sf/asset-id bad-increment) {})
+
 
   ;; -- Orchestration Demo
+  ;; 1. Register this Operation
+  ;; 2. Invoke the Operation to create an Orchestration
+  ;; 3. Invoke the Orchestration (the previous step should return the ID of the Orchestration)
   (def make-orchestration-demo1
     (let [metadata (invokable/invokable-metadata #'demo.invokable/make-orchestration-demo1)]
       (invokable/register-invokable aladdin metadata)))
+
+  ;; Step 2 - Invoke the Operation
+  (as-> (job/run-job (app-context) (sf/asset-id make-orchestration-demo1) {:n 2}) orchestration
+        ;; Step 3 - Invoke the Orchestration
+        (job/run-job (app-context) (:id orchestration) {:n 0}))
 
   (def make-orchestration-demo2
     (let [metadata (invokable/invokable-metadata #'demo.invokable/make-orchestration-demo2)]
       (invokable/register-invokable aladdin metadata)))
 
-  (demo.invokable/make-orchestration-demo1 (app-context) {:n 10})
-  (demo.invokable/make-orchestration-demo2 (app-context) {})
-  
+
   (let [orchestration #:orchestration {:id "Root"
 
                                        :children
@@ -166,9 +140,34 @@
                                                               :source-port :n
                                                               :target "Root"
                                                               :target-port :n}]}]
-    (orchestration/execute-sync (app-context) orchestration {:n 1}))
+    (orchestration/execute-async (app-context) orchestration {:n 1} {:watch print-pretty-status}))
+
+  ;; Re-using the same Operation n times to connect to a different port
+  (let [orchestration (orchestration/dep13->orchestration {:id "Root"
+
+                                                           :children
+                                                           {"make-range" {:did (sf/asset-id make-range)}
+                                                            "concatenate" {:did (sf/asset-id concatenate)}}
+
+                                                           :edges
+                                                           [{:source "make-range"
+                                                             :sourcePort "range"
+                                                             :target "concatenate"
+                                                             :targetPort "coll1"}
+
+                                                            {:source "make-range"
+                                                             :sourcePort "range"
+                                                             :target "concatenate"
+                                                             :targetPort "coll1"}
+
+                                                            {:source "concatenate"
+                                                             :sourcePort "coll"
+                                                             :target "Root"
+                                                             :targetPort "coll"}]})]
+    (orchestration/execute (app-context) orchestration {} {:watch print-pretty-status}))
 
 
+  ;; -- Specs
   (s/valid? :orchestration-edge/source-root #:orchestration-edge{:source-port :a
                                                                  :target "A"
                                                                  :target-port :x})
@@ -183,68 +182,6 @@
                                                            :target-port :x})
 
   (gen/sample (s/gen :orchestration/orchestration) 1)
-
-  (gen/sample (s/gen :orchestration-invocation/completed) 1)
-  (gen/sample (s/gen :orchestration-invocation/running) 1)
-
-  (gen/sample (s/gen :orchestration-execution/process) 1)
-
-
-  ;; Re-using the same Operation n times to connect to a different port
-  (let [orchestration {:id "Root"
-
-                       :children
-                       {"make-range" (sf/asset-id make-range)
-                        "concatenate" (sf/asset-id concatenate)}
-
-                       :edges
-                       [{:source "make-range"
-                         :target "concatenate"
-                         :ports [:range :coll1]}
-
-                        {:source "make-range"
-                         :target "concatenate"
-                         :ports [:range :coll2]}
-
-                        {:source "concatenate"
-                         :target "Root"
-                         :ports [:coll :coll]}]}]
-    (orchestration/execute-sync (app-context) orchestration))
-
-  ;; TODO
-  (let [orchestration {:id "Root"
-
-                       :children {"Inc-n1" (sf/asset-id increment)}
-
-                       :edges
-                       [{:source "Root"
-                         :target "Inc"
-                         :ports [:n :n]}
-
-                        {:source "Inc"
-                         :target "Root"
-                         :ports [:n :n]}]}]
-    (orchestration/execute-sync (app-context) orchestration {:n 10}))
-
-  (let [orchestration {:id "Orchestration"
-
-                       :children
-                       {"Inc-n1" (sf/asset-id increment)
-                        "Inc-n2" (sf/asset-id increment)}
-
-                       :edges
-                       [{:source "Orchestration"
-                         :target "Inc-n1"
-                         :ports [:n :n]}
-
-                        {:source "Inc-n1"
-                         :target "Inc-n2"
-                         :ports [:n :n]}
-
-                        {:source "Inc-n2"
-                         :target "Orchestration"
-                         :ports [:n :n]}]}]
-    (orchestration/execute-sync (app-context) orchestration {:n 10}))
 
   )
 

@@ -32,6 +32,36 @@
 (deftest ^:integration test-welcome
   (is (= 200 (:status (http/get (base-url) auth-headers)))))
 
+(deftest invoke-errors-test
+  (testing "Metadata not found"
+    (try
+      (http/post (str (base-url) "api/v1/invoke/sync/foo")
+                 (merge auth-headers {:body (json/write-str {:n 1})}))
+      (catch ExceptionInfo e
+        (let [{:keys [status body]} (ex-data e)]
+          (is (= 404 status))
+          (is (= {:error "Metadata not found."} (json/read-str body :key-fn keyword)))))))
+
+
+  (testing "Invalid type"
+    (let [metadata-str (json/write-str {"name" "Foo"
+                                        "contentHash" (-> (io/resource "testfile.txt")
+                                                          (io/input-stream)
+                                                          (byte-streams/to-byte-array)
+                                                          (sf/digest))})
+
+          meta-data-response (http/post (str (base-url) "api/v1/meta/data")
+                                        (merge auth-headers {:body metadata-str}))
+
+          generated-id (json/read-str (:body meta-data-response))]
+      (try
+        (http/post (str (base-url) "api/v1/invoke/sync/" generated-id)
+                   (merge auth-headers {:body (json/write-str {:n 1})}))
+        (catch ExceptionInfo e
+          (let [{:keys [status body]} (ex-data e)]
+            (is (= 400 status))
+            (is (= {:error "Asset must be an Operation."} (json/read-str body :key-fn keyword)))))))))
+
 (deftest invoke-sync-test
   (testing "Invoke Sync API"
     (testing "Operation - Increment n"

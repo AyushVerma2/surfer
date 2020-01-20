@@ -3,9 +3,12 @@
             [com.stuartsierra.dependency :as dep]
             [surfer.store :as store]
             [starfish.core :as sf]
-            [surfer.invokable :as invoke]
+            [surfer.invokable :as invokable]
             [surfer.app-context :as app-context]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [surfer.asset :as asset]
+            [surfer.storage :as storage]
+            [surfer.env :as env]))
 
 ;; -- ORCHESTRATION EDGE
 
@@ -160,6 +163,9 @@
 
 ;; --
 
+(def root-nid
+  "Root")
+
 (defn dep13->orchestration
   "Returns an Orchestration entity from a DEP 13 format."
   [m]
@@ -219,7 +225,7 @@
       (= edge (select-keys e (keys edge))))
     (:orchestration/edges orchestration)))
 
-(defn invokable-params [orchestration parameters process nid]
+(defn invokable-params [orchestration orchestration-params process nid]
   (let [edges-input-redirect (filter
                                (fn [edge]
                                  (= (:orchestration-edge/target edge) nid))
@@ -228,7 +234,7 @@
         params (if (seq edges-input-redirect)
                  (reduce
                    (fn [params {:orchestration-edge/keys [source-port target-port]}]
-                     (assoc params target-port (get parameters source-port)))
+                     (assoc params target-port (get orchestration-params source-port)))
                    {}
                    edges-input-redirect)
                  (some->> (get-in (dependency-graph orchestration) [:dependencies nid])
@@ -259,8 +265,8 @@
     (fn [process nid]
       (assoc process nid {:orchestration-invocation/node nid
                           :orchestration-invocation/status :orchestration-invocation.status/scheduled}))
-    {"Root" {:orchestration-invocation/node "Root"
-             :orchestration-invocation/status :orchestration-invocation.status/scheduled}}
+    {root-nid {:orchestration-invocation/node root-nid
+               :orchestration-invocation/status :orchestration-invocation.status/scheduled}}
     nodes))
 
 (defn update-to-running [process nid input]
@@ -288,14 +294,18 @@
     {}
     process))
 
-(defn execute-sync [app-context orchestration & [params]]
+(defn every-succeeded? [process]
+  (every?
+    #(= :orchestration-invocation.status/succeeded
+        (:orchestration-invocation/status %))
+    (vals (dissoc process root-nid))))
+
+(defn execute [app-context orchestration params & [{:keys [watch] :or {watch identity}}]]
   (let [nodes (dep/topo-sort (dependency-graph orchestration))
 
-        root-nid "Root"
-
-        root-process (-> (prepare nodes)
-                         (update-to-running root-nid params))
-
+        process (doto (prepare nodes) (watch))
+        ;; Don't watch here, wait until the first Operation is running.
+        process (update-to-running process root-nid params)
         process (reduce
                   (fn [process nid]
                     (let [aid (get-in orchestration [:orchestration/children nid :orchestration-child/did])
@@ -303,33 +313,37 @@
                           metadata (-> (app-context/db app-context)
                                        (store/get-metadata aid {:key-fn keyword}))
 
-                          invokable (invoke/invokable-operation app-context metadata)
+                          invokable (invokable/invokable-operation app-context metadata)
 
                           invokable-params (invokable-params orchestration params process nid)
 
-                          process (update-to-running process nid invokable-params)]
+                          process (doto (update-to-running process nid invokable-params) (watch))]
                       (try
-                        (update-to-succeeded process nid (sf/invoke-result invokable invokable-params))
+                        (let [process (update-to-succeeded process nid (sf/invoke-result invokable invokable-params))
+                              ;; The Orchestration is succeeded whenever the last Operation is succeeded.
+                              process (if (every-succeeded? process)
+                                        (update-to-succeeded process root-nid (output-mapping orchestration process))
+                                        process)]
+                          (doto process (watch)))
                         (catch Exception e
                           (let [process (update-to-failed process nid e)]
+                            ;; The whole Orchestration fails if a single Operation fails.
+                            ;; Whenever an Operation fails, all the scheduled Operations are canceled.
                             ;; Root error is a copy of the failed node.
-                            (reduced (-> process
-                                         (update-to-failed root-nid (get process nid))
-                                         (cancel-scheduled))))))))
-                  root-process
-                  nodes)
-
-        root-failed? (= :orchestration-invocation.status/failed
-                        (get-in process [root-nid :orchestration-invocation/status]))
-
-        process (if root-failed?
+                            (reduced (doto (-> process
+                                               (update-to-failed root-nid (get process nid))
+                                               (cancel-scheduled))
+                                       (watch))))))))
                   process
-                  (update-to-succeeded process root-nid (output-mapping orchestration process)))]
+                  nodes)]
     {:orchestration-execution/topo nodes
      :orchestration-execution/process process}))
 
+(defn execute-async [app-context orchestration params & [watch]]
+  (future (execute app-context orchestration params watch)))
+
 (defn results [{:orchestration-execution/keys [process]}]
-  (let [root (get process "Root")]
+  (let [root (get process root-nid)]
     (merge {:status (name (:orchestration-invocation/status root))
             :children (reduce-kv
                         (fn [children k v]
@@ -341,10 +355,15 @@
                                                    (when-let [error (:orchestration-invocation/error v)]
                                                      {:error (.getMessage error)}))))
                         {}
-                        (dissoc process "Root"))}
+                        (dissoc process root-nid))}
 
            (when-let [output (:orchestration-invocation/output root)]
              {:results output})
 
            (when-let [error (:orchestration-invocation/error root)]
              {:error (str "Failed to execute Operation '" (:orchestration-invocation/node error) "'.")}))))
+
+(defn get-orchestration [app-context id]
+  (dep13->orchestration
+    (with-open [input-stream (storage/asset-input-stream (env/storage-path (app-context/env app-context)) id)]
+      (asset/read-json-input-stream input-stream))))

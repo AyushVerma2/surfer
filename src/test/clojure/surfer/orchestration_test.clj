@@ -306,7 +306,7 @@
                                                              :output {:odds [1 3 5 7 9]}
                                                              :status :orchestration-invocation.status/succeeded}}}
 
-                 (orchestration/execute-sync (system/app-context test-system) orchestration)))))
+                 (orchestration/execute (system/app-context test-system) orchestration nil)))))
 
       (testing "Nodes (Operations) with dependencies"
         (let [orchestration {:orchestration/id "Root"
@@ -351,7 +351,7 @@
                                                              :input {:coll2 [0 1 2 3 4 5 6 7 8 9] :coll1 [0 1 2 3 4 5 6 7 8 9]}
                                                              :output {:coll [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]}
                                                              :status :orchestration-invocation.status/succeeded}}}
-                 (orchestration/execute-sync (system/app-context test-system) orchestration {})))))
+                 (orchestration/execute (system/app-context test-system) orchestration {})))))
 
       (testing "Intermediary Operation fails"
         (let [orchestration #:orchestration {:id "Root"
@@ -382,7 +382,7 @@
                                                                     :target "Root"
                                                                     :target-port :n}]}
 
-              execution (orchestration/execute-sync (system/app-context test-system) orchestration {:n 1})]
+              execution (orchestration/execute (system/app-context test-system) orchestration {:n 1})]
           (is (= '("Increment1" "BadIncrement" "Increment2") (:orchestration-execution/topo execution)))
           (is (= {"Root" #:orchestration-invocation {:node "Root"
                                                      :input {:n 1}
